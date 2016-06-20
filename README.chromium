@@ -9,4 +9,4 @@ The Android NDK provides libraries and tools necessary for building, running,
 and debugging C/C++ on Android.
 
 Local Modifications:
-None
+ - Removed everything below android-16 from platforms/
