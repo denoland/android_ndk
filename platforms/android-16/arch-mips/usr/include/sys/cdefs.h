@@ -246,20 +246,6 @@
 #endif
 #endif
 
-/*
- * C99 defines __func__ predefined identifier, which was made available
- * in GCC 2.95.
- */
-#if !defined(__STDC_VERSION__) || !(__STDC_VERSION__ >= 199901L)
-#if __GNUC_PREREQ(2, 6)
-#define	__func__	__PRETTY_FUNCTION__
-#elif __GNUC_PREREQ(2, 4)
-#define	__func__	__FUNCTION__
-#else
-#define	__func__	""
-#endif
-#endif /* !(__STDC_VERSION__ >= 199901L) */
-
 #if defined(_KERNEL)
 #if defined(NO_KERNEL_RCSIDS)
 #undef __KERNEL_RCSID

@@ -10,3 +10,5 @@ and debugging C/C++ on Android.
 
 Local Modifications:
  - Removed everything below android-16 from platforms/
+ - Cherry-picked __func__ fix from upstream bionic
+    https://android-review.googlesource.com/#/c/250323/2
