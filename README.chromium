@@ -14,3 +14,6 @@ Local Modifications:
     https://android-review.googlesource.com/#/c/250323/2
  - Cherry-picked noexcept change from upstream LLVM libcxx
     http://llvm.org/viewvc/llvm-project?view=revision&revision=255683
+ - Cherry-picked SFINAE change that removed _NOEXCEPT_OR_FALSE use from
+   upstream LLVM libcxx
+    http://llvm.org/viewvc/llvm-project?view=revision&revision=219998
