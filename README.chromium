@@ -12,3 +12,5 @@ Local Modifications:
  - Removed everything below android-16 from platforms/
  - Cherry-picked __func__ fix from upstream bionic
     https://android-review.googlesource.com/#/c/250323/2
+ - Cherry-picked noexcept change from upstream LLVM libcxx
+    http://llvm.org/viewvc/llvm-project?view=revision&revision=255683
