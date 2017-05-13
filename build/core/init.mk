@@ -628,7 +628,7 @@ endif
 #
 #    arm -> arm-linux-androideabi-4.9
 #    x86 -> x86-android-linux-4.9
-#    mips -> mipsel-linux-android-4.9
+#    mips -> mips64el-linux-android-4.9
 #
 # This is used in setup-toolchain.mk
 #

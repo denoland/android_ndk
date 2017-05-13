@@ -45,14 +45,17 @@
 #include <cstring>
 #include <algorithm>
 
-#ifdef AMD_EXTENSIONS
 namespace spv {
     extern "C" {
         // Include C-based headers that don't have a namespace
+#ifdef AMD_EXTENSIONS
         #include "GLSL.ext.AMD.h"
+#endif
+#ifdef NV_EXTENSIONS
+        #include "GLSL.ext.NV.h"
+#endif
     }
 }
-#endif
 
 namespace spv {
 
@@ -256,6 +259,10 @@ const char* DecorationString(int decoration)
 #ifdef AMD_EXTENSIONS
     case 4999: return "ExplicitInterpAMD";
 #endif
+#ifdef NV_EXTENSIONS
+    case 5248: return "OverrideCoverageNV";
+    case 5250: return "PassthroughNV";
+#endif
     }
 }
 
@@ -311,6 +318,16 @@ const char* BuiltInString(int builtIn)
 
     case BuiltInCeiling:
     default: return "Bad";
+
+    case 4416: return "SubgroupEqMaskKHR";
+    case 4417: return "SubgroupGeMaskKHR";
+    case 4418: return "SubgroupGtMaskKHR";
+    case 4419: return "SubgroupLeMaskKHR";
+    case 4420: return "SubgroupLtMaskKHR";
+
+    case 4424: return "BaseVertex";
+    case 4425: return "BaseInstance";
+    case 4426: return "DrawIndex";
 
 #ifdef AMD_EXTENSIONS
     case 4992: return "BaryCoordNoPerspAMD";
@@ -799,6 +816,14 @@ const char* CapabilityString(int info)
 
     case CapabilityCeiling:
     default: return "Bad";
+
+    case 4423: return "SubgroupBallotKHR";
+    case 4427: return "DrawParameters";
+
+#ifdef NV_EXTENSIONS
+    case 5251: return "GeometryShaderPassthroughNV";
+#endif
+
     }
 }
 
@@ -1131,6 +1156,10 @@ const char* OpcodeString(int op)
     default:
         return "Bad";
 
+    case 4421: return "OpSubgroupBallotKHR";
+    case 4422: return "OpSubgroupFirstInvocationKHR";
+    case 4432: return "OpSubgroupReadInvocationKHR";
+
 #ifdef AMD_EXTENSIONS
     case 5000: return "OpGroupIAddNonUniformAMD";
     case 5001: return "OpGroupFAddNonUniformAMD";
@@ -1146,11 +1175,7 @@ const char* OpcodeString(int op)
 
 // The set of objects that hold all the instruction/operand
 // parameterization information.
-#ifdef AMD_EXTENSIONS
 InstructionParameters InstructionDesc[OpCodeMask + 1];
-#else
-InstructionParameters InstructionDesc[OpcodeCeiling];
-#endif
 OperandParameters ExecutionModeOperands[ExecutionModeCeiling];
 OperandParameters DecorationOperands[DecorationCeiling];
 
@@ -2741,6 +2766,14 @@ void Parameterize()
     InstructionDesc[OpEnqueueMarker].operands.push(OperandId, "'Num Events'");
     InstructionDesc[OpEnqueueMarker].operands.push(OperandId, "'Wait Events'");
     InstructionDesc[OpEnqueueMarker].operands.push(OperandId, "'Ret Event'");
+
+    InstructionDesc[OpSubgroupBallotKHR].operands.push(OperandId, "'Predicate'");
+
+    InstructionDesc[OpSubgroupFirstInvocationKHR].operands.push(OperandId, "'Value'");
+
+    InstructionDesc[OpSubgroupReadInvocationKHR].capabilities.push_back(CapabilityGroups);
+    InstructionDesc[OpSubgroupReadInvocationKHR].operands.push(OperandId, "'Value'");
+    InstructionDesc[OpSubgroupReadInvocationKHR].operands.push(OperandId, "'Index'");
 
 #ifdef AMD_EXTENSIONS
     InstructionDesc[OpGroupIAddNonUniformAMD].capabilities.push_back(CapabilityGroups);

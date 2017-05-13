@@ -67,13 +67,18 @@ endif
 ifeq ($(TARGET_ARCH_ABI),armeabi)
   RS_TRIPLE := arm-none-linux-gnueabi
 endif
+ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
+  RS_TRIPLE := aarch64-linux-android
+endif
 ifeq ($(TARGET_ARCH_ABI),mips)
   RS_TRIPLE := mipsel-unknown-linux
 endif
 ifeq ($(TARGET_ARCH_ABI),x86)
   RS_TRIPLE := i686-unknown-linux
 endif
-
+ifeq ($(TARGET_ARCH_ABI),x86_64)
+  RS_TRIPLE := x86_64-unknown-linux
+endif
 
 include $(BUILD_SYSTEM)/setup-toolchain.mk
 

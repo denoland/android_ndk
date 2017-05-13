@@ -515,7 +515,6 @@ build_stl_libs_for_abi ()
             EXTRA_CXXFLAGS="-mstackrealign"
             ;;
         mips)
-            # TODO: Remove this once mipsel-linux-android target is changed in clang
             EXTRA_CFLAGS="-mips32"
             EXTRA_CXXFLAGS="-mips32"
             EXTRA_LDFLAGS="-mips32"

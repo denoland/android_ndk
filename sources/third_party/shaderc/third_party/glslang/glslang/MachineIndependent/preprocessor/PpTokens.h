@@ -86,11 +86,11 @@ enum EFixedAtoms {
 
     // Operators
 
-    PpAtomAdd,
-    PpAtomSub,
-    PpAtomMul,
-    PpAtomDiv,
-    PpAtomMod,
+    PPAtomAddAssign,
+    PPAtomSubAssign,
+    PPAtomMulAssign,
+    PPAtomDivAssign,
+    PPAtomModAssign,
 
     PpAtomRight,
     PpAtomLeft,
@@ -123,6 +123,9 @@ enum EFixedAtoms {
     PpAtomConstUint64,
     PpAtomConstFloat,
     PpAtomConstDouble,
+#ifdef AMD_EXTENSIONS
+    PpAtomConstFloat16,
+#endif
     PpAtomConstString,
 
     // Identifiers 
@@ -131,7 +134,6 @@ enum EFixedAtoms {
     // preprocessor "keywords"
 
     PpAtomDefine,
-    PpAtomDefined,
     PpAtomUndef,
 
     PpAtomIf,

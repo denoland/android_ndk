@@ -147,10 +147,15 @@ else
 fi
 
 PLATFORM_NUMBER=${PLATFORM#android-}
-#dump "COMMAND: python `dirname $0`/make_standalone_toolchain.py \
-    #--arch $ARCH --api $PLATFORM_NUMBER --stl $STL $INSTALL_ARG"
+if [ -n "$PLATFORM_NUMBER" ]; then
+  PLATFORM_ARG="--api $PLATFORM_NUMBER"
+else
+  PLATFORM_ARG=""
+fi
+
 run python `dirname $0`/make_standalone_toolchain.py \
-    --arch $ARCH --api $PLATFORM_NUMBER --stl $STL $INSTALL_ARG $FORCE_ARG
+    --arch $ARCH $PLATFORM_ARG --stl $STL $INSTALL_ARG $FORCE_ARG
+fail_panic "Failed to create toolchain."
 
 if [ -n "$INSTALL_DIR" ]; then
     dump "Toolchain installed to $INSTALL_DIR."

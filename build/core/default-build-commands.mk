@@ -151,9 +151,9 @@ TARGET_LDFLAGS :=
 # Use *-gcc-ar instead of *-ar for better LTO support, except for
 # gcc4.6 which doesn't have gcc-ar
 ifneq (clang,$(NDK_TOOLCHAIN_VERSION))
-TARGET_AR       = $(TOOLCHAIN_PREFIX)gcc-ar
+    TARGET_AR = $(TOOLCHAIN_PREFIX)gcc-ar
 else
-TARGET_AR       = $(TOOLCHAIN_PREFIX)ar
+    TARGET_AR = $(TOOLCHAIN_PREFIX)ar
 endif
 
 TARGET_ARFLAGS := crsD

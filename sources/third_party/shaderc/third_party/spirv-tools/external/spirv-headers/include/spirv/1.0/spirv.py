@@ -42,7 +42,7 @@
 spv = {
     'MagicNumber' : 0x07230203,
     'Version' : 0x00010000,
-    'Revision' : 7,
+    'Revision' : 8,
     'OpCodeMask' : 0xffff,
     'WordCountShift' : 16,
 
@@ -396,6 +396,9 @@ spv = {
         'SubgroupGtMaskKHR' : 4418,
         'SubgroupLeMaskKHR' : 4419,
         'SubgroupLtMaskKHR' : 4420,
+        'BaseVertex' : 4424,
+        'BaseInstance' : 4425,
+        'DrawIndex' : 4426,
     },
 
     'SelectionControlShift' : {
@@ -562,6 +565,7 @@ spv = {
         'StorageImageWriteWithoutFormat' : 56,
         'MultiViewport' : 57,
         'SubgroupBallotKHR' : 4423,
+        'DrawParameters' : 4427,
     },
 
     'Op' : {

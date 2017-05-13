@@ -29,7 +29,9 @@ config.cxx_abi = "libcxxabi"
 config.use_sanitizer = ""
 config.configuration_variant = "libcxx.ndk"
 config.target_triple = "%TRIPLE%"
-config.sysroot = os.path.join(ndk, "platforms/android-21/arch-%ARCH%/")
+config.device_api_level = "%DEVICE_API%"
+config.target_api = %API%
+config.arch = "%ARCH%"
 config.gcc_toolchain = os.path.join(
     ndk, "toolchains/%TOOLCHAIN%-4.9/prebuilt/linux-x86_64")
 

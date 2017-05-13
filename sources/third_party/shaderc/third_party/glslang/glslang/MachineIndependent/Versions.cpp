@@ -192,6 +192,12 @@ void TParseVersions::initializeExtensionBehavior()
     extensionBehavior[E_GL_AMD_shader_trinary_minmax]                = EBhDisable;
     extensionBehavior[E_GL_AMD_shader_explicit_vertex_parameter]     = EBhDisable;
     extensionBehavior[E_GL_AMD_gcn_shader]                           = EBhDisable;
+    extensionBehavior[E_GL_AMD_gpu_shader_half_float]                = EBhDisable;
+#endif
+
+#ifdef NV_EXTENSIONS 
+    extensionBehavior[E_GL_NV_sample_mask_override_coverage]         = EBhDisable;
+    extensionBehavior[E_SPV_NV_geometry_shader_passthrough]          = EBhDisable;
 #endif
 
     // AEP
@@ -299,6 +305,12 @@ void TParseVersions::getPreamble(std::string& preamble)
             "#define GL_AMD_shader_trinary_minmax 1\n"
             "#define GL_AMD_shader_explicit_vertex_parameter 1\n"
             "#define GL_AMD_gcn_shader 1\n"
+            "#define GL_AMD_gpu_shader_half_float 1\n"
+#endif
+
+#ifdef NV_EXTENSIONS 
+            "#define GL_NV_sample_mask_override_coverage 1\n"
+            "#define GL_NV_geometry_shader_passthrough 1\n"
 #endif
             ;
     }
@@ -662,6 +674,19 @@ void TParseVersions::doubleCheck(const TSourceLoc& loc, const char* op)
     profileRequires(loc, ECoreProfile, 400, nullptr, op);
     profileRequires(loc, ECompatibilityProfile, 400, nullptr, op);
 }
+
+#ifdef AMD_EXTENSIONS
+// Call for any operation needing GLSL float16 data-type support.
+void TParseVersions::float16Check(const TSourceLoc& loc, const char* op, bool builtIn)
+{
+    if (!builtIn) {
+        requireExtensions(loc, 1, &E_GL_AMD_gpu_shader_half_float, "shader half float");
+        requireProfile(loc, ECoreProfile | ECompatibilityProfile, op);
+        profileRequires(loc, ECoreProfile, 450, nullptr, op);
+        profileRequires(loc, ECompatibilityProfile, 450, nullptr, op);
+    }
+}
+#endif
 
 // Call for any operation needing GLSL 64-bit integer data-type support.
 void TParseVersions::int64Check(const TSourceLoc& loc, const char* op, bool builtIn)

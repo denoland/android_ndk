@@ -36,7 +36,7 @@ def get_llvm_prebuilt_path(host):
 
 
 def main(args):
-    LLVM_VERSION = 'clang-2812033'
+    LLVM_VERSION = 'clang-3362437'
 
     host = args.host
     package_dir = args.dist_dir
@@ -58,7 +58,8 @@ def main(args):
         host = 'windows-x86_64'
 
     if host == 'windows':
-        # We need to replace clang.exe with clang_32.exe. Copy clang into a
+        # We need to replace clang.exe with clang_32.exe and
+        # libwinpthread-1.dll with libwinpthread-1.dll.32. Copy clang into a
         # temporary directory for rearranging.
         build_path = os.path.join(args.out_dir, 'clang/windows')
         if os.path.exists(build_path):
@@ -69,21 +70,37 @@ def main(args):
                         install_path)
         os.rename(os.path.join(install_path, 'bin/clang_32.exe'),
                   os.path.join(install_path, 'bin/clang.exe'))
+        os.rename(os.path.join(install_path, 'bin/libwinpthread-1.dll.32'),
+                  os.path.join(install_path, 'bin/libwinpthread-1.dll'))
         # clang++.exe is not a symlink in the Windows package. Need to copy to
         # there as well.
         shutil.copy2(os.path.join(install_path, 'bin/clang.exe'),
                      os.path.join(install_path, 'bin/clang++.exe'))
         prebuilt_path = build_path
+    elif host in ('darwin-x86_64', 'linux-x86_64'):
+        # The Linux and Darwin toolchains have Python compiler wrappers that
+        # currently do nothing. We don't have these for Windows and we want to
+        # make sure Windows behavior is consistent with the other platforms, so
+        # just unwrap the compilers until they do something useful and are
+        # available on Windows.
+        build_path = os.path.join(args.out_dir, 'clang/windows')
+        if os.path.exists(build_path):
+            shutil.rmtree(build_path)
+        install_path = os.path.join(build_path, LLVM_VERSION)
+        os.makedirs(build_path)
+        shutil.copytree(os.path.join(prebuilt_path, LLVM_VERSION),
+                        install_path)
 
-    package_name = 'llvm-{}.zip'.format(host)
-    package_path = os.path.join(package_dir, package_name)
-    if os.path.exists(package_path):
-        os.unlink(package_path)
-    os.chdir(prebuilt_path)
-    args = ['zip', '-9qr', package_path, LLVM_VERSION]
-    if not host.startswith('windows'):
-        args.append('--symlinks')
-    subprocess.check_call(args)
+        os.rename(os.path.join(install_path, 'bin/clang.real'),
+                  os.path.join(install_path, 'bin/clang'))
+        os.rename(os.path.join(install_path, 'bin/clang++.real'),
+                  os.path.join(install_path, 'bin/clang++'))
+
+        prebuilt_path = build_path
+
+    package_name = 'clang-{}'.format(host)
+    built_path = os.path.join(prebuilt_path, LLVM_VERSION)
+    build_support.make_package(package_name, built_path, package_dir)
 
 if __name__ == '__main__':
     build_support.run(main)

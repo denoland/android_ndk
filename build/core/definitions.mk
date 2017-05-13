@@ -378,6 +378,7 @@ modules-LOCALS := \
     MODULE_FILENAME \
     PATH \
     SRC_FILES \
+    HAS_CPP \
     CPP_EXTENSION \
     C_INCLUDES \
     CFLAGS \
@@ -402,6 +403,8 @@ modules-LOCALS := \
     EXPORT_CPPFLAGS \
     EXPORT_ASMFLAGS \
     EXPORT_LDFLAGS \
+    EXPORT_SHARED_LIBRARIES \
+    EXPORT_STATIC_LIBRARIES \
     EXPORT_LDLIBS \
     EXPORT_C_INCLUDES \
     FILTER_ASM \
@@ -719,6 +722,10 @@ module-get-direct-libs = $(strip \
 # -----------------------------------------------------------------------------
 module-get-all-dependencies = $(call -ndk-mod-get-closure,$1,module-get-depends)
 
+# Same as module-get-all-dependencies, but topologically sorted.
+module-get-all-dependencies-topo = \
+    $(call -ndk-mod-get-topological-depends,$1,module-get-all-dependencies)
+
 # -----------------------------------------------------------------------------
 # Compute the list of all static and shared libraries required to link a
 # given module.
@@ -807,7 +814,8 @@ module-get-c++-sources = \
 
 # Returns true if a module has C++ sources
 #
-module-has-c++-sources = $(strip $(call module-get-c++-sources,$1))
+module-has-c++-sources = $(strip $(call module-get-c++-sources,$1) \
+                                 $(filter true,$(__ndk_modules.$1.HAS_CPP)))
 
 
 # Add C++ dependencies to any module that has C++ sources.
@@ -1296,6 +1304,7 @@ NDK_APP_VARS_OPTIONAL := \
     APP_SHORT_COMMANDS \
     APP_STL \
     APP_THIN_ARCHIVE \
+    APP_UNIFIED_HEADERS \
 
 # the list of all variables that may appear in an Application.mk file
 # or defined by the build scripts.
@@ -1501,10 +1510,12 @@ $$(_OBJ): PRIVATE_RS_BCC    := $$(_RS_BCC)
 $$(_OBJ): PRIVATE_CXX       := $$(_CXX)
 $$(_OBJ): PRIVATE_RS_FLAGS  := $$(_RS_FLAGS)
 $$(_OBJ): PRIVATE_CPPFLAGS  := $$(_CPP_FLAGS)
+$$(_OBJ): PRIVATE_LD        := $$(TARGET_LD)
 $$(_OBJ): PRIVATE_LDFLAGS   := $$(_LD_FLAGS)
-$$(_OBJ): PRIVATE_OUT       := $$(NDK_APP_DST_DIR)
+$$(_OBJ): PRIVATE_OUT       := $$(TARGET_OUT)
 $$(_OBJ): PRIVATE_RS_TRIPLE := $$(RS_TRIPLE)
 $$(_OBJ): PRIVATE_COMPAT    := $$(_COMPAT)
+$$(_OBJ): PRIVATE_LIB_PATH  := $$(RENDERSCRIPT_TOOLCHAIN_PREBUILT_ROOT)/platform/$(TARGET_ARCH)
 
 ifeq ($$(LOCAL_SHORT_COMMANDS),true)
 _OPTIONS_LISTFILE := $$(_OBJ).cflags
@@ -1513,17 +1524,27 @@ $$(_OBJ): PRIVATE_CPPFLAGS := @$$(call host-path,$$(_OPTIONS_LISTFILE))
 $$(_OBJ): $$(_OPTIONS_LISTFILE)
 endif
 
+# x86_64 & mips64 has both lib/ and lib64/, use lib64 for 64bit RenderScript compilation.
+ifneq ($(filter x86_64 mips64,$(TARGET_ARCH_ABI)),)
+$$(_OBJ): PRIVATE_SYS_PATH := $$(call host-path,$(SYSROOT_LINK)/usr/lib64)
+else
+$$(_OBJ): PRIVATE_SYS_PATH := $$(call host-path,$(SYSROOT_LINK)/usr/lib)
+endif
+
 # llvm-rc-cc.exe has problem accepting input *.rs with path. To workaround:
 # cd ($dir $(_SRC)) ; llvm-rs-cc $(notdir $(_SRC)) -o ...full-path...
 #
 ifeq ($$(_COMPAT),true)
+	# In COMPAT mode, use LD instead of CXX to bypass the gradle check for their book-keeping of native libs.
+	# And this is what we do with SDK.
+	# TODO: We could use CXX after gradle can correctly handle librs.*.so.
 $$(_OBJ): $$(_RS_SRC) $$(LOCAL_MAKEFILE) $$(NDK_APP_APPLICATION_MK) $$(NDK_DEPENDENCIES_CONVERTER)
 	$$(call host-echo-build-step,$$(PRIVATE_ABI),$$(PRIVATE_TEXT)) "$$(PRIVATE_MODULE) <= $$(notdir $$(PRIVATE_RS_SRC))"
 	$$(hide) \
 	cd $$(call host-path,$$(dir $$(PRIVATE_RS_SRC))) && $$(PRIVATE_RS_CC) -o $$(call host-path,$$(abspath $$(dir $$(PRIVATE_OBJ))))/ -d $$(abspath $$(call host-path,$$(dir $$(PRIVATE_OBJ)))) -MD -reflect-c++ -target-api $(strip $(subst android-,,$(APP_PLATFORM))) $$(PRIVATE_RS_FLAGS) $$(notdir $$(PRIVATE_RS_SRC))
 	$$(hide) \
-	$$(PRIVATE_RS_BCC) -O3 -o $$(call host-path,$$(PRIVATE_BC_OBJ)) -fPIC -shared -rt-path $$(call host-path,$(SYSROOT_LINK)/usr/lib/rs/libclcore.bc) -mtriple $$(PRIVATE_RS_TRIPLE) $$(call host-path,$$(PRIVATE_BC_SRC)) && \
-	$$(PRIVATE_CXX) -shared -Wl,-soname,librs.$$(PRIVATE_BC_SO) -nostdlib $$(call host-path,$$(PRIVATE_BC_OBJ)) $$(call host-path,$(SYSROOT_LINK)/usr/lib/rs/libcompiler_rt.a) -o $$(call host-path,$$(PRIVATE_OUT)/librs.$$(PRIVATE_BC_SO)) -L $$(call host-path,$(SYSROOT_LINK)/usr/lib) -L $$(call host-path,$(SYSROOT_LINK)/usr/lib/rs) $$(PRIVATE_LDFLAGS) -lRSSupport -lm -lc && \
+	$$(PRIVATE_RS_BCC) -O3 -o $$(call host-path,$$(PRIVATE_BC_OBJ)) -fPIC -shared -rt-path $$(PRIVATE_LIB_PATH)/librsrt.bc -mtriple $$(PRIVATE_RS_TRIPLE) $$(call host-path,$$(PRIVATE_BC_SRC)) && \
+	$$(PRIVATE_LD) -shared -Bsymbolic -z noexecstack -z relro -z now -nostdlib $$(call host-path,$$(PRIVATE_BC_OBJ)) $$(PRIVATE_LIB_PATH)/libcompiler_rt.a -o $$(call host-path,$$(PRIVATE_OUT)/librs.$$(PRIVATE_BC_SO)) -L $$(PRIVATE_SYS_PATH) -L $$(PRIVATE_LIB_PATH) -lRSSupport -lm -lc && \
 	$$(PRIVATE_CXX) -MMD -MP -MF $$(call convert-deps,$$(PRIVATE_DEPS)) $$(PRIVATE_CPPFLAGS) $$(call host-path,$$(PRIVATE_CPP_SRC)) -o $$(call host-path,$$(PRIVATE_OBJ)) \
 	$$(call cmd-convert-deps,$$(PRIVATE_DEPS))
 else
@@ -1631,7 +1652,8 @@ _FLAGS := $$($$(my)CFLAGS) \
           $$(LOCAL_CONLYFLAGS) \
           $$(NDK_APP_CFLAGS) \
           $$(NDK_APP_CONLYFLAGS) \
-          -isystem $$(call host-path,$$(SYSROOT_INC)/usr/include) \
+          --sysroot $$(call host-path,$$(SYSROOT_INC)) \
+          $(SYSROOT_ARCH_INC_ARG) \
           -c \
 
 _TEXT := Compile $$(call get-src-file-text,$1)
@@ -1682,7 +1704,8 @@ _OBJ:=$$(LOCAL_OBJS_DIR:%/=%)/$(2)
 _FLAGS := $$(call host-c-includes,$$(LOCAL_C_INCLUDES) $$(LOCAL_PATH)) \
           $$(LOCAL_ASMFLAGS) \
           $$(NDK_APP_ASMFLAGS) \
-          -isystem $$(call host-path,$$(SYSROOT_INC)/usr/include) \
+          --sysroot $$(call host-path,$$(SYSROOT_INC)) \
+          $(SYSROOT_ARCH_INC_ARG) \
           $$(if $$(filter x86_64, $$(TARGET_ARCH_ABI)), -f elf64, -f elf32 -m x86)
 
 _TEXT := Assemble $$(call get-src-file-text,$1)
@@ -1760,7 +1783,8 @@ _FLAGS := $$($$(my)CXXFLAGS) \
           $$(NDK_APP_CFLAGS) \
           $$(NDK_APP_CPPFLAGS) \
           $$(NDK_APP_CXXFLAGS) \
-          -isystem $$(call host-path,$$(SYSROOT_INC)/usr/include) \
+          --sysroot $$(call host-path,$$(SYSROOT_INC)) \
+          $(SYSROOT_ARCH_INC_ARG) \
           -c \
 
 _CC   := $$(NDK_CCACHE) $$($$(my)CXX)
@@ -1808,7 +1832,8 @@ _CPP_FLAGS := $$($$(my)CXXFLAGS) \
           $$(NDK_APP_CFLAGS) \
           $$(NDK_APP_CPPFLAGS) \
           $$(NDK_APP_CXXFLAGS) \
-          -isystem $$(call host-path,$$(SYSROOT_INC)/usr/include) \
+          --sysroot $$(call host-path,$$(SYSROOT_INC)) \
+          $(SYSROOT_ARCH_INC_ARG) \
           -fno-rtti \
           -c \
 
@@ -2108,7 +2133,7 @@ $(call ndk-stl-register,\
 $(call ndk-stl-register,\
     c++_static,\
     cxx-stl/llvm-libc++,\
-    c++_static libc++abi libunwind android_support,\
+    c++_static libc++abi android_support,\
     ,\
     -ldl\
     )
@@ -2118,7 +2143,7 @@ $(call ndk-stl-register,\
 $(call ndk-stl-register,\
     c++_shared,\
     cxx-stl/llvm-libc++,\
-    libandroid_support libunwind,\
+    libandroid_support,\
     c++_shared,\
     \
     )

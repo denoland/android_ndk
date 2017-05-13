@@ -32,9 +32,9 @@
 #include "spirv-tools/libspirv.h"
 #include "spirv_constant.h"
 #include "spirv_endian.h"
-#include "val/Construct.h"
-#include "val/Function.h"
-#include "val/ValidationState.h"
+#include "val/construct.h"
+#include "val/function.h"
+#include "val/validation_state.h"
 
 using std::function;
 using std::ostream_iterator;
@@ -47,6 +47,7 @@ using std::vector;
 using libspirv::CfgPass;
 using libspirv::InstructionPass;
 using libspirv::ModuleLayoutPass;
+using libspirv::DataRulesPass;
 using libspirv::IdPass;
 using libspirv::ValidationState_t;
 
@@ -68,14 +69,15 @@ spv_result_t spvValidateIDs(const spv_instruction_t* pInsts,
 namespace {
 
 // TODO(umar): Validate header
-// TODO(umar): The Id bound should be validated also. But you can only do that
-// after you've seen all the instructions in the module.
 // TODO(umar): The binary parser validates the magic word, and the length of the
 // header, but nothing else.
 spv_result_t setHeader(void* user_data, spv_endianness_t endian, uint32_t magic,
                        uint32_t version, uint32_t generator, uint32_t id_bound,
                        uint32_t reserved) {
-  (void)user_data;
+  // Record the ID bound so that the validator can ensure no ID is out of bound.
+  ValidationState_t& _ = *(reinterpret_cast<ValidationState_t*>(user_data));
+  _.setIdBound(id_bound);
+
   (void)endian;
   (void)magic;
   (void)version;
@@ -122,7 +124,7 @@ spv_result_t ProcessInstruction(void* user_data,
     _.entry_points().push_back(inst->words[2]);
 
   DebugInstructionPass(_, inst);
-  // TODO(umar): Perform data rules pass
+  if (auto error = DataRulesPass(_, inst)) return error;
   if (auto error = IdPass(_, inst)) return error;
   if (auto error = ModuleLayoutPass(_, inst)) return error;
   if (auto error = CfgPass(_, inst)) return error;
@@ -229,7 +231,7 @@ spv_result_t spvValidateBinary(const spv_const_context context,
 
     auto id_str = ss.str();
     return vstate.diag(SPV_ERROR_INVALID_ID)
-           << "The following forward referenced IDs have not be defined:\n"
+           << "The following forward referenced IDs have not been defined:\n"
            << id_str.substr(0, id_str.size() - 1);
   }
 

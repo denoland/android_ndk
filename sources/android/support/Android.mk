@@ -13,19 +13,14 @@ else
 # 32-bit ABIs
 
 android_support_sources := \
-    src/locale_support.c \
-    src/math_support.c \
-    src/stdlib_support.c \
-    src/wchar_support.c \
+    src/_Exit.cpp \
     src/locale/duplocale.c \
     src/locale/freelocale.c \
     src/locale/localeconv.c \
     src/locale/newlocale.c \
     src/locale/uselocale.c \
-    src/stdio/stdio_impl.c \
-    src/stdio/strtod.c \
-    src/stdio/vfprintf.c \
-    src/stdio/vfwprintf.c \
+    src/locale_support.c \
+    src/math_support.c \
     src/msun/e_log2.c \
     src/msun/e_log2f.c \
     src/msun/s_nan.c \
@@ -115,16 +110,22 @@ android_support_sources := \
     src/musl-stdio/printf.c \
     src/musl-stdio/snprintf.c \
     src/musl-stdio/sprintf.c \
+    src/musl-stdio/swprintf.c \
     src/musl-stdio/vprintf.c \
     src/musl-stdio/vsprintf.c \
-    src/musl-stdio/swprintf.c \
     src/musl-stdio/vwprintf.c \
     src/musl-stdio/wprintf.c \
+    src/stdio/stdio_impl.c \
+    src/stdio/strtod.c \
+    src/stdio/vfprintf.c \
+    src/stdio/vfwprintf.c \
+    src/stdlib_support.c \
+    src/wchar_support.c \
     src/wcstox/floatscan.c \
     src/wcstox/intscan.c \
     src/wcstox/shgetc.c \
-    src/wcstox/wcstol.c \
     src/wcstox/wcstod.c \
+    src/wcstox/wcstol.c \
 
 # Replaces broken implementations in x86 libm.so
 ifeq (x86,$(TARGET_ARCH_ABI))
@@ -145,6 +146,7 @@ LIBCXX_LIBS := ../../cxx-stl/llvm-libc++/libs/$(TARGET_ARCH_ABI)
 include $(CLEAR_VARS)
 LOCAL_MODULE := android_support
 LOCAL_SRC_FILES := $(LIBCXX_LIBS)/lib$(LOCAL_MODULE)$(TARGET_LIB_EXTENSION)
+LOCAL_EXPORT_C_INCLUDES := $(android_support_c_includes)
 include $(PREBUILT_STATIC_LIBRARY)
 
 else # Building
@@ -170,8 +172,7 @@ LOCAL_CFLAGS += \
   -Wno-shift-negative-value
 endif
 
-LOCAL_CFLAGS += $(android_support_cflags)
-LOCAL_EXPORT_CFLAGS := $(android_support_cflags)
+LOCAL_EXPORT_C_INCLUDES := $(android_support_c_includes)
 include $(BUILD_STATIC_LIBRARY)
 
 endif # Prebuilt/building

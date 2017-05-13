@@ -15,6 +15,9 @@ class AndroidTargetInfo(libcxx.test.target_info.DefaultTargetInfo):
     def system(self):
         raise NotImplementedError
 
+    def add_cxx_compile_flags(self, flags):
+        flags.extend(['-D__STDC_FORMAT_MACROS'])
+
     def platform_ver(self):
         raise NotImplementedError
 
@@ -50,6 +53,27 @@ class Configuration(libcxx.test.config.Configuration):
     def configure_compile_flags(self):
         super(Configuration, self).configure_compile_flags()
 
+        unified_headers = self.get_lit_bool('unified_headers')
+        arch = self.get_lit_conf('arch')
+        api = self.get_lit_conf('target_api')
+
+        sysroot_path = 'platforms/android-{}/arch-{}'.format(api, arch)
+        platform_sysroot = os.path.join(os.environ['NDK'], sysroot_path)
+        if unified_headers:
+            sysroot = os.path.join(os.environ['NDK'], 'sysroot')
+            self.cxx.compile_flags.extend(['--sysroot', sysroot])
+
+            triple = self.get_lit_conf('target_triple')
+            header_triple = triple.rstrip('0123456789')
+            arch_includes = os.path.join(sysroot, 'usr/include', header_triple)
+            self.cxx.compile_flags.extend(['-isystem', arch_includes])
+
+            self.cxx.compile_flags.append('-D__ANDROID_API__={}'.format(api))
+
+            self.cxx.link_flags.extend(['--sysroot', platform_sysroot])
+        else:
+            self.cxx.flags.extend(['--sysroot', platform_sysroot])
+
         android_support_headers = os.path.join(
             os.environ['NDK'], 'sources/android/support/include')
         self.cxx.compile_flags.append('-I' + android_support_headers)
@@ -64,6 +88,7 @@ class Configuration(libcxx.test.config.Configuration):
         self.cxx.link_flags.append('-gcc-toolchain')
         self.cxx.link_flags.append(gcc_toolchain)
 
+        self.cxx.link_flags.append('-landroid_support')
         triple = self.get_lit_conf('target_triple')
         if triple.startswith('arm-'):
             self.cxx.link_flags.append('-lunwind')
@@ -75,7 +100,9 @@ class Configuration(libcxx.test.config.Configuration):
         self.cxx.link_flags.append('-lc')
         self.cxx.link_flags.append('-lm')
         self.cxx.link_flags.append('-ldl')
-        self.cxx.link_flags.append('-pie')
+        device_api = int(self.get_lit_conf('device_api_level'))
+        if device_api >= 16:
+            self.cxx.link_flags.append('-pie')
 
     def configure_features(self):
         self.config.available_features.add('c++11')

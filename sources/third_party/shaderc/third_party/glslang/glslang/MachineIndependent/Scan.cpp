@@ -463,6 +463,25 @@ void TScanContext::fillInKeywordMap()
     (*KeywordMap)["u64vec3"] =                 U64VEC3;
     (*KeywordMap)["u64vec4"] =                 U64VEC4;
 
+#ifdef AMD_EXTENSIONS
+    (*KeywordMap)["float16_t"] =               FLOAT16_T;
+    (*KeywordMap)["f16vec2"] =                 F16VEC2;
+    (*KeywordMap)["f16vec3"] =                 F16VEC3;
+    (*KeywordMap)["f16vec4"] =                 F16VEC4;
+    (*KeywordMap)["f16mat2"] =                 F16MAT2;
+    (*KeywordMap)["f16mat3"] =                 F16MAT3;
+    (*KeywordMap)["f16mat4"] =                 F16MAT4;
+    (*KeywordMap)["f16mat2x2"] =               F16MAT2X2;
+    (*KeywordMap)["f16mat2x3"] =               F16MAT2X3;
+    (*KeywordMap)["f16mat2x4"] =               F16MAT2X4;
+    (*KeywordMap)["f16mat3x2"] =               F16MAT3X2;
+    (*KeywordMap)["f16mat3x3"] =               F16MAT3X3;
+    (*KeywordMap)["f16mat3x4"] =               F16MAT3X4;
+    (*KeywordMap)["f16mat4x2"] =               F16MAT4X2;
+    (*KeywordMap)["f16mat4x3"] =               F16MAT4X3;
+    (*KeywordMap)["f16mat4x4"] =               F16MAT4X4;
+#endif
+
     (*KeywordMap)["sampler2D"] =               SAMPLER2D;
     (*KeywordMap)["samplerCube"] =             SAMPLERCUBE;
     (*KeywordMap)["samplerCubeArray"] =        SAMPLERCUBEARRAY;
@@ -619,13 +638,14 @@ int TScanContext::tokenize(TPpContext* pp, TParserToken& token)
     do {
         parserToken = &token;
         TPpToken ppToken;
-        tokenText = pp->tokenize(&ppToken);
-        if (tokenText == nullptr || tokenText[0] == 0)
+        int token = pp->tokenize(ppToken);
+        if (token == EndOfInput)
             return 0;
 
+        tokenText = ppToken.name;
         loc = ppToken.loc;
         parserToken->sType.lex.loc = loc;
-        switch (ppToken.token) {
+        switch (token) {
         case ';':  afterType = false;   return SEMICOLON;
         case ',':  afterType = false;   return COMMA;
         case ':':                       return COLON;
@@ -654,11 +674,11 @@ int TScanContext::tokenize(TPpContext* pp, TParserToken& token)
             parseContext.error(loc, "illegal use of escape character", "\\", "");
             break;
 
-        case PpAtomAdd:                return ADD_ASSIGN;
-        case PpAtomSub:                return SUB_ASSIGN;
-        case PpAtomMul:                return MUL_ASSIGN;
-        case PpAtomDiv:                return DIV_ASSIGN;
-        case PpAtomMod:                return MOD_ASSIGN;
+        case PPAtomAddAssign:          return ADD_ASSIGN;
+        case PPAtomSubAssign:          return SUB_ASSIGN;
+        case PPAtomMulAssign:          return MUL_ASSIGN;
+        case PPAtomDivAssign:          return DIV_ASSIGN;
+        case PPAtomModAssign:          return MOD_ASSIGN;
 
         case PpAtomRight:              return RIGHT_OP;
         case PpAtomLeft:               return LEFT_OP;
@@ -687,6 +707,9 @@ int TScanContext::tokenize(TPpContext* pp, TParserToken& token)
         case PpAtomConstUint64:        parserToken->sType.lex.i64 = ppToken.i64val;     return UINT64CONSTANT;
         case PpAtomConstFloat:         parserToken->sType.lex.d   = ppToken.dval;       return FLOATCONSTANT;
         case PpAtomConstDouble:        parserToken->sType.lex.d   = ppToken.dval;       return DOUBLECONSTANT;
+#ifdef AMD_EXTENSIONS
+        case PpAtomConstFloat16:       parserToken->sType.lex.d   = ppToken.dval;       return FLOAT16CONSTANT;
+#endif
         case PpAtomIdentifier:
         {
             int token = tokenizeIdentifier();
@@ -698,7 +721,7 @@ int TScanContext::tokenize(TPpContext* pp, TParserToken& token)
 
         default:
             char buf[2];
-            buf[0] = (char)ppToken.token;
+            buf[0] = token;
             buf[1] = 0;
             parseContext.error(loc, "unexpected token", buf, "");
             break;
@@ -938,9 +961,37 @@ int TScanContext::tokenizeIdentifier()
     case U64VEC2:
     case U64VEC3:
     case U64VEC4:
-        if (parseContext.profile != EEsProfile && parseContext.version >= 450)
+        afterType = true;
+        if (parseContext.symbolTable.atBuiltInLevel() || 
+            (parseContext.extensionTurnedOn(E_GL_ARB_gpu_shader_int64) &&
+             parseContext.profile != EEsProfile && parseContext.version >= 450))
             return keyword;
         return identifierOrType();
+
+#ifdef AMD_EXTENSIONS
+    case FLOAT16_T:
+    case F16VEC2:
+    case F16VEC3:
+    case F16VEC4:
+    case F16MAT2:
+    case F16MAT3:
+    case F16MAT4:
+    case F16MAT2X2:
+    case F16MAT2X3:
+    case F16MAT2X4:
+    case F16MAT3X2:
+    case F16MAT3X3:
+    case F16MAT3X4:
+    case F16MAT4X2:
+    case F16MAT4X3:
+    case F16MAT4X4:
+        afterType = true;
+        if (parseContext.symbolTable.atBuiltInLevel() ||
+            (parseContext.extensionTurnedOn(E_GL_AMD_gpu_shader_half_float) &&
+             parseContext.profile != EEsProfile && parseContext.version >= 450))
+            return keyword;
+        return identifierOrType();
+#endif
 
     case SAMPLERCUBEARRAY:
     case SAMPLERCUBEARRAYSHADOW:

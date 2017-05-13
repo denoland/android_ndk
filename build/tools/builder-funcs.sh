@@ -609,6 +609,11 @@ builder_begin_android ()
             builder_cflags "$SCRATCH_FLAGS"
             builder_cxxflags "$SCRATCH_FLAGS"
             builder_ldflags "$SCRATCH_FLAGS"
+            if [ "$ABI" = "mips" ]; then
+              # Help clang use mips64el multilib GCC
+              SCRATCH_FLAGS="-L${GCC_TOOLCHAIN}/lib/gcc/mips64el-linux-android/4.9.x/32/mips-r1 "
+              builder_ldflags "$SCRATCH_FLAGS"
+            fi
         fi
     fi
 
@@ -641,6 +646,12 @@ builder_begin_android ()
             builder_cflags "$SCRATCH_FLAGS"
             builder_cxxflags "$SCRATCH_FLAGS"
             builder_ldflags "-march=armv7-a -Wl,--fix-cortex-a8"
+            ;;
+        mips)
+            SCRATCH_FLAGS="-mips32"
+            builder_cflags "$SCRATCH_FLAGS"
+            builder_cxxflags "$SCRATCH_FLAGS"
+            builder_ldflags "-mips32"
             ;;
     esac
 }

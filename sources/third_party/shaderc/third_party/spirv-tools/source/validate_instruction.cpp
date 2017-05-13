@@ -16,6 +16,7 @@
 
 #include "validate.h"
 
+#include <algorithm>
 #include <cassert>
 
 #include <sstream>
@@ -26,8 +27,8 @@
 #include "opcode.h"
 #include "operand.h"
 #include "spirv_definition.h"
-#include "val/Function.h"
-#include "val/ValidationState.h"
+#include "val/function.h"
+#include "val/validation_state.h"
 
 using libspirv::AssemblyGrammar;
 using libspirv::CapabilitySet;
@@ -131,6 +132,107 @@ spv_result_t CapCheck(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+// Checks that the Resuld <id> is within the valid bound.
+spv_result_t LimitCheckIdBound(ValidationState_t& _,
+                               const spv_parsed_instruction_t* inst) {
+  if (inst->result_id >= _.getIdBound()) {
+    return _.diag(SPV_ERROR_INVALID_BINARY)
+           << "Result <id> '" << inst->result_id
+           << "' must be less than the ID bound '" << _.getIdBound() << "'.";
+  }
+  return SPV_SUCCESS;
+}
+
+// Checks that the number of OpTypeStruct members is within the limit.
+spv_result_t LimitCheckStruct(ValidationState_t& _,
+                              const spv_parsed_instruction_t* inst) {
+  if (SpvOpTypeStruct != inst->opcode) {
+    return SPV_SUCCESS;
+  }
+
+  // Number of members is the number of operands of the instruction minus 1.
+  // One operand is the result ID.
+  const uint16_t limit = 0x3fff;
+  if (inst->num_operands - 1 > limit) {
+    return _.diag(SPV_ERROR_INVALID_BINARY)
+           << "Number of OpTypeStruct members (" << inst->num_operands - 1
+           << ") has exceeded the limit (" << limit << ").";
+  }
+
+  // Section 2.17 of SPIRV Spec specifies that the "Structure Nesting Depth"
+  // must be less than or equal to 255.
+  // This is interpreted as structures including other structures as members.
+  // The code does not follow pointers or look into arrays to see if we reach a
+  // structure downstream.
+  // The nesting depth of a struct is 1+(largest depth of any member).
+  // Scalars are at depth 0.
+  uint32_t max_member_depth = 0;
+  // Struct members start at word 2 of OpTypeStruct instruction.
+  for (size_t word_i = 2; word_i < inst->num_words; ++word_i) {
+    auto member = inst->words[word_i];
+    auto memberTypeInstr = _.FindDef(member);
+    if (memberTypeInstr && SpvOpTypeStruct == memberTypeInstr->opcode()) {
+      max_member_depth = std::max(
+          max_member_depth, _.struct_nesting_depth(memberTypeInstr->id()));
+    }
+  }
+
+  const uint32_t depth_limit = 255;
+  const uint32_t cur_depth = 1 + max_member_depth;
+  _.set_struct_nesting_depth(inst->result_id, cur_depth);
+  if (cur_depth > depth_limit) {
+    return _.diag(SPV_ERROR_INVALID_BINARY)
+           << "Structure Nesting Depth may not be larger than " << depth_limit
+           << ". Found " << cur_depth << ".";
+  }
+  return SPV_SUCCESS;
+}
+
+// Checks that the number of (literal, label) pairs in OpSwitch is within the
+// limit.
+spv_result_t LimitCheckSwitch(ValidationState_t& _,
+                              const spv_parsed_instruction_t* inst) {
+  if (SpvOpSwitch == inst->opcode) {
+    // The instruction syntax is as follows:
+    // OpSwitch <selector ID> <Default ID> literal label literal label ...
+    // literal,label pairs come after the first 2 operands.
+    // It is guaranteed at this point that num_operands is an even numner.
+    unsigned int num_pairs = (inst->num_operands - 2) / 2;
+    const unsigned int num_pairs_limit = 16383;
+    if (num_pairs > num_pairs_limit) {
+      return _.diag(SPV_ERROR_INVALID_BINARY)
+             << "Number of (literal, label) pairs in OpSwitch (" << num_pairs
+             << ") exceeds the limit (" << num_pairs_limit << ").";
+    }
+  }
+  return SPV_SUCCESS;
+}
+
+// Ensure the number of variables of the given class does not exceed the limit.
+spv_result_t LimitCheckNumVars(ValidationState_t& _,
+                               const SpvStorageClass storage_class) {
+  if (SpvStorageClassFunction == storage_class) {
+    _.incrementNumLocalVars();
+    const uint32_t num_local_vars_limit = 0x7FFFF;
+    if (_.num_local_vars() > num_local_vars_limit) {
+      return _.diag(SPV_ERROR_INVALID_BINARY)
+             << "Number of local variables ('Function' Storage Class) "
+                "exceeded the valid limit ("
+             << num_local_vars_limit << ").";
+    }
+  } else {
+    _.incrementNumGlobalVars();
+    const uint32_t num_global_vars_limit = 0xFFFF;
+    if (_.num_global_vars() > num_global_vars_limit) {
+      return _.diag(SPV_ERROR_INVALID_BINARY)
+             << "Number of Global Variables (Storage Class other than "
+                "'Function') exceeded the valid limit ("
+             << num_global_vars_limit << ").";
+    }
+  }
+  return SPV_SUCCESS;
+}
+
 spv_result_t InstructionPass(ValidationState_t& _,
                              const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
@@ -146,6 +248,9 @@ spv_result_t InstructionPass(ValidationState_t& _,
   if (opcode == SpvOpVariable) {
     const auto storage_class =
         static_cast<SpvStorageClass>(inst->words[inst->operands[2].offset]);
+    if (auto error = LimitCheckNumVars(_, storage_class)) {
+      return error;
+    }
     if (storage_class == SpvStorageClassGeneric)
       return _.diag(SPV_ERROR_INVALID_BINARY)
              << "OpVariable storage class cannot be Generic";
@@ -169,6 +274,13 @@ spv_result_t InstructionPass(ValidationState_t& _,
       }
     }
   }
-  return CapCheck(_, inst);
+
+  if (auto error = CapCheck(_, inst)) return error;
+  if (auto error = LimitCheckIdBound(_, inst)) return error;
+  if (auto error = LimitCheckStruct(_, inst)) return error;
+  if (auto error = LimitCheckSwitch(_, inst)) return error;
+
+  // All instruction checks have passed.
+  return SPV_SUCCESS;
 }
 }  // namespace libspirv
