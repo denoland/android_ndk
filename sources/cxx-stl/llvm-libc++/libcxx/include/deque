@@ -909,7 +909,7 @@ protected:
     typedef typename __alloc_traits::pointer         pointer;
     typedef typename __alloc_traits::const_pointer   const_pointer;
 
-    static const difference_type __block_size = sizeof(value_type) < 256 ? 4096 / sizeof(value_type) : 16;
+    static const difference_type __block_size = sizeof(value_type) < 256 ? 512 / sizeof(value_type) : 2;
 
     typedef typename __alloc_traits::template
 #ifndef _LIBCPP_HAS_NO_TEMPLATE_ALIASES
