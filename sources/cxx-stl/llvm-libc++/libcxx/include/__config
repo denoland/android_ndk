@@ -203,6 +203,17 @@
 #define _LIBCPP_ALWAYS_INLINE_EXCEPT_GCC49 _LIBCPP_ALWAYS_INLINE
 #endif
 
+#ifdef CHROMIUM_CXX_TWEAK_INLINES
+#define CHROMIUM_LIBCPP_INLINE_VISIBILITY __attribute__ ((__visibility__("hidden"), noinline))
+#define CHROMIUM_LIBCPP_ALWAYS_INLINE __attribute__ ((__visibility__("hidden"), __always_inline__))
+#define CHROMIUM_LIBCPP_NEVER_INLINE __attribute__ ((__visibility__("hidden"), noinline))
+#else
+#define CHROMIUM_LIBCPP_INLINE_VISIBILITY _LIBCPP_INLINE_VISIBILITY
+#define CHROMIUM_LIBCPP_ALWAYS_INLINE
+#define CHROMIUM_LIBCPP_NEVER_INLINE
+#endif
+#define CHROMIUM_LIBCPP_INLINE_VISIBILITY_EXCEPT_GCC49 CHROMIUM_LIBCPP_INLINE_VISIBILITY
+
 #if defined(__clang__)
 
 #if defined(__APPLE__) && !defined(__i386__) && !defined(__x86_64__) &&        \
