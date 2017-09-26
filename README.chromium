@@ -17,8 +17,3 @@ Local Modifications:
  - Cherry-picked SFINAE change that removed _NOEXCEPT_OR_FALSE use from
    upstream LLVM libcxx
     http://llvm.org/viewvc/llvm-project?view=revision&revision=219998
- - Lower std::deque block size (crbug.com/674287):
-    chromium-patches/Lower-std-deque-block-size.patch
- - Add CHROMIUM_CXX_TWEAK_INLINES define (crbug.com/738155):
-    chromium-patches/CHROMIUM_CXX_TWEAK_INLINES.patch
-

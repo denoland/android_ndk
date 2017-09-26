@@ -374,9 +374,7 @@ protected:
     size_type capacity() const _NOEXCEPT
         {return static_cast<size_type>(__end_cap() - __begin_);}
 
-    // Saved 33kb (Sept 2017).
-    // For more context: https://crbug.com/738155
-    CHROMIUM_LIBCPP_INLINE_VISIBILITY
+    _LIBCPP_INLINE_VISIBILITY
     void __destruct_at_end(pointer __new_last) _NOEXCEPT;
 
     _LIBCPP_INLINE_VISIBILITY
@@ -442,7 +440,7 @@ private:
 };
 
 template <class _Tp, class _Allocator>
-inline CHROMIUM_LIBCPP_INLINE_VISIBILITY
+inline _LIBCPP_INLINE_VISIBILITY
 void
 __vector_base<_Tp, _Allocator>::__destruct_at_end(pointer __new_last) _NOEXCEPT
 {
@@ -700,15 +698,12 @@ public:
     const value_type* data() const _NOEXCEPT
         {return _VSTD::__to_raw_pointer(this->__begin_);}
 
-    // push_back and emplace_back saved 270kb (Sept 2017).
-    // For more context: https://crbug.com/738155
-    CHROMIUM_LIBCPP_INLINE_VISIBILITY void push_back(const_reference __x);
+    _LIBCPP_INLINE_VISIBILITY void push_back(const_reference __x);
 #ifndef _LIBCPP_HAS_NO_RVALUE_REFERENCES
-    CHROMIUM_LIBCPP_INLINE_VISIBILITY void push_back(value_type&& __x);
+    _LIBCPP_INLINE_VISIBILITY void push_back(value_type&& __x);
 #ifndef _LIBCPP_HAS_NO_VARIADICS
     template <class... _Args>
-    CHROMIUM_LIBCPP_INLINE_VISIBILITY
-    void emplace_back(_Args&&... __args);
+        void emplace_back(_Args&&... __args);
 #endif  // _LIBCPP_HAS_NO_VARIADICS
 #endif  // _LIBCPP_HAS_NO_RVALUE_REFERENCES
     void pop_back();
@@ -1581,7 +1576,7 @@ vector<_Tp, _Allocator>::__push_back_slow_path(_Up& __x)
 }
 
 template <class _Tp, class _Allocator>
-inline CHROMIUM_LIBCPP_INLINE_VISIBILITY
+inline _LIBCPP_INLINE_VISIBILITY
 void
 vector<_Tp, _Allocator>::push_back(const_reference __x)
 {
@@ -1599,7 +1594,7 @@ vector<_Tp, _Allocator>::push_back(const_reference __x)
 #ifndef _LIBCPP_HAS_NO_RVALUE_REFERENCES
 
 template <class _Tp, class _Allocator>
-inline CHROMIUM_LIBCPP_INLINE_VISIBILITY
+inline _LIBCPP_INLINE_VISIBILITY
 void
 vector<_Tp, _Allocator>::push_back(value_type&& __x)
 {
@@ -1632,7 +1627,7 @@ vector<_Tp, _Allocator>::__emplace_back_slow_path(_Args&&... __args)
 
 template <class _Tp, class _Allocator>
 template <class... _Args>
-inline CHROMIUM_LIBCPP_INLINE_VISIBILITY
+inline _LIBCPP_INLINE_VISIBILITY
 void
 vector<_Tp, _Allocator>::emplace_back(_Args&&... __args)
 {
