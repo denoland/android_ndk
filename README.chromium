@@ -21,4 +21,7 @@ Local Modifications:
     chromium-patches/Lower-std-deque-block-size.patch
  - Add CHROMIUM_CXX_TWEAK_INLINES define (crbug.com/738155):
     chromium-patches/CHROMIUM_CXX_TWEAK_INLINES.patch
+ - Cherry-picked CFI bad-cast fixes from upstream LLVM libcxx
+    http://llvm.org/viewvc/llvm-project?view=revision&revision=260441
+    http://llvm.org/viewvc/llvm-project?view=revision&revision=263310
 

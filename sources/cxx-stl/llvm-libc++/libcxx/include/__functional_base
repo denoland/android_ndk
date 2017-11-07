@@ -78,7 +78,7 @@ struct _LIBCPP_TYPE_VIS_ONLY less<void>
 // addressof
 
 template <class _Tp>
-inline _LIBCPP_INLINE_VISIBILITY
+inline _LIBCPP_NO_CFI _LIBCPP_INLINE_VISIBILITY
 _Tp*
 addressof(_Tp& __x) _NOEXCEPT
 {
