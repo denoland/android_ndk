@@ -1,12 +1,12 @@
 /* Default linker script, for normal executables */
-/* Modified for Android.  */
-/* Copyright (C) 2014 Free Software Foundation, Inc.
+/* Copyright (C) 2014-2016 Free Software Foundation, Inc.
    Copying and distribution of this script, with or without modification,
    are permitted in any medium without royalty provided the copyright
    notice and this notice are preserved.  */
 OUTPUT_FORMAT("a.out-i386-linux", "a.out-i386-linux",
 	      "a.out-i386-linux")
 OUTPUT_ARCH(i386)
+SEARCH_DIR("=/tmp/5baf8a6401021a06075b51967c6cd3bd/i386-linux-androidaout/lib");
 PROVIDE (__stack = 0);
 SECTIONS
 {
