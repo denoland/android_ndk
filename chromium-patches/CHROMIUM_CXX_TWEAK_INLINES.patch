@@ -2,10 +2,10 @@ diff --git a/sources/cxx-stl/llvm-libc++/include/__config b/sources/cxx-stl/llvm
 index b7acd667..b784e2a3 100644
 --- a/sources/cxx-stl/llvm-libc++/include/__config
 +++ b/sources/cxx-stl/llvm-libc++/include/__config
-@@ -138,6 +138,46 @@
- #define __libcpp_has_include(__x) 0
+@@ -736,6 +736,46 @@ namespace std {
  #endif
- 
+ #endif
+
 +// When CHROMIUM_CXX_TWEAK_INLINES is defined, certain STL types will be tweaked
 +// to ensure that their constructor, or certain methods, are never inlined. This can
 +// surprisingly reduce the size of the Chrome binary by more than 3%, with little
@@ -37,18 +37,18 @@ index b7acd667..b784e2a3 100644
 +//     Empty if the tweak is disabled.
 +//
 +#ifdef CHROMIUM_CXX_TWEAK_INLINES
-+#define CHROMIUM_LIBCPP_INLINE_VISIBILITY __attribute__ ((__visibility__("hidden"), noinline))
-+#define CHROMIUM_LIBCPP_ALWAYS_INLINE __attribute__ ((__visibility__("hidden"), __always_inline__))
-+#define CHROMIUM_LIBCPP_NEVER_INLINE __attribute__ ((__visibility__("hidden"), noinline))
++#define CHROMIUM_LIBCPP_INLINE_VISIBILITY __attribute__ ((noinline))
++#define CHROMIUM_LIBCPP_ALWAYS_INLINE _LIBCPP_ALWAYS_INLINE
++#define CHROMIUM_LIBCPP_NEVER_INLINE __attribute__ ((noinline))
 +#else
 +#define CHROMIUM_LIBCPP_INLINE_VISIBILITY _LIBCPP_INLINE_VISIBILITY
 +#define CHROMIUM_LIBCPP_ALWAYS_INLINE
 +#define CHROMIUM_LIBCPP_NEVER_INLINE
 +#endif
 +
- #if defined(__clang__)
- #define _LIBCPP_COMPILER_CLANG
- # ifndef __apple_build_version__
+ #ifndef _LIBCPP_EXTERN_TEMPLATE_INLINE_VISIBILITY
+ # if !defined(_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS)
+ #  define _LIBCPP_EXTERN_TEMPLATE_INLINE_VISIBILITY __attribute__((__visibility__("default"), __always_inline__))
 diff --git a/sources/cxx-stl/llvm-libc++/include/string b/sources/cxx-stl/llvm-libc++/include/string
 index cf42f529..5a31af04 100644
 --- a/sources/cxx-stl/llvm-libc++/include/string

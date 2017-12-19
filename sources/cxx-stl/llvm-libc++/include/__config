@@ -138,46 +138,6 @@
 #define __libcpp_has_include(__x) 0
 #endif
 
-// When CHROMIUM_CXX_TWEAK_INLINES is defined, certain STL types will be tweaked
-// to ensure that their constructor, or certain methods, are never inlined. This can
-// surprisingly reduce the size of the Chrome binary by more than 3%, with little
-// impact on performance.
-//
-// This is controlled by modifying some libc++ headers using the following macros:
-//
-//  CHROMIUM_LIBCPP_INLINE_VISIBILITY:
-//     Replaces an _existing_ _LIBCPP_INLINE_VISIBILITY use on a target method.
-//     I.e. this indicates libc++ methods that were already possibly inlined,
-//     but that will never be when the tweak is active.
-//
-//     Equivalent to _LIBCPP_INLINE_VISIBILITY if the tweak is disabled.
-//
-//  CHROMIUM_LIBCPP_NEVER_INLINE:
-//     This is added to ensure that a target method, which was _not_ already
-//     tagged with _LIBCPP_INLINE_VISIBILITY, will never be inlined.
-//
-//     This is equivalent to adding CHROMIUM_LIBCPP_INLINE_VISIBILITY, except
-//     that it helps spot the places where _LIBCPP_INLINE_VISIBILITY was not
-//     used in the original libc++ header.
-//
-//     Empty if the tweak is disabled.
-//
-//  CHROMIUM_LIBCPP_ALWAYS_INLINE:
-//     This is added to ensure that a target method, which is _not_ already
-//     tagged with _LIBCPP_INLINE_VISIBILITY, will always be inlined.
-//
-//     Empty if the tweak is disabled.
-//
-#ifdef CHROMIUM_CXX_TWEAK_INLINES
-#define CHROMIUM_LIBCPP_INLINE_VISIBILITY __attribute__ ((__visibility__("hidden"), noinline))
-#define CHROMIUM_LIBCPP_ALWAYS_INLINE __attribute__ ((__visibility__("hidden"), __always_inline__))
-#define CHROMIUM_LIBCPP_NEVER_INLINE __attribute__ ((__visibility__("hidden"), noinline))
-#else
-#define CHROMIUM_LIBCPP_INLINE_VISIBILITY _LIBCPP_INLINE_VISIBILITY
-#define CHROMIUM_LIBCPP_ALWAYS_INLINE
-#define CHROMIUM_LIBCPP_NEVER_INLINE
-#endif
-
 #if defined(__clang__)
 #define _LIBCPP_COMPILER_CLANG
 # ifndef __apple_build_version__
@@ -774,6 +734,46 @@ namespace std {
 #else
 #define _LIBCPP_ALWAYS_INLINE  __attribute__ ((__always_inline__))
 #endif
+#endif
+
+// When CHROMIUM_CXX_TWEAK_INLINES is defined, certain STL types will be tweaked
+// to ensure that their constructor, or certain methods, are never inlined. This can
+// surprisingly reduce the size of the Chrome binary by more than 3%, with little
+// impact on performance.
+//
+// This is controlled by modifying some libc++ headers using the following macros:
+//
+//  CHROMIUM_LIBCPP_INLINE_VISIBILITY:
+//     Replaces an _existing_ _LIBCPP_INLINE_VISIBILITY use on a target method.
+//     I.e. this indicates libc++ methods that were already possibly inlined,
+//     but that will never be when the tweak is active.
+//
+//     Equivalent to _LIBCPP_INLINE_VISIBILITY if the tweak is disabled.
+//
+//  CHROMIUM_LIBCPP_NEVER_INLINE:
+//     This is added to ensure that a target method, which was _not_ already
+//     tagged with _LIBCPP_INLINE_VISIBILITY, will never be inlined.
+//
+//     This is equivalent to adding CHROMIUM_LIBCPP_INLINE_VISIBILITY, except
+//     that it helps spot the places where _LIBCPP_INLINE_VISIBILITY was not
+//     used in the original libc++ header.
+//
+//     Empty if the tweak is disabled.
+//
+//  CHROMIUM_LIBCPP_ALWAYS_INLINE:
+//     This is added to ensure that a target method, which is _not_ already
+//     tagged with _LIBCPP_INLINE_VISIBILITY, will always be inlined.
+//
+//     Empty if the tweak is disabled.
+//
+#ifdef CHROMIUM_CXX_TWEAK_INLINES
+#define CHROMIUM_LIBCPP_INLINE_VISIBILITY __attribute__ ((noinline))
+#define CHROMIUM_LIBCPP_ALWAYS_INLINE _LIBCPP_ALWAYS_INLINE
+#define CHROMIUM_LIBCPP_NEVER_INLINE __attribute__ ((noinline))
+#else
+#define CHROMIUM_LIBCPP_INLINE_VISIBILITY _LIBCPP_INLINE_VISIBILITY
+#define CHROMIUM_LIBCPP_ALWAYS_INLINE
+#define CHROMIUM_LIBCPP_NEVER_INLINE
 #endif
 
 #ifndef _LIBCPP_EXTERN_TEMPLATE_INLINE_VISIBILITY
