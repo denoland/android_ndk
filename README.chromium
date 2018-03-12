@@ -19,3 +19,5 @@ Local Modifications:
     chromium-patches/CHROMIUM_CXX_TWEAK_INLINES.patch
  - Cherry-picked r322201 from upstream LLVM libcxx (crbug.com/749784):
     http://llvm.org/viewvc/llvm-project?view=revision&revision=322201
+ - Add support for llvm-symbolizer to simpleperf/annotate.py:
+    https://chromium-review.googlesource.com/c/android_ndk/+/952475

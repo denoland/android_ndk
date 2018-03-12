@@ -87,6 +87,43 @@ class Addr2Line(object):
         self._combine_source_files()
 
 
+    def _run_llvm_symbolizer(self, dso_path, addrs):
+        subproc = subprocess.Popen([self.addr2line_path, '-obj=%s' % dso_path,
+                                    '-demangle', '-functions=linkage'],
+                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        addr_str = '\n'.join('0x%x' % addr for addr in addrs)
+        (stdoutdata, _) = subproc.communicate(str_to_bytes(addr_str))
+        stdoutdata = bytes_to_str(stdoutdata)
+        stanzas = stdoutdata.split('\n\n')
+        if len(stanzas) < len(addrs):
+            log_fatal("llvm-symbolizer produced %d stanzas for %d addresses" % (
+                len(stanzas), len(addrs)))
+        # Munge output to look like addr2line output
+        result = []
+        for i, addr in enumerate(addrs):
+            result.append('0x%x' % addr)
+            lines = stanzas[i].split('\n')
+            if len(lines) % 2:
+                log_fatal("llvm-symbolizer produced a stanza with %d lines" % len(lines))
+            for j in xrange(0, len(lines), 2):
+                result.append(lines[j])
+                # Strip character position in line
+                result.append(lines[j+1].rsplit(':', 1)[0])
+        return result
+
+
+    def _run_addr2line(self, dso_path, addrs):
+        subproc = subprocess.Popen([self.addr2line_path, '-e', dso_path, '-aifC'],
+                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        addr_str = '\n'.join(['0x%x' % addr for addr in addrs])
+        (stdoutdata, _) = subproc.communicate(str_to_bytes(addr_str))
+        stdoutdata = bytes_to_str(stdoutdata)
+        stdoutdata = stdoutdata.strip().split('\n')
+        if len(stdoutdata) < len(addrs):
+            log_fatal("addr2line didn't output enough lines")
+        return stdoutdata
+
+
     def _convert_addrs_to_lines(self, dso_name, dso):
         dso_path = self._find_dso_path(dso_name)
         if dso_path is None:
@@ -94,17 +131,10 @@ class Addr2Line(object):
             dso.clear()
             return
         addrs = sorted(dso.keys())
-        addr_str = []
-        for addr in addrs:
-            addr_str.append('0x%x' % addr)
-        addr_str = '\n'.join(addr_str)
-        subproc = subprocess.Popen([self.addr2line_path, '-e', dso_path, '-aifC'],
-                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        (stdoutdata, _) = subproc.communicate(str_to_bytes(addr_str))
-        stdoutdata = bytes_to_str(stdoutdata)
-        stdoutdata = stdoutdata.strip().split('\n')
-        if len(stdoutdata) < len(addrs):
-            log_fatal("addr2line didn't output enough lines")
+        if self.addr2line_path.endswith('llvm-symbolizer'):
+            stdoutdata = self._run_llvm_symbolizer(dso_path, addrs)
+        else:
+            stdoutdata = self._run_addr2line(dso_path, addrs)
         addr_pos = 0
         out_pos = 0
         while addr_pos < len(addrs) and out_pos < len(stdoutdata):
