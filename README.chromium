@@ -21,3 +21,5 @@ Local Modifications:
     http://llvm.org/viewvc/llvm-project?view=revision&revision=322201
  - Add support for llvm-symbolizer to simpleperf/annotate.py:
     https://chromium-review.googlesource.com/c/android_ndk/+/952475
+ - Fixed perf_data_path config to simpleperf.  Upstream patch:
+    https://android-review.googlesource.com/c/platform/system/extras/+/641339
