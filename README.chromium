@@ -23,3 +23,6 @@ Local Modifications:
     https://chromium-review.googlesource.com/c/android_ndk/+/952475
  - Fixed perf_data_path config to simpleperf.  Upstream patch:
     https://android-review.googlesource.com/c/platform/system/extras/+/641339
+ - Cherry-picked r322744 and r339797 from upstream LLVM libcxx (crbug.com/870677):
+    http://llvm.org/viewvc/llvm-project?view=revision&revision=322744
+    http://llvm.org/viewvc/llvm-project?view=revision&revision=339797
