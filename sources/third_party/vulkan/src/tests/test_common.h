@@ -53,8 +53,28 @@
 #pragma warning(disable : 4251)
 #pragma warning(disable : 4275)
 #endif
-#include "gtest-1.7.0/include/gtest/gtest.h"
+
+// GTest and Xlib collide due to redefinitions of "None" and "Bool"
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+#pragma push_macro("None")
+#pragma push_macro("Bool")
+#undef None
+#undef Bool
+#endif
+
+// Use the NDK's header on Android
+#ifndef __ANDROID__
 #include "gtest/gtest.h"
+#else
+#include "gtest/gtest.h"
+#endif
+
+// Redefine Xlib definitions
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+#pragma pop_macro("Bool")
+#pragma pop_macro("None")
+#endif
+
 #ifdef _WIN32
 #pragma warning(pop)
 #endif
@@ -64,8 +84,8 @@
 
 static inline const char *vk_result_string(VkResult err) {
     switch (err) {
-#define STR(r)                                                                                                                     \
-    case r:                                                                                                                        \
+#define STR(r) \
+    case r:    \
         return #r
         STR(VK_SUCCESS);
         STR(VK_NOT_READY);
@@ -81,8 +101,8 @@ static inline const char *vk_result_string(VkResult err) {
         STR(VK_ERROR_MEMORY_MAP_FAILED);
         STR(VK_ERROR_INCOMPATIBLE_DRIVER);
 #undef STR
-    default:
-        return "UNKNOWN_RESULT";
+        default:
+            return "UNKNOWN_RESULT";
     }
 }
 
@@ -90,8 +110,8 @@ static inline void test_error_callback(const char *expr, const char *file, unsig
     ADD_FAILURE_AT(file, line) << "Assertion: `" << expr << "'";
 }
 
-#if defined(__linux__)
-/* Linux-specific common code: */
+#if defined(__linux__) || defined(__APPLE__)
+    /* Linux-specific common code: */
 
 #include <pthread.h>
 
@@ -122,17 +142,17 @@ static inline void test_platform_thread_cond_wait(test_platform_thread_cond *pCo
 }
 static inline void test_platform_thread_cond_broadcast(test_platform_thread_cond *pCond) { pthread_cond_broadcast(pCond); }
 
-#elif defined(_WIN32) // defined(__linux__)
+#elif defined(_WIN32)  // defined(__linux__)
 // Threads:
 typedef HANDLE test_platform_thread;
 static inline int test_platform_thread_create(test_platform_thread *thread, void *(*func)(void *), void *data) {
     DWORD threadID;
-    *thread = CreateThread(NULL, // default security attributes
-                           0,    // use default stack size
+    *thread = CreateThread(NULL,  // default security attributes
+                           0,     // use default stack size
                            (LPTHREAD_START_ROUTINE)func,
-                           data,       // thread function argument
-                           0,          // use default creation flags
-                           &threadID); // returns thread identifier
+                           data,        // thread function argument
+                           0,           // use default creation flags
+                           &threadID);  // returns thread identifier
     return (*thread != NULL);
 }
 static inline int test_platform_thread_join(test_platform_thread thread, void **retval) {
@@ -155,17 +175,17 @@ static void test_platform_thread_cond_wait(test_platform_thread_cond *pCond, tes
     SleepConditionVariableCS(pCond, pMutex, INFINITE);
 }
 static void test_platform_thread_cond_broadcast(test_platform_thread_cond *pCond) { WakeAllConditionVariable(pCond); }
-#else                 // defined(_WIN32)
+#else                  // defined(_WIN32)
 
 #error The "test_common.h" file must be modified for this OS.
 
-// NOTE: In order to support another OS, an #elif needs to be added (above the
-// "#else // defined(_WIN32)") for that OS, and OS-specific versions of the
-// contents of this file must be created.
+    // NOTE: In order to support another OS, an #elif needs to be added (above the
+    // "#else // defined(_WIN32)") for that OS, and OS-specific versions of the
+    // contents of this file must be created.
 
-// NOTE: Other OS-specific changes are also needed for this OS.  Search for
-// files with "WIN32" in it, as a quick way to find files that must be changed.
+    // NOTE: Other OS-specific changes are also needed for this OS.  Search for
+    // files with "WIN32" in it, as a quick way to find files that must be changed.
 
-#endif // defined(_WIN32)
+#endif  // defined(_WIN32)
 
-#endif // TEST_COMMON_H
+#endif  // TEST_COMMON_H

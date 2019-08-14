@@ -1,5 +1,5 @@
 /*
-** Copyright (c) 2015-2016 The Khronos Group Inc.
+** Copyright (c) 2015-2018 The Khronos Group Inc.
 **
 ** Licensed under the Apache License, Version 2.0 (the "License");
 ** you may not use this file except in compliance with the License.
@@ -21,6 +21,486 @@
 
 
 namespace unique_objects {
+
+// Unique Objects pNext extension handling function
+void *CreateUnwrappedExtensionStructs(const void *pNext) {
+    void *cur_pnext = const_cast<void *>(pNext);
+    void *head_pnext = NULL;
+    void *prev_ext_struct = NULL;
+    void *cur_ext_struct = NULL;
+
+    while (cur_pnext != NULL) {
+        GenericHeader *header = reinterpret_cast<GenericHeader *>(cur_pnext);
+
+        switch (header->sType) {
+#ifdef VK_USE_PLATFORM_WIN32_KHR 
+            case VK_STRUCTURE_TYPE_D3D12_FENCE_SUBMIT_INFO_KHR: {
+                    safe_VkD3D12FenceSubmitInfoKHR *safe_struct = new safe_VkD3D12FenceSubmitInfoKHR;
+                    safe_struct->initialize(reinterpret_cast<const VkD3D12FenceSubmitInfoKHR *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+#endif // VK_USE_PLATFORM_WIN32_KHR 
+
+            case VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO: {
+                    safe_VkDeviceGroupSubmitInfo *safe_struct = new safe_VkDeviceGroupSubmitInfo;
+                    safe_struct->initialize(reinterpret_cast<const VkDeviceGroupSubmitInfo *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            case VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO: {
+                    safe_VkProtectedSubmitInfo *safe_struct = new safe_VkProtectedSubmitInfo;
+                    safe_struct->initialize(reinterpret_cast<const VkProtectedSubmitInfo *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR 
+            case VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_KHR: {
+                    safe_VkWin32KeyedMutexAcquireReleaseInfoKHR *safe_struct = new safe_VkWin32KeyedMutexAcquireReleaseInfoKHR;
+                    safe_struct->initialize(reinterpret_cast<const VkWin32KeyedMutexAcquireReleaseInfoKHR *>(cur_pnext));
+                    if (safe_struct->pAcquireSyncs) {
+                        for (uint32_t index0 = 0; index0 < safe_struct->acquireCount; ++index0) {
+                            safe_struct->pAcquireSyncs[index0] = Unwrap(safe_struct->pAcquireSyncs[index0]);
+                        }
+                    }
+                    if (safe_struct->pReleaseSyncs) {
+                        for (uint32_t index0 = 0; index0 < safe_struct->releaseCount; ++index0) {
+                            safe_struct->pReleaseSyncs[index0] = Unwrap(safe_struct->pReleaseSyncs[index0]);
+                        }
+                    }
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+#endif // VK_USE_PLATFORM_WIN32_KHR 
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR 
+            case VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_NV: {
+                    safe_VkWin32KeyedMutexAcquireReleaseInfoNV *safe_struct = new safe_VkWin32KeyedMutexAcquireReleaseInfoNV;
+                    safe_struct->initialize(reinterpret_cast<const VkWin32KeyedMutexAcquireReleaseInfoNV *>(cur_pnext));
+                    if (safe_struct->pAcquireSyncs) {
+                        for (uint32_t index0 = 0; index0 < safe_struct->acquireCount; ++index0) {
+                            safe_struct->pAcquireSyncs[index0] = Unwrap(safe_struct->pAcquireSyncs[index0]);
+                        }
+                    }
+                    if (safe_struct->pReleaseSyncs) {
+                        for (uint32_t index0 = 0; index0 < safe_struct->releaseCount; ++index0) {
+                            safe_struct->pReleaseSyncs[index0] = Unwrap(safe_struct->pReleaseSyncs[index0]);
+                        }
+                    }
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+#endif // VK_USE_PLATFORM_WIN32_KHR 
+
+            case VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_MEMORY_ALLOCATE_INFO_NV: {
+                    safe_VkDedicatedAllocationMemoryAllocateInfoNV *safe_struct = new safe_VkDedicatedAllocationMemoryAllocateInfoNV;
+                    safe_struct->initialize(reinterpret_cast<const VkDedicatedAllocationMemoryAllocateInfoNV *>(cur_pnext));
+                    if (safe_struct->image) {
+                        safe_struct->image = Unwrap(safe_struct->image);
+                    }
+                    if (safe_struct->buffer) {
+                        safe_struct->buffer = Unwrap(safe_struct->buffer);
+                    }
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            case VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO: {
+                    safe_VkExportMemoryAllocateInfo *safe_struct = new safe_VkExportMemoryAllocateInfo;
+                    safe_struct->initialize(reinterpret_cast<const VkExportMemoryAllocateInfo *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            case VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_NV: {
+                    safe_VkExportMemoryAllocateInfoNV *safe_struct = new safe_VkExportMemoryAllocateInfoNV;
+                    safe_struct->initialize(reinterpret_cast<const VkExportMemoryAllocateInfoNV *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR 
+            case VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_KHR: {
+                    safe_VkExportMemoryWin32HandleInfoKHR *safe_struct = new safe_VkExportMemoryWin32HandleInfoKHR;
+                    safe_struct->initialize(reinterpret_cast<const VkExportMemoryWin32HandleInfoKHR *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+#endif // VK_USE_PLATFORM_WIN32_KHR 
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR 
+            case VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_NV: {
+                    safe_VkExportMemoryWin32HandleInfoNV *safe_struct = new safe_VkExportMemoryWin32HandleInfoNV;
+                    safe_struct->initialize(reinterpret_cast<const VkExportMemoryWin32HandleInfoNV *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+#endif // VK_USE_PLATFORM_WIN32_KHR 
+
+#ifdef VK_USE_PLATFORM_ANDROID_KHR 
+            case VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID: {
+                    safe_VkImportAndroidHardwareBufferInfoANDROID *safe_struct = new safe_VkImportAndroidHardwareBufferInfoANDROID;
+                    safe_struct->initialize(reinterpret_cast<const VkImportAndroidHardwareBufferInfoANDROID *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+#endif // VK_USE_PLATFORM_ANDROID_KHR 
+
+            case VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR: {
+                    safe_VkImportMemoryFdInfoKHR *safe_struct = new safe_VkImportMemoryFdInfoKHR;
+                    safe_struct->initialize(reinterpret_cast<const VkImportMemoryFdInfoKHR *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            case VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT: {
+                    safe_VkImportMemoryHostPointerInfoEXT *safe_struct = new safe_VkImportMemoryHostPointerInfoEXT;
+                    safe_struct->initialize(reinterpret_cast<const VkImportMemoryHostPointerInfoEXT *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR 
+            case VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR: {
+                    safe_VkImportMemoryWin32HandleInfoKHR *safe_struct = new safe_VkImportMemoryWin32HandleInfoKHR;
+                    safe_struct->initialize(reinterpret_cast<const VkImportMemoryWin32HandleInfoKHR *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+#endif // VK_USE_PLATFORM_WIN32_KHR 
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR 
+            case VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_NV: {
+                    safe_VkImportMemoryWin32HandleInfoNV *safe_struct = new safe_VkImportMemoryWin32HandleInfoNV;
+                    safe_struct->initialize(reinterpret_cast<const VkImportMemoryWin32HandleInfoNV *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+#endif // VK_USE_PLATFORM_WIN32_KHR 
+
+            case VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO: {
+                    safe_VkMemoryAllocateFlagsInfo *safe_struct = new safe_VkMemoryAllocateFlagsInfo;
+                    safe_struct->initialize(reinterpret_cast<const VkMemoryAllocateFlagsInfo *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            case VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO: {
+                    safe_VkMemoryDedicatedAllocateInfo *safe_struct = new safe_VkMemoryDedicatedAllocateInfo;
+                    safe_struct->initialize(reinterpret_cast<const VkMemoryDedicatedAllocateInfo *>(cur_pnext));
+                    if (safe_struct->image) {
+                        safe_struct->image = Unwrap(safe_struct->image);
+                    }
+                    if (safe_struct->buffer) {
+                        safe_struct->buffer = Unwrap(safe_struct->buffer);
+                    }
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            case VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_IMAGE_CREATE_INFO_NV: {
+                    safe_VkDedicatedAllocationImageCreateInfoNV *safe_struct = new safe_VkDedicatedAllocationImageCreateInfoNV;
+                    safe_struct->initialize(reinterpret_cast<const VkDedicatedAllocationImageCreateInfoNV *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+#ifdef VK_USE_PLATFORM_ANDROID_KHR 
+            case VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID: {
+                    safe_VkExternalFormatANDROID *safe_struct = new safe_VkExternalFormatANDROID;
+                    safe_struct->initialize(reinterpret_cast<const VkExternalFormatANDROID *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+#endif // VK_USE_PLATFORM_ANDROID_KHR 
+
+            case VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO: {
+                    safe_VkExternalMemoryImageCreateInfo *safe_struct = new safe_VkExternalMemoryImageCreateInfo;
+                    safe_struct->initialize(reinterpret_cast<const VkExternalMemoryImageCreateInfo *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            case VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_NV: {
+                    safe_VkExternalMemoryImageCreateInfoNV *safe_struct = new safe_VkExternalMemoryImageCreateInfoNV;
+                    safe_struct->initialize(reinterpret_cast<const VkExternalMemoryImageCreateInfoNV *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            case VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT: {
+                    safe_VkImageDrmFormatModifierExplicitCreateInfoEXT *safe_struct = new safe_VkImageDrmFormatModifierExplicitCreateInfoEXT;
+                    safe_struct->initialize(reinterpret_cast<const VkImageDrmFormatModifierExplicitCreateInfoEXT *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            case VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_LIST_CREATE_INFO_EXT: {
+                    safe_VkImageDrmFormatModifierListCreateInfoEXT *safe_struct = new safe_VkImageDrmFormatModifierListCreateInfoEXT;
+                    safe_struct->initialize(reinterpret_cast<const VkImageDrmFormatModifierListCreateInfoEXT *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            case VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR: {
+                    safe_VkImageFormatListCreateInfoKHR *safe_struct = new safe_VkImageFormatListCreateInfoKHR;
+                    safe_struct->initialize(reinterpret_cast<const VkImageFormatListCreateInfoKHR *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            case VK_STRUCTURE_TYPE_IMAGE_SWAPCHAIN_CREATE_INFO_KHR: {
+                    safe_VkImageSwapchainCreateInfoKHR *safe_struct = new safe_VkImageSwapchainCreateInfoKHR;
+                    safe_struct->initialize(reinterpret_cast<const VkImageSwapchainCreateInfoKHR *>(cur_pnext));
+                    if (safe_struct->swapchain) {
+                        safe_struct->swapchain = Unwrap(safe_struct->swapchain);
+                    }
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            case VK_STRUCTURE_TYPE_IMAGE_VIEW_ASTC_DECODE_MODE_EXT: {
+                    safe_VkImageViewASTCDecodeModeEXT *safe_struct = new safe_VkImageViewASTCDecodeModeEXT;
+                    safe_struct->initialize(reinterpret_cast<const VkImageViewASTCDecodeModeEXT *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            case VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO: {
+                    safe_VkImageViewUsageCreateInfo *safe_struct = new safe_VkImageViewUsageCreateInfo;
+                    safe_struct->initialize(reinterpret_cast<const VkImageViewUsageCreateInfo *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            case VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO: {
+                    safe_VkSamplerYcbcrConversionInfo *safe_struct = new safe_VkSamplerYcbcrConversionInfo;
+                    safe_struct->initialize(reinterpret_cast<const VkSamplerYcbcrConversionInfo *>(cur_pnext));
+                    if (safe_struct->conversion) {
+                        safe_struct->conversion = Unwrap(safe_struct->conversion);
+                    }
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            case VK_STRUCTURE_TYPE_SHADER_MODULE_VALIDATION_CACHE_CREATE_INFO_EXT: {
+                    safe_VkShaderModuleValidationCacheCreateInfoEXT *safe_struct = new safe_VkShaderModuleValidationCacheCreateInfoEXT;
+                    safe_struct->initialize(reinterpret_cast<const VkShaderModuleValidationCacheCreateInfoEXT *>(cur_pnext));
+                    if (safe_struct->validationCache) {
+                        safe_struct->validationCache = Unwrap(safe_struct->validationCache);
+                    }
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT: {
+                    safe_VkSamplerReductionModeCreateInfoEXT *safe_struct = new safe_VkSamplerReductionModeCreateInfoEXT;
+                    safe_struct->initialize(reinterpret_cast<const VkSamplerReductionModeCreateInfoEXT *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            case VK_STRUCTURE_TYPE_DESCRIPTOR_ACCELERATION_STRUCTURE_INFO_NVX: {
+                    safe_VkDescriptorAccelerationStructureInfoNVX *safe_struct = new safe_VkDescriptorAccelerationStructureInfoNVX;
+                    safe_struct->initialize(reinterpret_cast<const VkDescriptorAccelerationStructureInfoNVX *>(cur_pnext));
+                    if (safe_struct->pAccelerationStructures) {
+                        for (uint32_t index0 = 0; index0 < safe_struct->accelerationStructureCount; ++index0) {
+                            safe_struct->pAccelerationStructures[index0] = Unwrap(safe_struct->pAccelerationStructures[index0]);
+                        }
+                    }
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            case VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT: {
+                    safe_VkWriteDescriptorSetInlineUniformBlockEXT *safe_struct = new safe_VkWriteDescriptorSetInlineUniformBlockEXT;
+                    safe_struct->initialize(reinterpret_cast<const VkWriteDescriptorSetInlineUniformBlockEXT *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            case VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_DEVICE_GROUP_INFO: {
+                    safe_VkBindImageMemoryDeviceGroupInfo *safe_struct = new safe_VkBindImageMemoryDeviceGroupInfo;
+                    safe_struct->initialize(reinterpret_cast<const VkBindImageMemoryDeviceGroupInfo *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            case VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_SWAPCHAIN_INFO_KHR: {
+                    safe_VkBindImageMemorySwapchainInfoKHR *safe_struct = new safe_VkBindImageMemorySwapchainInfoKHR;
+                    safe_struct->initialize(reinterpret_cast<const VkBindImageMemorySwapchainInfoKHR *>(cur_pnext));
+                    if (safe_struct->swapchain) {
+                        safe_struct->swapchain = Unwrap(safe_struct->swapchain);
+                    }
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            case VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO: {
+                    safe_VkBindImagePlaneMemoryInfo *safe_struct = new safe_VkBindImagePlaneMemoryInfo;
+                    safe_struct->initialize(reinterpret_cast<const VkBindImagePlaneMemoryInfo *>(cur_pnext));
+                    cur_ext_struct = reinterpret_cast<void *>(safe_struct);
+                } break;
+
+            default:
+                break;
+        }
+
+        // Save pointer to the first structure in the pNext chain
+        head_pnext = (head_pnext ? head_pnext : cur_ext_struct);
+
+        // For any extension structure but the first, link the last struct's pNext to the current ext struct
+        if (prev_ext_struct) {
+            (reinterpret_cast<GenericHeader *>(prev_ext_struct))->pNext = cur_ext_struct;
+        }
+        prev_ext_struct = cur_ext_struct;
+
+        // Process the next structure in the chain
+        cur_pnext = const_cast<void *>(header->pNext);
+    }
+    return head_pnext;
+}
+
+// Free a pNext extension chain
+void FreeUnwrappedExtensionStructs(void *head) {
+    GenericHeader *curr_ptr = reinterpret_cast<GenericHeader *>(head);
+    while (curr_ptr) {
+        GenericHeader *header = curr_ptr;
+        curr_ptr = reinterpret_cast<GenericHeader *>(header->pNext);
+
+        switch (header->sType) {
+#ifdef VK_USE_PLATFORM_WIN32_KHR 
+            case VK_STRUCTURE_TYPE_D3D12_FENCE_SUBMIT_INFO_KHR:
+                delete reinterpret_cast<safe_VkD3D12FenceSubmitInfoKHR *>(header);
+                break;
+#endif // VK_USE_PLATFORM_WIN32_KHR 
+
+            case VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO:
+                delete reinterpret_cast<safe_VkDeviceGroupSubmitInfo *>(header);
+                break;
+
+            case VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO:
+                delete reinterpret_cast<safe_VkProtectedSubmitInfo *>(header);
+                break;
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR 
+            case VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_KHR:
+                delete reinterpret_cast<safe_VkWin32KeyedMutexAcquireReleaseInfoKHR *>(header);
+                break;
+#endif // VK_USE_PLATFORM_WIN32_KHR 
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR 
+            case VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_NV:
+                delete reinterpret_cast<safe_VkWin32KeyedMutexAcquireReleaseInfoNV *>(header);
+                break;
+#endif // VK_USE_PLATFORM_WIN32_KHR 
+
+            case VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_MEMORY_ALLOCATE_INFO_NV:
+                delete reinterpret_cast<safe_VkDedicatedAllocationMemoryAllocateInfoNV *>(header);
+                break;
+
+            case VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO:
+                delete reinterpret_cast<safe_VkExportMemoryAllocateInfo *>(header);
+                break;
+
+            case VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_NV:
+                delete reinterpret_cast<safe_VkExportMemoryAllocateInfoNV *>(header);
+                break;
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR 
+            case VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_KHR:
+                delete reinterpret_cast<safe_VkExportMemoryWin32HandleInfoKHR *>(header);
+                break;
+#endif // VK_USE_PLATFORM_WIN32_KHR 
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR 
+            case VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_NV:
+                delete reinterpret_cast<safe_VkExportMemoryWin32HandleInfoNV *>(header);
+                break;
+#endif // VK_USE_PLATFORM_WIN32_KHR 
+
+#ifdef VK_USE_PLATFORM_ANDROID_KHR 
+            case VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID:
+                delete reinterpret_cast<safe_VkImportAndroidHardwareBufferInfoANDROID *>(header);
+                break;
+#endif // VK_USE_PLATFORM_ANDROID_KHR 
+
+            case VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR:
+                delete reinterpret_cast<safe_VkImportMemoryFdInfoKHR *>(header);
+                break;
+
+            case VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT:
+                delete reinterpret_cast<safe_VkImportMemoryHostPointerInfoEXT *>(header);
+                break;
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR 
+            case VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR:
+                delete reinterpret_cast<safe_VkImportMemoryWin32HandleInfoKHR *>(header);
+                break;
+#endif // VK_USE_PLATFORM_WIN32_KHR 
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR 
+            case VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_NV:
+                delete reinterpret_cast<safe_VkImportMemoryWin32HandleInfoNV *>(header);
+                break;
+#endif // VK_USE_PLATFORM_WIN32_KHR 
+
+            case VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO:
+                delete reinterpret_cast<safe_VkMemoryAllocateFlagsInfo *>(header);
+                break;
+
+            case VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO:
+                delete reinterpret_cast<safe_VkMemoryDedicatedAllocateInfo *>(header);
+                break;
+
+            case VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_IMAGE_CREATE_INFO_NV:
+                delete reinterpret_cast<safe_VkDedicatedAllocationImageCreateInfoNV *>(header);
+                break;
+
+#ifdef VK_USE_PLATFORM_ANDROID_KHR 
+            case VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID:
+                delete reinterpret_cast<safe_VkExternalFormatANDROID *>(header);
+                break;
+#endif // VK_USE_PLATFORM_ANDROID_KHR 
+
+            case VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO:
+                delete reinterpret_cast<safe_VkExternalMemoryImageCreateInfo *>(header);
+                break;
+
+            case VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_NV:
+                delete reinterpret_cast<safe_VkExternalMemoryImageCreateInfoNV *>(header);
+                break;
+
+            case VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT:
+                delete reinterpret_cast<safe_VkImageDrmFormatModifierExplicitCreateInfoEXT *>(header);
+                break;
+
+            case VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_LIST_CREATE_INFO_EXT:
+                delete reinterpret_cast<safe_VkImageDrmFormatModifierListCreateInfoEXT *>(header);
+                break;
+
+            case VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR:
+                delete reinterpret_cast<safe_VkImageFormatListCreateInfoKHR *>(header);
+                break;
+
+            case VK_STRUCTURE_TYPE_IMAGE_SWAPCHAIN_CREATE_INFO_KHR:
+                delete reinterpret_cast<safe_VkImageSwapchainCreateInfoKHR *>(header);
+                break;
+
+            case VK_STRUCTURE_TYPE_IMAGE_VIEW_ASTC_DECODE_MODE_EXT:
+                delete reinterpret_cast<safe_VkImageViewASTCDecodeModeEXT *>(header);
+                break;
+
+            case VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO:
+                delete reinterpret_cast<safe_VkImageViewUsageCreateInfo *>(header);
+                break;
+
+            case VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO:
+                delete reinterpret_cast<safe_VkSamplerYcbcrConversionInfo *>(header);
+                break;
+
+            case VK_STRUCTURE_TYPE_SHADER_MODULE_VALIDATION_CACHE_CREATE_INFO_EXT:
+                delete reinterpret_cast<safe_VkShaderModuleValidationCacheCreateInfoEXT *>(header);
+                break;
+
+            case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT:
+                delete reinterpret_cast<safe_VkSamplerReductionModeCreateInfoEXT *>(header);
+                break;
+
+            case VK_STRUCTURE_TYPE_DESCRIPTOR_ACCELERATION_STRUCTURE_INFO_NVX:
+                delete reinterpret_cast<safe_VkDescriptorAccelerationStructureInfoNVX *>(header);
+                break;
+
+            case VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT:
+                delete reinterpret_cast<safe_VkWriteDescriptorSetInlineUniformBlockEXT *>(header);
+                break;
+
+            case VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_DEVICE_GROUP_INFO:
+                delete reinterpret_cast<safe_VkBindImageMemoryDeviceGroupInfo *>(header);
+                break;
+
+            case VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_SWAPCHAIN_INFO_KHR:
+                delete reinterpret_cast<safe_VkBindImageMemorySwapchainInfoKHR *>(header);
+                break;
+
+            case VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO:
+                delete reinterpret_cast<safe_VkBindImagePlaneMemoryInfo *>(header);
+                break;
+
+            default:
+                assert(0);
+        }
+    }
+}
+
 
 
 // Declare only
@@ -79,7 +559,7 @@ VKAPI_ATTR VkResult VKAPI_CALL QueueSubmit(
     const VkSubmitInfo*                         pSubmits,
     VkFence                                     fence)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(queue), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(queue), layer_data_map);
     safe_VkSubmitInfo *local_pSubmits = NULL;
     {
         std::lock_guard<std::mutex> lock(global_lock);
@@ -87,45 +567,70 @@ VKAPI_ATTR VkResult VKAPI_CALL QueueSubmit(
             local_pSubmits = new safe_VkSubmitInfo[submitCount];
             for (uint32_t index0 = 0; index0 < submitCount; ++index0) {
                 local_pSubmits[index0].initialize(&pSubmits[index0]);
+                local_pSubmits[index0].pNext = CreateUnwrappedExtensionStructs(local_pSubmits[index0].pNext);
                 if (local_pSubmits[index0].pWaitSemaphores) {
                     for (uint32_t index1 = 0; index1 < local_pSubmits[index0].waitSemaphoreCount; ++index1) {
-                        local_pSubmits[index0].pWaitSemaphores[index1] = (VkSemaphore)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(local_pSubmits[index0].pWaitSemaphores[index1])];
+                        local_pSubmits[index0].pWaitSemaphores[index1] = Unwrap(local_pSubmits[index0].pWaitSemaphores[index1]);
                     }
                 }
                 if (local_pSubmits[index0].pSignalSemaphores) {
                     for (uint32_t index1 = 0; index1 < local_pSubmits[index0].signalSemaphoreCount; ++index1) {
-                        local_pSubmits[index0].pSignalSemaphores[index1] = (VkSemaphore)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(local_pSubmits[index0].pSignalSemaphores[index1])];
+                        local_pSubmits[index0].pSignalSemaphores[index1] = Unwrap(local_pSubmits[index0].pSignalSemaphores[index1]);
                     }
                 }
             }
         }
-        fence = (VkFence)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(fence)];
+        fence = Unwrap(fence);
     }
-    VkResult result = dev_data->device_dispatch_table->QueueSubmit(queue, submitCount, (const VkSubmitInfo*)local_pSubmits, fence);
-    if (local_pSubmits)
+    VkResult result = dev_data->dispatch_table.QueueSubmit(queue, submitCount, (const VkSubmitInfo*)local_pSubmits, fence);
+    if (local_pSubmits) {
+        for (uint32_t index0 = 0; index0 < submitCount; ++index0) {
+            FreeUnwrappedExtensionStructs(const_cast<void *>(local_pSubmits[index0].pNext));
+        }
         delete[] local_pSubmits;
+    }
     return result;
 }
 
-// Declare only
 VKAPI_ATTR VkResult VKAPI_CALL AllocateMemory(
     VkDevice                                    device,
     const VkMemoryAllocateInfo*                 pAllocateInfo,
     const VkAllocationCallbacks*                pAllocator,
-    VkDeviceMemory*                             pMemory);
+    VkDeviceMemory*                             pMemory)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkMemoryAllocateInfo *local_pAllocateInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pAllocateInfo) {
+            local_pAllocateInfo = new safe_VkMemoryAllocateInfo(pAllocateInfo);
+            local_pAllocateInfo->pNext = CreateUnwrappedExtensionStructs(local_pAllocateInfo->pNext);
+        }
+    }
+    VkResult result = dev_data->dispatch_table.AllocateMemory(device, (const VkMemoryAllocateInfo*)local_pAllocateInfo, pAllocator, pMemory);
+    if (local_pAllocateInfo) {
+        FreeUnwrappedExtensionStructs(const_cast<void *>(local_pAllocateInfo->pNext));
+        delete local_pAllocateInfo;
+    }
+    if (VK_SUCCESS == result) {
+        std::lock_guard<std::mutex> lock(global_lock);
+        *pMemory = WrapNew(*pMemory);
+    }
+    return result;
+}
 
 VKAPI_ATTR void VKAPI_CALL FreeMemory(
     VkDevice                                    device,
     VkDeviceMemory                              memory,
     const VkAllocationCallbacks*                pAllocator)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     std::unique_lock<std::mutex> lock(global_lock);
     uint64_t memory_id = reinterpret_cast<uint64_t &>(memory);
-    memory = (VkDeviceMemory)dev_data->unique_id_mapping[memory_id];
-    dev_data->unique_id_mapping.erase(memory_id);
+    memory = (VkDeviceMemory)unique_id_mapping[memory_id];
+    unique_id_mapping.erase(memory_id);
     lock.unlock();
-    dev_data->device_dispatch_table->FreeMemory(device, memory, pAllocator);
+    dev_data->dispatch_table.FreeMemory(device, memory, pAllocator);
 
 }
 
@@ -137,12 +642,12 @@ VKAPI_ATTR VkResult VKAPI_CALL MapMemory(
     VkMemoryMapFlags                            flags,
     void**                                      ppData)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        memory = (VkDeviceMemory)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(memory)];
+        memory = Unwrap(memory);
     }
-    VkResult result = dev_data->device_dispatch_table->MapMemory(device, memory, offset, size, flags, ppData);
+    VkResult result = dev_data->dispatch_table.MapMemory(device, memory, offset, size, flags, ppData);
 
     return result;
 }
@@ -151,12 +656,12 @@ VKAPI_ATTR void VKAPI_CALL UnmapMemory(
     VkDevice                                    device,
     VkDeviceMemory                              memory)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        memory = (VkDeviceMemory)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(memory)];
+        memory = Unwrap(memory);
     }
-    dev_data->device_dispatch_table->UnmapMemory(device, memory);
+    dev_data->dispatch_table.UnmapMemory(device, memory);
 
 }
 
@@ -165,7 +670,7 @@ VKAPI_ATTR VkResult VKAPI_CALL FlushMappedMemoryRanges(
     uint32_t                                    memoryRangeCount,
     const VkMappedMemoryRange*                  pMemoryRanges)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     safe_VkMappedMemoryRange *local_pMemoryRanges = NULL;
     {
         std::lock_guard<std::mutex> lock(global_lock);
@@ -174,14 +679,15 @@ VKAPI_ATTR VkResult VKAPI_CALL FlushMappedMemoryRanges(
             for (uint32_t index0 = 0; index0 < memoryRangeCount; ++index0) {
                 local_pMemoryRanges[index0].initialize(&pMemoryRanges[index0]);
                 if (pMemoryRanges[index0].memory) {
-                    local_pMemoryRanges[index0].memory = (VkDeviceMemory)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pMemoryRanges[index0].memory)];
+                    local_pMemoryRanges[index0].memory = Unwrap(pMemoryRanges[index0].memory);
                 }
             }
         }
     }
-    VkResult result = dev_data->device_dispatch_table->FlushMappedMemoryRanges(device, memoryRangeCount, (const VkMappedMemoryRange*)local_pMemoryRanges);
-    if (local_pMemoryRanges)
+    VkResult result = dev_data->dispatch_table.FlushMappedMemoryRanges(device, memoryRangeCount, (const VkMappedMemoryRange*)local_pMemoryRanges);
+    if (local_pMemoryRanges) {
         delete[] local_pMemoryRanges;
+    }
     return result;
 }
 
@@ -190,7 +696,7 @@ VKAPI_ATTR VkResult VKAPI_CALL InvalidateMappedMemoryRanges(
     uint32_t                                    memoryRangeCount,
     const VkMappedMemoryRange*                  pMemoryRanges)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     safe_VkMappedMemoryRange *local_pMemoryRanges = NULL;
     {
         std::lock_guard<std::mutex> lock(global_lock);
@@ -199,14 +705,15 @@ VKAPI_ATTR VkResult VKAPI_CALL InvalidateMappedMemoryRanges(
             for (uint32_t index0 = 0; index0 < memoryRangeCount; ++index0) {
                 local_pMemoryRanges[index0].initialize(&pMemoryRanges[index0]);
                 if (pMemoryRanges[index0].memory) {
-                    local_pMemoryRanges[index0].memory = (VkDeviceMemory)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pMemoryRanges[index0].memory)];
+                    local_pMemoryRanges[index0].memory = Unwrap(pMemoryRanges[index0].memory);
                 }
             }
         }
     }
-    VkResult result = dev_data->device_dispatch_table->InvalidateMappedMemoryRanges(device, memoryRangeCount, (const VkMappedMemoryRange*)local_pMemoryRanges);
-    if (local_pMemoryRanges)
+    VkResult result = dev_data->dispatch_table.InvalidateMappedMemoryRanges(device, memoryRangeCount, (const VkMappedMemoryRange*)local_pMemoryRanges);
+    if (local_pMemoryRanges) {
         delete[] local_pMemoryRanges;
+    }
     return result;
 }
 
@@ -215,12 +722,12 @@ VKAPI_ATTR void VKAPI_CALL GetDeviceMemoryCommitment(
     VkDeviceMemory                              memory,
     VkDeviceSize*                               pCommittedMemoryInBytes)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        memory = (VkDeviceMemory)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(memory)];
+        memory = Unwrap(memory);
     }
-    dev_data->device_dispatch_table->GetDeviceMemoryCommitment(device, memory, pCommittedMemoryInBytes);
+    dev_data->dispatch_table.GetDeviceMemoryCommitment(device, memory, pCommittedMemoryInBytes);
 
 }
 
@@ -230,13 +737,13 @@ VKAPI_ATTR VkResult VKAPI_CALL BindBufferMemory(
     VkDeviceMemory                              memory,
     VkDeviceSize                                memoryOffset)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        buffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(buffer)];
-        memory = (VkDeviceMemory)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(memory)];
+        buffer = Unwrap(buffer);
+        memory = Unwrap(memory);
     }
-    VkResult result = dev_data->device_dispatch_table->BindBufferMemory(device, buffer, memory, memoryOffset);
+    VkResult result = dev_data->dispatch_table.BindBufferMemory(device, buffer, memory, memoryOffset);
 
     return result;
 }
@@ -247,13 +754,13 @@ VKAPI_ATTR VkResult VKAPI_CALL BindImageMemory(
     VkDeviceMemory                              memory,
     VkDeviceSize                                memoryOffset)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        image = (VkImage)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(image)];
-        memory = (VkDeviceMemory)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(memory)];
+        image = Unwrap(image);
+        memory = Unwrap(memory);
     }
-    VkResult result = dev_data->device_dispatch_table->BindImageMemory(device, image, memory, memoryOffset);
+    VkResult result = dev_data->dispatch_table.BindImageMemory(device, image, memory, memoryOffset);
 
     return result;
 }
@@ -263,12 +770,12 @@ VKAPI_ATTR void VKAPI_CALL GetBufferMemoryRequirements(
     VkBuffer                                    buffer,
     VkMemoryRequirements*                       pMemoryRequirements)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        buffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(buffer)];
+        buffer = Unwrap(buffer);
     }
-    dev_data->device_dispatch_table->GetBufferMemoryRequirements(device, buffer, pMemoryRequirements);
+    dev_data->dispatch_table.GetBufferMemoryRequirements(device, buffer, pMemoryRequirements);
 
 }
 
@@ -277,12 +784,12 @@ VKAPI_ATTR void VKAPI_CALL GetImageMemoryRequirements(
     VkImage                                     image,
     VkMemoryRequirements*                       pMemoryRequirements)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        image = (VkImage)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(image)];
+        image = Unwrap(image);
     }
-    dev_data->device_dispatch_table->GetImageMemoryRequirements(device, image, pMemoryRequirements);
+    dev_data->dispatch_table.GetImageMemoryRequirements(device, image, pMemoryRequirements);
 
 }
 
@@ -292,12 +799,12 @@ VKAPI_ATTR void VKAPI_CALL GetImageSparseMemoryRequirements(
     uint32_t*                                   pSparseMemoryRequirementCount,
     VkSparseImageMemoryRequirements*            pSparseMemoryRequirements)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        image = (VkImage)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(image)];
+        image = Unwrap(image);
     }
-    dev_data->device_dispatch_table->GetImageSparseMemoryRequirements(device, image, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
+    dev_data->dispatch_table.GetImageSparseMemoryRequirements(device, image, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
 
 }
 
@@ -307,7 +814,7 @@ VKAPI_ATTR VkResult VKAPI_CALL QueueBindSparse(
     const VkBindSparseInfo*                     pBindInfo,
     VkFence                                     fence)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(queue), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(queue), layer_data_map);
     safe_VkBindSparseInfo *local_pBindInfo = NULL;
     {
         std::lock_guard<std::mutex> lock(global_lock);
@@ -317,18 +824,18 @@ VKAPI_ATTR VkResult VKAPI_CALL QueueBindSparse(
                 local_pBindInfo[index0].initialize(&pBindInfo[index0]);
                 if (local_pBindInfo[index0].pWaitSemaphores) {
                     for (uint32_t index1 = 0; index1 < local_pBindInfo[index0].waitSemaphoreCount; ++index1) {
-                        local_pBindInfo[index0].pWaitSemaphores[index1] = (VkSemaphore)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(local_pBindInfo[index0].pWaitSemaphores[index1])];
+                        local_pBindInfo[index0].pWaitSemaphores[index1] = Unwrap(local_pBindInfo[index0].pWaitSemaphores[index1]);
                     }
                 }
                 if (local_pBindInfo[index0].pBufferBinds) {
                     for (uint32_t index1 = 0; index1 < local_pBindInfo[index0].bufferBindCount; ++index1) {
                         if (pBindInfo[index0].pBufferBinds[index1].buffer) {
-                            local_pBindInfo[index0].pBufferBinds[index1].buffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pBindInfo[index0].pBufferBinds[index1].buffer)];
+                            local_pBindInfo[index0].pBufferBinds[index1].buffer = Unwrap(pBindInfo[index0].pBufferBinds[index1].buffer);
                         }
                         if (local_pBindInfo[index0].pBufferBinds[index1].pBinds) {
                             for (uint32_t index2 = 0; index2 < local_pBindInfo[index0].pBufferBinds[index1].bindCount; ++index2) {
                                 if (pBindInfo[index0].pBufferBinds[index1].pBinds[index2].memory) {
-                                    local_pBindInfo[index0].pBufferBinds[index1].pBinds[index2].memory = (VkDeviceMemory)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pBindInfo[index0].pBufferBinds[index1].pBinds[index2].memory)];
+                                    local_pBindInfo[index0].pBufferBinds[index1].pBinds[index2].memory = Unwrap(pBindInfo[index0].pBufferBinds[index1].pBinds[index2].memory);
                                 }
                             }
                         }
@@ -337,12 +844,12 @@ VKAPI_ATTR VkResult VKAPI_CALL QueueBindSparse(
                 if (local_pBindInfo[index0].pImageOpaqueBinds) {
                     for (uint32_t index1 = 0; index1 < local_pBindInfo[index0].imageOpaqueBindCount; ++index1) {
                         if (pBindInfo[index0].pImageOpaqueBinds[index1].image) {
-                            local_pBindInfo[index0].pImageOpaqueBinds[index1].image = (VkImage)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pBindInfo[index0].pImageOpaqueBinds[index1].image)];
+                            local_pBindInfo[index0].pImageOpaqueBinds[index1].image = Unwrap(pBindInfo[index0].pImageOpaqueBinds[index1].image);
                         }
                         if (local_pBindInfo[index0].pImageOpaqueBinds[index1].pBinds) {
                             for (uint32_t index2 = 0; index2 < local_pBindInfo[index0].pImageOpaqueBinds[index1].bindCount; ++index2) {
                                 if (pBindInfo[index0].pImageOpaqueBinds[index1].pBinds[index2].memory) {
-                                    local_pBindInfo[index0].pImageOpaqueBinds[index1].pBinds[index2].memory = (VkDeviceMemory)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pBindInfo[index0].pImageOpaqueBinds[index1].pBinds[index2].memory)];
+                                    local_pBindInfo[index0].pImageOpaqueBinds[index1].pBinds[index2].memory = Unwrap(pBindInfo[index0].pImageOpaqueBinds[index1].pBinds[index2].memory);
                                 }
                             }
                         }
@@ -351,12 +858,12 @@ VKAPI_ATTR VkResult VKAPI_CALL QueueBindSparse(
                 if (local_pBindInfo[index0].pImageBinds) {
                     for (uint32_t index1 = 0; index1 < local_pBindInfo[index0].imageBindCount; ++index1) {
                         if (pBindInfo[index0].pImageBinds[index1].image) {
-                            local_pBindInfo[index0].pImageBinds[index1].image = (VkImage)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pBindInfo[index0].pImageBinds[index1].image)];
+                            local_pBindInfo[index0].pImageBinds[index1].image = Unwrap(pBindInfo[index0].pImageBinds[index1].image);
                         }
                         if (local_pBindInfo[index0].pImageBinds[index1].pBinds) {
                             for (uint32_t index2 = 0; index2 < local_pBindInfo[index0].pImageBinds[index1].bindCount; ++index2) {
                                 if (pBindInfo[index0].pImageBinds[index1].pBinds[index2].memory) {
-                                    local_pBindInfo[index0].pImageBinds[index1].pBinds[index2].memory = (VkDeviceMemory)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pBindInfo[index0].pImageBinds[index1].pBinds[index2].memory)];
+                                    local_pBindInfo[index0].pImageBinds[index1].pBinds[index2].memory = Unwrap(pBindInfo[index0].pImageBinds[index1].pBinds[index2].memory);
                                 }
                             }
                         }
@@ -364,16 +871,17 @@ VKAPI_ATTR VkResult VKAPI_CALL QueueBindSparse(
                 }
                 if (local_pBindInfo[index0].pSignalSemaphores) {
                     for (uint32_t index1 = 0; index1 < local_pBindInfo[index0].signalSemaphoreCount; ++index1) {
-                        local_pBindInfo[index0].pSignalSemaphores[index1] = (VkSemaphore)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(local_pBindInfo[index0].pSignalSemaphores[index1])];
+                        local_pBindInfo[index0].pSignalSemaphores[index1] = Unwrap(local_pBindInfo[index0].pSignalSemaphores[index1]);
                     }
                 }
             }
         }
-        fence = (VkFence)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(fence)];
+        fence = Unwrap(fence);
     }
-    VkResult result = dev_data->device_dispatch_table->QueueBindSparse(queue, bindInfoCount, (const VkBindSparseInfo*)local_pBindInfo, fence);
-    if (local_pBindInfo)
+    VkResult result = dev_data->dispatch_table.QueueBindSparse(queue, bindInfoCount, (const VkBindSparseInfo*)local_pBindInfo, fence);
+    if (local_pBindInfo) {
         delete[] local_pBindInfo;
+    }
     return result;
 }
 
@@ -383,13 +891,11 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateFence(
     const VkAllocationCallbacks*                pAllocator,
     VkFence*                                    pFence)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
-    VkResult result = dev_data->device_dispatch_table->CreateFence(device, pCreateInfo, pAllocator, pFence);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    VkResult result = dev_data->dispatch_table.CreateFence(device, pCreateInfo, pAllocator, pFence);
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pFence);
-        *pFence = reinterpret_cast<VkFence&>(unique_id);
+        *pFence = WrapNew(*pFence);
     }
     return result;
 }
@@ -399,13 +905,13 @@ VKAPI_ATTR void VKAPI_CALL DestroyFence(
     VkFence                                     fence,
     const VkAllocationCallbacks*                pAllocator)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     std::unique_lock<std::mutex> lock(global_lock);
     uint64_t fence_id = reinterpret_cast<uint64_t &>(fence);
-    fence = (VkFence)dev_data->unique_id_mapping[fence_id];
-    dev_data->unique_id_mapping.erase(fence_id);
+    fence = (VkFence)unique_id_mapping[fence_id];
+    unique_id_mapping.erase(fence_id);
     lock.unlock();
-    dev_data->device_dispatch_table->DestroyFence(device, fence, pAllocator);
+    dev_data->dispatch_table.DestroyFence(device, fence, pAllocator);
 
 }
 
@@ -414,18 +920,18 @@ VKAPI_ATTR VkResult VKAPI_CALL ResetFences(
     uint32_t                                    fenceCount,
     const VkFence*                              pFences)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     VkFence *local_pFences = NULL;
     {
         std::lock_guard<std::mutex> lock(global_lock);
         if (pFences) {
             local_pFences = new VkFence[fenceCount];
             for (uint32_t index0 = 0; index0 < fenceCount; ++index0) {
-                local_pFences[index0] = (VkFence)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pFences[index0])];
+                local_pFences[index0] = Unwrap(pFences[index0]);
             }
         }
     }
-    VkResult result = dev_data->device_dispatch_table->ResetFences(device, fenceCount, (const VkFence*)local_pFences);
+    VkResult result = dev_data->dispatch_table.ResetFences(device, fenceCount, (const VkFence*)local_pFences);
     if (local_pFences)
         delete[] local_pFences;
     return result;
@@ -435,12 +941,12 @@ VKAPI_ATTR VkResult VKAPI_CALL GetFenceStatus(
     VkDevice                                    device,
     VkFence                                     fence)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        fence = (VkFence)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(fence)];
+        fence = Unwrap(fence);
     }
-    VkResult result = dev_data->device_dispatch_table->GetFenceStatus(device, fence);
+    VkResult result = dev_data->dispatch_table.GetFenceStatus(device, fence);
 
     return result;
 }
@@ -452,18 +958,18 @@ VKAPI_ATTR VkResult VKAPI_CALL WaitForFences(
     VkBool32                                    waitAll,
     uint64_t                                    timeout)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     VkFence *local_pFences = NULL;
     {
         std::lock_guard<std::mutex> lock(global_lock);
         if (pFences) {
             local_pFences = new VkFence[fenceCount];
             for (uint32_t index0 = 0; index0 < fenceCount; ++index0) {
-                local_pFences[index0] = (VkFence)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pFences[index0])];
+                local_pFences[index0] = Unwrap(pFences[index0]);
             }
         }
     }
-    VkResult result = dev_data->device_dispatch_table->WaitForFences(device, fenceCount, (const VkFence*)local_pFences, waitAll, timeout);
+    VkResult result = dev_data->dispatch_table.WaitForFences(device, fenceCount, (const VkFence*)local_pFences, waitAll, timeout);
     if (local_pFences)
         delete[] local_pFences;
     return result;
@@ -475,13 +981,11 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateSemaphore(
     const VkAllocationCallbacks*                pAllocator,
     VkSemaphore*                                pSemaphore)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
-    VkResult result = dev_data->device_dispatch_table->CreateSemaphore(device, pCreateInfo, pAllocator, pSemaphore);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    VkResult result = dev_data->dispatch_table.CreateSemaphore(device, pCreateInfo, pAllocator, pSemaphore);
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pSemaphore);
-        *pSemaphore = reinterpret_cast<VkSemaphore&>(unique_id);
+        *pSemaphore = WrapNew(*pSemaphore);
     }
     return result;
 }
@@ -491,13 +995,13 @@ VKAPI_ATTR void VKAPI_CALL DestroySemaphore(
     VkSemaphore                                 semaphore,
     const VkAllocationCallbacks*                pAllocator)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     std::unique_lock<std::mutex> lock(global_lock);
     uint64_t semaphore_id = reinterpret_cast<uint64_t &>(semaphore);
-    semaphore = (VkSemaphore)dev_data->unique_id_mapping[semaphore_id];
-    dev_data->unique_id_mapping.erase(semaphore_id);
+    semaphore = (VkSemaphore)unique_id_mapping[semaphore_id];
+    unique_id_mapping.erase(semaphore_id);
     lock.unlock();
-    dev_data->device_dispatch_table->DestroySemaphore(device, semaphore, pAllocator);
+    dev_data->dispatch_table.DestroySemaphore(device, semaphore, pAllocator);
 
 }
 
@@ -507,13 +1011,11 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateEvent(
     const VkAllocationCallbacks*                pAllocator,
     VkEvent*                                    pEvent)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
-    VkResult result = dev_data->device_dispatch_table->CreateEvent(device, pCreateInfo, pAllocator, pEvent);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    VkResult result = dev_data->dispatch_table.CreateEvent(device, pCreateInfo, pAllocator, pEvent);
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pEvent);
-        *pEvent = reinterpret_cast<VkEvent&>(unique_id);
+        *pEvent = WrapNew(*pEvent);
     }
     return result;
 }
@@ -523,13 +1025,13 @@ VKAPI_ATTR void VKAPI_CALL DestroyEvent(
     VkEvent                                     event,
     const VkAllocationCallbacks*                pAllocator)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     std::unique_lock<std::mutex> lock(global_lock);
     uint64_t event_id = reinterpret_cast<uint64_t &>(event);
-    event = (VkEvent)dev_data->unique_id_mapping[event_id];
-    dev_data->unique_id_mapping.erase(event_id);
+    event = (VkEvent)unique_id_mapping[event_id];
+    unique_id_mapping.erase(event_id);
     lock.unlock();
-    dev_data->device_dispatch_table->DestroyEvent(device, event, pAllocator);
+    dev_data->dispatch_table.DestroyEvent(device, event, pAllocator);
 
 }
 
@@ -537,12 +1039,12 @@ VKAPI_ATTR VkResult VKAPI_CALL GetEventStatus(
     VkDevice                                    device,
     VkEvent                                     event)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        event = (VkEvent)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(event)];
+        event = Unwrap(event);
     }
-    VkResult result = dev_data->device_dispatch_table->GetEventStatus(device, event);
+    VkResult result = dev_data->dispatch_table.GetEventStatus(device, event);
 
     return result;
 }
@@ -551,12 +1053,12 @@ VKAPI_ATTR VkResult VKAPI_CALL SetEvent(
     VkDevice                                    device,
     VkEvent                                     event)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        event = (VkEvent)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(event)];
+        event = Unwrap(event);
     }
-    VkResult result = dev_data->device_dispatch_table->SetEvent(device, event);
+    VkResult result = dev_data->dispatch_table.SetEvent(device, event);
 
     return result;
 }
@@ -565,12 +1067,12 @@ VKAPI_ATTR VkResult VKAPI_CALL ResetEvent(
     VkDevice                                    device,
     VkEvent                                     event)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        event = (VkEvent)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(event)];
+        event = Unwrap(event);
     }
-    VkResult result = dev_data->device_dispatch_table->ResetEvent(device, event);
+    VkResult result = dev_data->dispatch_table.ResetEvent(device, event);
 
     return result;
 }
@@ -581,13 +1083,11 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateQueryPool(
     const VkAllocationCallbacks*                pAllocator,
     VkQueryPool*                                pQueryPool)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
-    VkResult result = dev_data->device_dispatch_table->CreateQueryPool(device, pCreateInfo, pAllocator, pQueryPool);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    VkResult result = dev_data->dispatch_table.CreateQueryPool(device, pCreateInfo, pAllocator, pQueryPool);
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pQueryPool);
-        *pQueryPool = reinterpret_cast<VkQueryPool&>(unique_id);
+        *pQueryPool = WrapNew(*pQueryPool);
     }
     return result;
 }
@@ -597,13 +1097,13 @@ VKAPI_ATTR void VKAPI_CALL DestroyQueryPool(
     VkQueryPool                                 queryPool,
     const VkAllocationCallbacks*                pAllocator)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     std::unique_lock<std::mutex> lock(global_lock);
     uint64_t queryPool_id = reinterpret_cast<uint64_t &>(queryPool);
-    queryPool = (VkQueryPool)dev_data->unique_id_mapping[queryPool_id];
-    dev_data->unique_id_mapping.erase(queryPool_id);
+    queryPool = (VkQueryPool)unique_id_mapping[queryPool_id];
+    unique_id_mapping.erase(queryPool_id);
     lock.unlock();
-    dev_data->device_dispatch_table->DestroyQueryPool(device, queryPool, pAllocator);
+    dev_data->dispatch_table.DestroyQueryPool(device, queryPool, pAllocator);
 
 }
 
@@ -617,12 +1117,12 @@ VKAPI_ATTR VkResult VKAPI_CALL GetQueryPoolResults(
     VkDeviceSize                                stride,
     VkQueryResultFlags                          flags)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        queryPool = (VkQueryPool)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(queryPool)];
+        queryPool = Unwrap(queryPool);
     }
-    VkResult result = dev_data->device_dispatch_table->GetQueryPoolResults(device, queryPool, firstQuery, queryCount, dataSize, pData, stride, flags);
+    VkResult result = dev_data->dispatch_table.GetQueryPoolResults(device, queryPool, firstQuery, queryCount, dataSize, pData, stride, flags);
 
     return result;
 }
@@ -633,13 +1133,11 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateBuffer(
     const VkAllocationCallbacks*                pAllocator,
     VkBuffer*                                   pBuffer)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
-    VkResult result = dev_data->device_dispatch_table->CreateBuffer(device, pCreateInfo, pAllocator, pBuffer);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    VkResult result = dev_data->dispatch_table.CreateBuffer(device, pCreateInfo, pAllocator, pBuffer);
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pBuffer);
-        *pBuffer = reinterpret_cast<VkBuffer&>(unique_id);
+        *pBuffer = WrapNew(*pBuffer);
     }
     return result;
 }
@@ -649,13 +1147,13 @@ VKAPI_ATTR void VKAPI_CALL DestroyBuffer(
     VkBuffer                                    buffer,
     const VkAllocationCallbacks*                pAllocator)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     std::unique_lock<std::mutex> lock(global_lock);
     uint64_t buffer_id = reinterpret_cast<uint64_t &>(buffer);
-    buffer = (VkBuffer)dev_data->unique_id_mapping[buffer_id];
-    dev_data->unique_id_mapping.erase(buffer_id);
+    buffer = (VkBuffer)unique_id_mapping[buffer_id];
+    unique_id_mapping.erase(buffer_id);
     lock.unlock();
-    dev_data->device_dispatch_table->DestroyBuffer(device, buffer, pAllocator);
+    dev_data->dispatch_table.DestroyBuffer(device, buffer, pAllocator);
 
 }
 
@@ -665,25 +1163,24 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateBufferView(
     const VkAllocationCallbacks*                pAllocator,
     VkBufferView*                               pView)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     safe_VkBufferViewCreateInfo *local_pCreateInfo = NULL;
     {
         std::lock_guard<std::mutex> lock(global_lock);
         if (pCreateInfo) {
             local_pCreateInfo = new safe_VkBufferViewCreateInfo(pCreateInfo);
             if (pCreateInfo->buffer) {
-                local_pCreateInfo->buffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pCreateInfo->buffer)];
+                local_pCreateInfo->buffer = Unwrap(pCreateInfo->buffer);
             }
         }
     }
-    VkResult result = dev_data->device_dispatch_table->CreateBufferView(device, (const VkBufferViewCreateInfo*)local_pCreateInfo, pAllocator, pView);
-    if (local_pCreateInfo)
+    VkResult result = dev_data->dispatch_table.CreateBufferView(device, (const VkBufferViewCreateInfo*)local_pCreateInfo, pAllocator, pView);
+    if (local_pCreateInfo) {
         delete local_pCreateInfo;
+    }
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pView);
-        *pView = reinterpret_cast<VkBufferView&>(unique_id);
+        *pView = WrapNew(*pView);
     }
     return result;
 }
@@ -693,13 +1190,13 @@ VKAPI_ATTR void VKAPI_CALL DestroyBufferView(
     VkBufferView                                bufferView,
     const VkAllocationCallbacks*                pAllocator)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     std::unique_lock<std::mutex> lock(global_lock);
     uint64_t bufferView_id = reinterpret_cast<uint64_t &>(bufferView);
-    bufferView = (VkBufferView)dev_data->unique_id_mapping[bufferView_id];
-    dev_data->unique_id_mapping.erase(bufferView_id);
+    bufferView = (VkBufferView)unique_id_mapping[bufferView_id];
+    unique_id_mapping.erase(bufferView_id);
     lock.unlock();
-    dev_data->device_dispatch_table->DestroyBufferView(device, bufferView, pAllocator);
+    dev_data->dispatch_table.DestroyBufferView(device, bufferView, pAllocator);
 
 }
 
@@ -709,13 +1206,23 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateImage(
     const VkAllocationCallbacks*                pAllocator,
     VkImage*                                    pImage)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
-    VkResult result = dev_data->device_dispatch_table->CreateImage(device, pCreateInfo, pAllocator, pImage);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkImageCreateInfo *local_pCreateInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pCreateInfo) {
+            local_pCreateInfo = new safe_VkImageCreateInfo(pCreateInfo);
+            local_pCreateInfo->pNext = CreateUnwrappedExtensionStructs(local_pCreateInfo->pNext);
+        }
+    }
+    VkResult result = dev_data->dispatch_table.CreateImage(device, (const VkImageCreateInfo*)local_pCreateInfo, pAllocator, pImage);
+    if (local_pCreateInfo) {
+        FreeUnwrappedExtensionStructs(const_cast<void *>(local_pCreateInfo->pNext));
+        delete local_pCreateInfo;
+    }
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pImage);
-        *pImage = reinterpret_cast<VkImage&>(unique_id);
+        *pImage = WrapNew(*pImage);
     }
     return result;
 }
@@ -725,13 +1232,13 @@ VKAPI_ATTR void VKAPI_CALL DestroyImage(
     VkImage                                     image,
     const VkAllocationCallbacks*                pAllocator)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     std::unique_lock<std::mutex> lock(global_lock);
     uint64_t image_id = reinterpret_cast<uint64_t &>(image);
-    image = (VkImage)dev_data->unique_id_mapping[image_id];
-    dev_data->unique_id_mapping.erase(image_id);
+    image = (VkImage)unique_id_mapping[image_id];
+    unique_id_mapping.erase(image_id);
     lock.unlock();
-    dev_data->device_dispatch_table->DestroyImage(device, image, pAllocator);
+    dev_data->dispatch_table.DestroyImage(device, image, pAllocator);
 
 }
 
@@ -741,12 +1248,12 @@ VKAPI_ATTR void VKAPI_CALL GetImageSubresourceLayout(
     const VkImageSubresource*                   pSubresource,
     VkSubresourceLayout*                        pLayout)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        image = (VkImage)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(image)];
+        image = Unwrap(image);
     }
-    dev_data->device_dispatch_table->GetImageSubresourceLayout(device, image, pSubresource, pLayout);
+    dev_data->dispatch_table.GetImageSubresourceLayout(device, image, pSubresource, pLayout);
 
 }
 
@@ -756,25 +1263,26 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateImageView(
     const VkAllocationCallbacks*                pAllocator,
     VkImageView*                                pView)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     safe_VkImageViewCreateInfo *local_pCreateInfo = NULL;
     {
         std::lock_guard<std::mutex> lock(global_lock);
         if (pCreateInfo) {
             local_pCreateInfo = new safe_VkImageViewCreateInfo(pCreateInfo);
             if (pCreateInfo->image) {
-                local_pCreateInfo->image = (VkImage)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pCreateInfo->image)];
+                local_pCreateInfo->image = Unwrap(pCreateInfo->image);
             }
+            local_pCreateInfo->pNext = CreateUnwrappedExtensionStructs(local_pCreateInfo->pNext);
         }
     }
-    VkResult result = dev_data->device_dispatch_table->CreateImageView(device, (const VkImageViewCreateInfo*)local_pCreateInfo, pAllocator, pView);
-    if (local_pCreateInfo)
+    VkResult result = dev_data->dispatch_table.CreateImageView(device, (const VkImageViewCreateInfo*)local_pCreateInfo, pAllocator, pView);
+    if (local_pCreateInfo) {
+        FreeUnwrappedExtensionStructs(const_cast<void *>(local_pCreateInfo->pNext));
         delete local_pCreateInfo;
+    }
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pView);
-        *pView = reinterpret_cast<VkImageView&>(unique_id);
+        *pView = WrapNew(*pView);
     }
     return result;
 }
@@ -784,13 +1292,13 @@ VKAPI_ATTR void VKAPI_CALL DestroyImageView(
     VkImageView                                 imageView,
     const VkAllocationCallbacks*                pAllocator)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     std::unique_lock<std::mutex> lock(global_lock);
     uint64_t imageView_id = reinterpret_cast<uint64_t &>(imageView);
-    imageView = (VkImageView)dev_data->unique_id_mapping[imageView_id];
-    dev_data->unique_id_mapping.erase(imageView_id);
+    imageView = (VkImageView)unique_id_mapping[imageView_id];
+    unique_id_mapping.erase(imageView_id);
     lock.unlock();
-    dev_data->device_dispatch_table->DestroyImageView(device, imageView, pAllocator);
+    dev_data->dispatch_table.DestroyImageView(device, imageView, pAllocator);
 
 }
 
@@ -800,13 +1308,23 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateShaderModule(
     const VkAllocationCallbacks*                pAllocator,
     VkShaderModule*                             pShaderModule)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
-    VkResult result = dev_data->device_dispatch_table->CreateShaderModule(device, pCreateInfo, pAllocator, pShaderModule);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkShaderModuleCreateInfo *local_pCreateInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pCreateInfo) {
+            local_pCreateInfo = new safe_VkShaderModuleCreateInfo(pCreateInfo);
+            local_pCreateInfo->pNext = CreateUnwrappedExtensionStructs(local_pCreateInfo->pNext);
+        }
+    }
+    VkResult result = dev_data->dispatch_table.CreateShaderModule(device, (const VkShaderModuleCreateInfo*)local_pCreateInfo, pAllocator, pShaderModule);
+    if (local_pCreateInfo) {
+        FreeUnwrappedExtensionStructs(const_cast<void *>(local_pCreateInfo->pNext));
+        delete local_pCreateInfo;
+    }
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pShaderModule);
-        *pShaderModule = reinterpret_cast<VkShaderModule&>(unique_id);
+        *pShaderModule = WrapNew(*pShaderModule);
     }
     return result;
 }
@@ -816,13 +1334,13 @@ VKAPI_ATTR void VKAPI_CALL DestroyShaderModule(
     VkShaderModule                              shaderModule,
     const VkAllocationCallbacks*                pAllocator)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     std::unique_lock<std::mutex> lock(global_lock);
     uint64_t shaderModule_id = reinterpret_cast<uint64_t &>(shaderModule);
-    shaderModule = (VkShaderModule)dev_data->unique_id_mapping[shaderModule_id];
-    dev_data->unique_id_mapping.erase(shaderModule_id);
+    shaderModule = (VkShaderModule)unique_id_mapping[shaderModule_id];
+    unique_id_mapping.erase(shaderModule_id);
     lock.unlock();
-    dev_data->device_dispatch_table->DestroyShaderModule(device, shaderModule, pAllocator);
+    dev_data->dispatch_table.DestroyShaderModule(device, shaderModule, pAllocator);
 
 }
 
@@ -832,13 +1350,11 @@ VKAPI_ATTR VkResult VKAPI_CALL CreatePipelineCache(
     const VkAllocationCallbacks*                pAllocator,
     VkPipelineCache*                            pPipelineCache)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
-    VkResult result = dev_data->device_dispatch_table->CreatePipelineCache(device, pCreateInfo, pAllocator, pPipelineCache);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    VkResult result = dev_data->dispatch_table.CreatePipelineCache(device, pCreateInfo, pAllocator, pPipelineCache);
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pPipelineCache);
-        *pPipelineCache = reinterpret_cast<VkPipelineCache&>(unique_id);
+        *pPipelineCache = WrapNew(*pPipelineCache);
     }
     return result;
 }
@@ -848,13 +1364,13 @@ VKAPI_ATTR void VKAPI_CALL DestroyPipelineCache(
     VkPipelineCache                             pipelineCache,
     const VkAllocationCallbacks*                pAllocator)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     std::unique_lock<std::mutex> lock(global_lock);
     uint64_t pipelineCache_id = reinterpret_cast<uint64_t &>(pipelineCache);
-    pipelineCache = (VkPipelineCache)dev_data->unique_id_mapping[pipelineCache_id];
-    dev_data->unique_id_mapping.erase(pipelineCache_id);
+    pipelineCache = (VkPipelineCache)unique_id_mapping[pipelineCache_id];
+    unique_id_mapping.erase(pipelineCache_id);
     lock.unlock();
-    dev_data->device_dispatch_table->DestroyPipelineCache(device, pipelineCache, pAllocator);
+    dev_data->dispatch_table.DestroyPipelineCache(device, pipelineCache, pAllocator);
 
 }
 
@@ -864,12 +1380,12 @@ VKAPI_ATTR VkResult VKAPI_CALL GetPipelineCacheData(
     size_t*                                     pDataSize,
     void*                                       pData)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        pipelineCache = (VkPipelineCache)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(pipelineCache)];
+        pipelineCache = Unwrap(pipelineCache);
     }
-    VkResult result = dev_data->device_dispatch_table->GetPipelineCacheData(device, pipelineCache, pDataSize, pData);
+    VkResult result = dev_data->dispatch_table.GetPipelineCacheData(device, pipelineCache, pDataSize, pData);
 
     return result;
 }
@@ -880,19 +1396,19 @@ VKAPI_ATTR VkResult VKAPI_CALL MergePipelineCaches(
     uint32_t                                    srcCacheCount,
     const VkPipelineCache*                      pSrcCaches)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     VkPipelineCache *local_pSrcCaches = NULL;
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        dstCache = (VkPipelineCache)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(dstCache)];
+        dstCache = Unwrap(dstCache);
         if (pSrcCaches) {
             local_pSrcCaches = new VkPipelineCache[srcCacheCount];
             for (uint32_t index0 = 0; index0 < srcCacheCount; ++index0) {
-                local_pSrcCaches[index0] = (VkPipelineCache)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pSrcCaches[index0])];
+                local_pSrcCaches[index0] = Unwrap(pSrcCaches[index0]);
             }
         }
     }
-    VkResult result = dev_data->device_dispatch_table->MergePipelineCaches(device, dstCache, srcCacheCount, (const VkPipelineCache*)local_pSrcCaches);
+    VkResult result = dev_data->dispatch_table.MergePipelineCaches(device, dstCache, srcCacheCount, (const VkPipelineCache*)local_pSrcCaches);
     if (local_pSrcCaches)
         delete[] local_pSrcCaches;
     return result;
@@ -921,13 +1437,13 @@ VKAPI_ATTR void VKAPI_CALL DestroyPipeline(
     VkPipeline                                  pipeline,
     const VkAllocationCallbacks*                pAllocator)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     std::unique_lock<std::mutex> lock(global_lock);
     uint64_t pipeline_id = reinterpret_cast<uint64_t &>(pipeline);
-    pipeline = (VkPipeline)dev_data->unique_id_mapping[pipeline_id];
-    dev_data->unique_id_mapping.erase(pipeline_id);
+    pipeline = (VkPipeline)unique_id_mapping[pipeline_id];
+    unique_id_mapping.erase(pipeline_id);
     lock.unlock();
-    dev_data->device_dispatch_table->DestroyPipeline(device, pipeline, pAllocator);
+    dev_data->dispatch_table.DestroyPipeline(device, pipeline, pAllocator);
 
 }
 
@@ -937,7 +1453,7 @@ VKAPI_ATTR VkResult VKAPI_CALL CreatePipelineLayout(
     const VkAllocationCallbacks*                pAllocator,
     VkPipelineLayout*                           pPipelineLayout)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     safe_VkPipelineLayoutCreateInfo *local_pCreateInfo = NULL;
     {
         std::lock_guard<std::mutex> lock(global_lock);
@@ -945,19 +1461,18 @@ VKAPI_ATTR VkResult VKAPI_CALL CreatePipelineLayout(
             local_pCreateInfo = new safe_VkPipelineLayoutCreateInfo(pCreateInfo);
             if (local_pCreateInfo->pSetLayouts) {
                 for (uint32_t index1 = 0; index1 < local_pCreateInfo->setLayoutCount; ++index1) {
-                    local_pCreateInfo->pSetLayouts[index1] = (VkDescriptorSetLayout)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(local_pCreateInfo->pSetLayouts[index1])];
+                    local_pCreateInfo->pSetLayouts[index1] = Unwrap(local_pCreateInfo->pSetLayouts[index1]);
                 }
             }
         }
     }
-    VkResult result = dev_data->device_dispatch_table->CreatePipelineLayout(device, (const VkPipelineLayoutCreateInfo*)local_pCreateInfo, pAllocator, pPipelineLayout);
-    if (local_pCreateInfo)
+    VkResult result = dev_data->dispatch_table.CreatePipelineLayout(device, (const VkPipelineLayoutCreateInfo*)local_pCreateInfo, pAllocator, pPipelineLayout);
+    if (local_pCreateInfo) {
         delete local_pCreateInfo;
+    }
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pPipelineLayout);
-        *pPipelineLayout = reinterpret_cast<VkPipelineLayout&>(unique_id);
+        *pPipelineLayout = WrapNew(*pPipelineLayout);
     }
     return result;
 }
@@ -967,13 +1482,13 @@ VKAPI_ATTR void VKAPI_CALL DestroyPipelineLayout(
     VkPipelineLayout                            pipelineLayout,
     const VkAllocationCallbacks*                pAllocator)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     std::unique_lock<std::mutex> lock(global_lock);
     uint64_t pipelineLayout_id = reinterpret_cast<uint64_t &>(pipelineLayout);
-    pipelineLayout = (VkPipelineLayout)dev_data->unique_id_mapping[pipelineLayout_id];
-    dev_data->unique_id_mapping.erase(pipelineLayout_id);
+    pipelineLayout = (VkPipelineLayout)unique_id_mapping[pipelineLayout_id];
+    unique_id_mapping.erase(pipelineLayout_id);
     lock.unlock();
-    dev_data->device_dispatch_table->DestroyPipelineLayout(device, pipelineLayout, pAllocator);
+    dev_data->dispatch_table.DestroyPipelineLayout(device, pipelineLayout, pAllocator);
 
 }
 
@@ -983,13 +1498,23 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateSampler(
     const VkAllocationCallbacks*                pAllocator,
     VkSampler*                                  pSampler)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
-    VkResult result = dev_data->device_dispatch_table->CreateSampler(device, pCreateInfo, pAllocator, pSampler);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkSamplerCreateInfo *local_pCreateInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pCreateInfo) {
+            local_pCreateInfo = new safe_VkSamplerCreateInfo(pCreateInfo);
+            local_pCreateInfo->pNext = CreateUnwrappedExtensionStructs(local_pCreateInfo->pNext);
+        }
+    }
+    VkResult result = dev_data->dispatch_table.CreateSampler(device, (const VkSamplerCreateInfo*)local_pCreateInfo, pAllocator, pSampler);
+    if (local_pCreateInfo) {
+        FreeUnwrappedExtensionStructs(const_cast<void *>(local_pCreateInfo->pNext));
+        delete local_pCreateInfo;
+    }
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pSampler);
-        *pSampler = reinterpret_cast<VkSampler&>(unique_id);
+        *pSampler = WrapNew(*pSampler);
     }
     return result;
 }
@@ -999,13 +1524,13 @@ VKAPI_ATTR void VKAPI_CALL DestroySampler(
     VkSampler                                   sampler,
     const VkAllocationCallbacks*                pAllocator)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     std::unique_lock<std::mutex> lock(global_lock);
     uint64_t sampler_id = reinterpret_cast<uint64_t &>(sampler);
-    sampler = (VkSampler)dev_data->unique_id_mapping[sampler_id];
-    dev_data->unique_id_mapping.erase(sampler_id);
+    sampler = (VkSampler)unique_id_mapping[sampler_id];
+    unique_id_mapping.erase(sampler_id);
     lock.unlock();
-    dev_data->device_dispatch_table->DestroySampler(device, sampler, pAllocator);
+    dev_data->dispatch_table.DestroySampler(device, sampler, pAllocator);
 
 }
 
@@ -1015,7 +1540,7 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateDescriptorSetLayout(
     const VkAllocationCallbacks*                pAllocator,
     VkDescriptorSetLayout*                      pSetLayout)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     safe_VkDescriptorSetLayoutCreateInfo *local_pCreateInfo = NULL;
     {
         std::lock_guard<std::mutex> lock(global_lock);
@@ -1025,21 +1550,20 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateDescriptorSetLayout(
                 for (uint32_t index1 = 0; index1 < local_pCreateInfo->bindingCount; ++index1) {
                     if (local_pCreateInfo->pBindings[index1].pImmutableSamplers) {
                         for (uint32_t index2 = 0; index2 < local_pCreateInfo->pBindings[index1].descriptorCount; ++index2) {
-                            local_pCreateInfo->pBindings[index1].pImmutableSamplers[index2] = (VkSampler)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(local_pCreateInfo->pBindings[index1].pImmutableSamplers[index2])];
+                            local_pCreateInfo->pBindings[index1].pImmutableSamplers[index2] = Unwrap(local_pCreateInfo->pBindings[index1].pImmutableSamplers[index2]);
                         }
                     }
                 }
             }
         }
     }
-    VkResult result = dev_data->device_dispatch_table->CreateDescriptorSetLayout(device, (const VkDescriptorSetLayoutCreateInfo*)local_pCreateInfo, pAllocator, pSetLayout);
-    if (local_pCreateInfo)
+    VkResult result = dev_data->dispatch_table.CreateDescriptorSetLayout(device, (const VkDescriptorSetLayoutCreateInfo*)local_pCreateInfo, pAllocator, pSetLayout);
+    if (local_pCreateInfo) {
         delete local_pCreateInfo;
+    }
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pSetLayout);
-        *pSetLayout = reinterpret_cast<VkDescriptorSetLayout&>(unique_id);
+        *pSetLayout = WrapNew(*pSetLayout);
     }
     return result;
 }
@@ -1049,13 +1573,13 @@ VKAPI_ATTR void VKAPI_CALL DestroyDescriptorSetLayout(
     VkDescriptorSetLayout                       descriptorSetLayout,
     const VkAllocationCallbacks*                pAllocator)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     std::unique_lock<std::mutex> lock(global_lock);
     uint64_t descriptorSetLayout_id = reinterpret_cast<uint64_t &>(descriptorSetLayout);
-    descriptorSetLayout = (VkDescriptorSetLayout)dev_data->unique_id_mapping[descriptorSetLayout_id];
-    dev_data->unique_id_mapping.erase(descriptorSetLayout_id);
+    descriptorSetLayout = (VkDescriptorSetLayout)unique_id_mapping[descriptorSetLayout_id];
+    unique_id_mapping.erase(descriptorSetLayout_id);
     lock.unlock();
-    dev_data->device_dispatch_table->DestroyDescriptorSetLayout(device, descriptorSetLayout, pAllocator);
+    dev_data->dispatch_table.DestroyDescriptorSetLayout(device, descriptorSetLayout, pAllocator);
 
 }
 
@@ -1065,13 +1589,11 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateDescriptorPool(
     const VkAllocationCallbacks*                pAllocator,
     VkDescriptorPool*                           pDescriptorPool)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
-    VkResult result = dev_data->device_dispatch_table->CreateDescriptorPool(device, pCreateInfo, pAllocator, pDescriptorPool);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    VkResult result = dev_data->dispatch_table.CreateDescriptorPool(device, pCreateInfo, pAllocator, pDescriptorPool);
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pDescriptorPool);
-        *pDescriptorPool = reinterpret_cast<VkDescriptorPool&>(unique_id);
+        *pDescriptorPool = WrapNew(*pDescriptorPool);
     }
     return result;
 }
@@ -1081,13 +1603,13 @@ VKAPI_ATTR void VKAPI_CALL DestroyDescriptorPool(
     VkDescriptorPool                            descriptorPool,
     const VkAllocationCallbacks*                pAllocator)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     std::unique_lock<std::mutex> lock(global_lock);
     uint64_t descriptorPool_id = reinterpret_cast<uint64_t &>(descriptorPool);
-    descriptorPool = (VkDescriptorPool)dev_data->unique_id_mapping[descriptorPool_id];
-    dev_data->unique_id_mapping.erase(descriptorPool_id);
+    descriptorPool = (VkDescriptorPool)unique_id_mapping[descriptorPool_id];
+    unique_id_mapping.erase(descriptorPool_id);
     lock.unlock();
-    dev_data->device_dispatch_table->DestroyDescriptorPool(device, descriptorPool, pAllocator);
+    dev_data->dispatch_table.DestroyDescriptorPool(device, descriptorPool, pAllocator);
 
 }
 
@@ -1096,12 +1618,12 @@ VKAPI_ATTR VkResult VKAPI_CALL ResetDescriptorPool(
     VkDescriptorPool                            descriptorPool,
     VkDescriptorPoolResetFlags                  flags)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        descriptorPool = (VkDescriptorPool)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(descriptorPool)];
+        descriptorPool = Unwrap(descriptorPool);
     }
-    VkResult result = dev_data->device_dispatch_table->ResetDescriptorPool(device, descriptorPool, flags);
+    VkResult result = dev_data->dispatch_table.ResetDescriptorPool(device, descriptorPool, flags);
 
     return result;
 }
@@ -1111,31 +1633,30 @@ VKAPI_ATTR VkResult VKAPI_CALL AllocateDescriptorSets(
     const VkDescriptorSetAllocateInfo*          pAllocateInfo,
     VkDescriptorSet*                            pDescriptorSets)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     safe_VkDescriptorSetAllocateInfo *local_pAllocateInfo = NULL;
     {
         std::lock_guard<std::mutex> lock(global_lock);
         if (pAllocateInfo) {
             local_pAllocateInfo = new safe_VkDescriptorSetAllocateInfo(pAllocateInfo);
             if (pAllocateInfo->descriptorPool) {
-                local_pAllocateInfo->descriptorPool = (VkDescriptorPool)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pAllocateInfo->descriptorPool)];
+                local_pAllocateInfo->descriptorPool = Unwrap(pAllocateInfo->descriptorPool);
             }
             if (local_pAllocateInfo->pSetLayouts) {
                 for (uint32_t index1 = 0; index1 < local_pAllocateInfo->descriptorSetCount; ++index1) {
-                    local_pAllocateInfo->pSetLayouts[index1] = (VkDescriptorSetLayout)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(local_pAllocateInfo->pSetLayouts[index1])];
+                    local_pAllocateInfo->pSetLayouts[index1] = Unwrap(local_pAllocateInfo->pSetLayouts[index1]);
                 }
             }
         }
     }
-    VkResult result = dev_data->device_dispatch_table->AllocateDescriptorSets(device, (const VkDescriptorSetAllocateInfo*)local_pAllocateInfo, pDescriptorSets);
-    if (local_pAllocateInfo)
+    VkResult result = dev_data->dispatch_table.AllocateDescriptorSets(device, (const VkDescriptorSetAllocateInfo*)local_pAllocateInfo, pDescriptorSets);
+    if (local_pAllocateInfo) {
         delete local_pAllocateInfo;
+    }
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
         for (uint32_t index0 = 0; index0 < pAllocateInfo->descriptorSetCount; index0++) {
-            uint64_t unique_id = global_unique_id++;
-            dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(pDescriptorSets[index0]);
-            pDescriptorSets[index0] = reinterpret_cast<VkDescriptorSet&>(unique_id);
+            pDescriptorSets[index0] = WrapNew(pDescriptorSets[index0]);
         }
     }
     return result;
@@ -1147,19 +1668,19 @@ VKAPI_ATTR VkResult VKAPI_CALL FreeDescriptorSets(
     uint32_t                                    descriptorSetCount,
     const VkDescriptorSet*                      pDescriptorSets)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     VkDescriptorSet *local_pDescriptorSets = NULL;
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        descriptorPool = (VkDescriptorPool)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(descriptorPool)];
+        descriptorPool = Unwrap(descriptorPool);
         if (pDescriptorSets) {
             local_pDescriptorSets = new VkDescriptorSet[descriptorSetCount];
             for (uint32_t index0 = 0; index0 < descriptorSetCount; ++index0) {
-                local_pDescriptorSets[index0] = (VkDescriptorSet)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pDescriptorSets[index0])];
+                local_pDescriptorSets[index0] = Unwrap(pDescriptorSets[index0]);
             }
         }
     }
-    VkResult result = dev_data->device_dispatch_table->FreeDescriptorSets(device, descriptorPool, descriptorSetCount, (const VkDescriptorSet*)local_pDescriptorSets);
+    VkResult result = dev_data->dispatch_table.FreeDescriptorSets(device, descriptorPool, descriptorSetCount, (const VkDescriptorSet*)local_pDescriptorSets);
     if (local_pDescriptorSets)
         delete[] local_pDescriptorSets;
     if ((VK_SUCCESS == result) && (pDescriptorSets)) {
@@ -1167,7 +1688,7 @@ VKAPI_ATTR VkResult VKAPI_CALL FreeDescriptorSets(
         for (uint32_t index0 = 0; index0 < descriptorSetCount; index0++) {
             VkDescriptorSet handle = pDescriptorSets[index0];
             uint64_t unique_id = reinterpret_cast<uint64_t &>(handle);
-            dev_data->unique_id_mapping.erase(unique_id);
+            unique_id_mapping.erase(unique_id);
         }
     }
     return result;
@@ -1180,7 +1701,7 @@ VKAPI_ATTR void VKAPI_CALL UpdateDescriptorSets(
     uint32_t                                    descriptorCopyCount,
     const VkCopyDescriptorSet*                  pDescriptorCopies)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     safe_VkWriteDescriptorSet *local_pDescriptorWrites = NULL;
     safe_VkCopyDescriptorSet *local_pDescriptorCopies = NULL;
     {
@@ -1189,29 +1710,30 @@ VKAPI_ATTR void VKAPI_CALL UpdateDescriptorSets(
             local_pDescriptorWrites = new safe_VkWriteDescriptorSet[descriptorWriteCount];
             for (uint32_t index0 = 0; index0 < descriptorWriteCount; ++index0) {
                 local_pDescriptorWrites[index0].initialize(&pDescriptorWrites[index0]);
+                local_pDescriptorWrites[index0].pNext = CreateUnwrappedExtensionStructs(local_pDescriptorWrites[index0].pNext);
                 if (pDescriptorWrites[index0].dstSet) {
-                    local_pDescriptorWrites[index0].dstSet = (VkDescriptorSet)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pDescriptorWrites[index0].dstSet)];
+                    local_pDescriptorWrites[index0].dstSet = Unwrap(pDescriptorWrites[index0].dstSet);
                 }
                 if (local_pDescriptorWrites[index0].pImageInfo) {
                     for (uint32_t index1 = 0; index1 < local_pDescriptorWrites[index0].descriptorCount; ++index1) {
                         if (pDescriptorWrites[index0].pImageInfo[index1].sampler) {
-                            local_pDescriptorWrites[index0].pImageInfo[index1].sampler = (VkSampler)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pDescriptorWrites[index0].pImageInfo[index1].sampler)];
+                            local_pDescriptorWrites[index0].pImageInfo[index1].sampler = Unwrap(pDescriptorWrites[index0].pImageInfo[index1].sampler);
                         }
                         if (pDescriptorWrites[index0].pImageInfo[index1].imageView) {
-                            local_pDescriptorWrites[index0].pImageInfo[index1].imageView = (VkImageView)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pDescriptorWrites[index0].pImageInfo[index1].imageView)];
+                            local_pDescriptorWrites[index0].pImageInfo[index1].imageView = Unwrap(pDescriptorWrites[index0].pImageInfo[index1].imageView);
                         }
                     }
                 }
                 if (local_pDescriptorWrites[index0].pBufferInfo) {
                     for (uint32_t index1 = 0; index1 < local_pDescriptorWrites[index0].descriptorCount; ++index1) {
                         if (pDescriptorWrites[index0].pBufferInfo[index1].buffer) {
-                            local_pDescriptorWrites[index0].pBufferInfo[index1].buffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pDescriptorWrites[index0].pBufferInfo[index1].buffer)];
+                            local_pDescriptorWrites[index0].pBufferInfo[index1].buffer = Unwrap(pDescriptorWrites[index0].pBufferInfo[index1].buffer);
                         }
                     }
                 }
                 if (local_pDescriptorWrites[index0].pTexelBufferView) {
                     for (uint32_t index1 = 0; index1 < local_pDescriptorWrites[index0].descriptorCount; ++index1) {
-                        local_pDescriptorWrites[index0].pTexelBufferView[index1] = (VkBufferView)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(local_pDescriptorWrites[index0].pTexelBufferView[index1])];
+                        local_pDescriptorWrites[index0].pTexelBufferView[index1] = Unwrap(local_pDescriptorWrites[index0].pTexelBufferView[index1]);
                     }
                 }
             }
@@ -1221,19 +1743,24 @@ VKAPI_ATTR void VKAPI_CALL UpdateDescriptorSets(
             for (uint32_t index0 = 0; index0 < descriptorCopyCount; ++index0) {
                 local_pDescriptorCopies[index0].initialize(&pDescriptorCopies[index0]);
                 if (pDescriptorCopies[index0].srcSet) {
-                    local_pDescriptorCopies[index0].srcSet = (VkDescriptorSet)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pDescriptorCopies[index0].srcSet)];
+                    local_pDescriptorCopies[index0].srcSet = Unwrap(pDescriptorCopies[index0].srcSet);
                 }
                 if (pDescriptorCopies[index0].dstSet) {
-                    local_pDescriptorCopies[index0].dstSet = (VkDescriptorSet)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pDescriptorCopies[index0].dstSet)];
+                    local_pDescriptorCopies[index0].dstSet = Unwrap(pDescriptorCopies[index0].dstSet);
                 }
             }
         }
     }
-    dev_data->device_dispatch_table->UpdateDescriptorSets(device, descriptorWriteCount, (const VkWriteDescriptorSet*)local_pDescriptorWrites, descriptorCopyCount, (const VkCopyDescriptorSet*)local_pDescriptorCopies);
-    if (local_pDescriptorWrites)
+    dev_data->dispatch_table.UpdateDescriptorSets(device, descriptorWriteCount, (const VkWriteDescriptorSet*)local_pDescriptorWrites, descriptorCopyCount, (const VkCopyDescriptorSet*)local_pDescriptorCopies);
+    if (local_pDescriptorWrites) {
+        for (uint32_t index0 = 0; index0 < descriptorWriteCount; ++index0) {
+            FreeUnwrappedExtensionStructs(const_cast<void *>(local_pDescriptorWrites[index0].pNext));
+        }
         delete[] local_pDescriptorWrites;
-    if (local_pDescriptorCopies)
+    }
+    if (local_pDescriptorCopies) {
         delete[] local_pDescriptorCopies;
+    }
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL CreateFramebuffer(
@@ -1242,30 +1769,29 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateFramebuffer(
     const VkAllocationCallbacks*                pAllocator,
     VkFramebuffer*                              pFramebuffer)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     safe_VkFramebufferCreateInfo *local_pCreateInfo = NULL;
     {
         std::lock_guard<std::mutex> lock(global_lock);
         if (pCreateInfo) {
             local_pCreateInfo = new safe_VkFramebufferCreateInfo(pCreateInfo);
             if (pCreateInfo->renderPass) {
-                local_pCreateInfo->renderPass = (VkRenderPass)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pCreateInfo->renderPass)];
+                local_pCreateInfo->renderPass = Unwrap(pCreateInfo->renderPass);
             }
             if (local_pCreateInfo->pAttachments) {
                 for (uint32_t index1 = 0; index1 < local_pCreateInfo->attachmentCount; ++index1) {
-                    local_pCreateInfo->pAttachments[index1] = (VkImageView)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(local_pCreateInfo->pAttachments[index1])];
+                    local_pCreateInfo->pAttachments[index1] = Unwrap(local_pCreateInfo->pAttachments[index1]);
                 }
             }
         }
     }
-    VkResult result = dev_data->device_dispatch_table->CreateFramebuffer(device, (const VkFramebufferCreateInfo*)local_pCreateInfo, pAllocator, pFramebuffer);
-    if (local_pCreateInfo)
+    VkResult result = dev_data->dispatch_table.CreateFramebuffer(device, (const VkFramebufferCreateInfo*)local_pCreateInfo, pAllocator, pFramebuffer);
+    if (local_pCreateInfo) {
         delete local_pCreateInfo;
+    }
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pFramebuffer);
-        *pFramebuffer = reinterpret_cast<VkFramebuffer&>(unique_id);
+        *pFramebuffer = WrapNew(*pFramebuffer);
     }
     return result;
 }
@@ -1275,59 +1801,40 @@ VKAPI_ATTR void VKAPI_CALL DestroyFramebuffer(
     VkFramebuffer                               framebuffer,
     const VkAllocationCallbacks*                pAllocator)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     std::unique_lock<std::mutex> lock(global_lock);
     uint64_t framebuffer_id = reinterpret_cast<uint64_t &>(framebuffer);
-    framebuffer = (VkFramebuffer)dev_data->unique_id_mapping[framebuffer_id];
-    dev_data->unique_id_mapping.erase(framebuffer_id);
+    framebuffer = (VkFramebuffer)unique_id_mapping[framebuffer_id];
+    unique_id_mapping.erase(framebuffer_id);
     lock.unlock();
-    dev_data->device_dispatch_table->DestroyFramebuffer(device, framebuffer, pAllocator);
+    dev_data->dispatch_table.DestroyFramebuffer(device, framebuffer, pAllocator);
 
 }
 
+// Declare only
 VKAPI_ATTR VkResult VKAPI_CALL CreateRenderPass(
     VkDevice                                    device,
     const VkRenderPassCreateInfo*               pCreateInfo,
     const VkAllocationCallbacks*                pAllocator,
-    VkRenderPass*                               pRenderPass)
-{
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
-    VkResult result = dev_data->device_dispatch_table->CreateRenderPass(device, pCreateInfo, pAllocator, pRenderPass);
-    if (VK_SUCCESS == result) {
-        std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pRenderPass);
-        *pRenderPass = reinterpret_cast<VkRenderPass&>(unique_id);
-    }
-    return result;
-}
+    VkRenderPass*                               pRenderPass);
 
+// Declare only
 VKAPI_ATTR void VKAPI_CALL DestroyRenderPass(
     VkDevice                                    device,
     VkRenderPass                                renderPass,
-    const VkAllocationCallbacks*                pAllocator)
-{
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
-    std::unique_lock<std::mutex> lock(global_lock);
-    uint64_t renderPass_id = reinterpret_cast<uint64_t &>(renderPass);
-    renderPass = (VkRenderPass)dev_data->unique_id_mapping[renderPass_id];
-    dev_data->unique_id_mapping.erase(renderPass_id);
-    lock.unlock();
-    dev_data->device_dispatch_table->DestroyRenderPass(device, renderPass, pAllocator);
-
-}
+    const VkAllocationCallbacks*                pAllocator);
 
 VKAPI_ATTR void VKAPI_CALL GetRenderAreaGranularity(
     VkDevice                                    device,
     VkRenderPass                                renderPass,
     VkExtent2D*                                 pGranularity)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        renderPass = (VkRenderPass)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(renderPass)];
+        renderPass = Unwrap(renderPass);
     }
-    dev_data->device_dispatch_table->GetRenderAreaGranularity(device, renderPass, pGranularity);
+    dev_data->dispatch_table.GetRenderAreaGranularity(device, renderPass, pGranularity);
 
 }
 
@@ -1337,13 +1844,11 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateCommandPool(
     const VkAllocationCallbacks*                pAllocator,
     VkCommandPool*                              pCommandPool)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
-    VkResult result = dev_data->device_dispatch_table->CreateCommandPool(device, pCreateInfo, pAllocator, pCommandPool);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    VkResult result = dev_data->dispatch_table.CreateCommandPool(device, pCreateInfo, pAllocator, pCommandPool);
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pCommandPool);
-        *pCommandPool = reinterpret_cast<VkCommandPool&>(unique_id);
+        *pCommandPool = WrapNew(*pCommandPool);
     }
     return result;
 }
@@ -1353,13 +1858,13 @@ VKAPI_ATTR void VKAPI_CALL DestroyCommandPool(
     VkCommandPool                               commandPool,
     const VkAllocationCallbacks*                pAllocator)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     std::unique_lock<std::mutex> lock(global_lock);
     uint64_t commandPool_id = reinterpret_cast<uint64_t &>(commandPool);
-    commandPool = (VkCommandPool)dev_data->unique_id_mapping[commandPool_id];
-    dev_data->unique_id_mapping.erase(commandPool_id);
+    commandPool = (VkCommandPool)unique_id_mapping[commandPool_id];
+    unique_id_mapping.erase(commandPool_id);
     lock.unlock();
-    dev_data->device_dispatch_table->DestroyCommandPool(device, commandPool, pAllocator);
+    dev_data->dispatch_table.DestroyCommandPool(device, commandPool, pAllocator);
 
 }
 
@@ -1368,12 +1873,12 @@ VKAPI_ATTR VkResult VKAPI_CALL ResetCommandPool(
     VkCommandPool                               commandPool,
     VkCommandPoolResetFlags                     flags)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        commandPool = (VkCommandPool)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(commandPool)];
+        commandPool = Unwrap(commandPool);
     }
-    VkResult result = dev_data->device_dispatch_table->ResetCommandPool(device, commandPool, flags);
+    VkResult result = dev_data->dispatch_table.ResetCommandPool(device, commandPool, flags);
 
     return result;
 }
@@ -1383,20 +1888,21 @@ VKAPI_ATTR VkResult VKAPI_CALL AllocateCommandBuffers(
     const VkCommandBufferAllocateInfo*          pAllocateInfo,
     VkCommandBuffer*                            pCommandBuffers)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     safe_VkCommandBufferAllocateInfo *local_pAllocateInfo = NULL;
     {
         std::lock_guard<std::mutex> lock(global_lock);
         if (pAllocateInfo) {
             local_pAllocateInfo = new safe_VkCommandBufferAllocateInfo(pAllocateInfo);
             if (pAllocateInfo->commandPool) {
-                local_pAllocateInfo->commandPool = (VkCommandPool)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pAllocateInfo->commandPool)];
+                local_pAllocateInfo->commandPool = Unwrap(pAllocateInfo->commandPool);
             }
         }
     }
-    VkResult result = dev_data->device_dispatch_table->AllocateCommandBuffers(device, (const VkCommandBufferAllocateInfo*)local_pAllocateInfo, pCommandBuffers);
-    if (local_pAllocateInfo)
+    VkResult result = dev_data->dispatch_table.AllocateCommandBuffers(device, (const VkCommandBufferAllocateInfo*)local_pAllocateInfo, pCommandBuffers);
+    if (local_pAllocateInfo) {
         delete local_pAllocateInfo;
+    }
     return result;
 }
 
@@ -1406,12 +1912,12 @@ VKAPI_ATTR void VKAPI_CALL FreeCommandBuffers(
     uint32_t                                    commandBufferCount,
     const VkCommandBuffer*                      pCommandBuffers)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        commandPool = (VkCommandPool)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(commandPool)];
+        commandPool = Unwrap(commandPool);
     }
-    dev_data->device_dispatch_table->FreeCommandBuffers(device, commandPool, commandBufferCount, pCommandBuffers);
+    dev_data->dispatch_table.FreeCommandBuffers(device, commandPool, commandBufferCount, pCommandBuffers);
 
 }
 
@@ -1419,7 +1925,7 @@ VKAPI_ATTR VkResult VKAPI_CALL BeginCommandBuffer(
     VkCommandBuffer                             commandBuffer,
     const VkCommandBufferBeginInfo*             pBeginInfo)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     safe_VkCommandBufferBeginInfo *local_pBeginInfo = NULL;
     {
         std::lock_guard<std::mutex> lock(global_lock);
@@ -1427,17 +1933,18 @@ VKAPI_ATTR VkResult VKAPI_CALL BeginCommandBuffer(
             local_pBeginInfo = new safe_VkCommandBufferBeginInfo(pBeginInfo);
             if (local_pBeginInfo->pInheritanceInfo) {
                 if (pBeginInfo->pInheritanceInfo->renderPass) {
-                    local_pBeginInfo->pInheritanceInfo->renderPass = (VkRenderPass)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pBeginInfo->pInheritanceInfo->renderPass)];
+                    local_pBeginInfo->pInheritanceInfo->renderPass = Unwrap(pBeginInfo->pInheritanceInfo->renderPass);
                 }
                 if (pBeginInfo->pInheritanceInfo->framebuffer) {
-                    local_pBeginInfo->pInheritanceInfo->framebuffer = (VkFramebuffer)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pBeginInfo->pInheritanceInfo->framebuffer)];
+                    local_pBeginInfo->pInheritanceInfo->framebuffer = Unwrap(pBeginInfo->pInheritanceInfo->framebuffer);
                 }
             }
         }
     }
-    VkResult result = dev_data->device_dispatch_table->BeginCommandBuffer(commandBuffer, (const VkCommandBufferBeginInfo*)local_pBeginInfo);
-    if (local_pBeginInfo)
+    VkResult result = dev_data->dispatch_table.BeginCommandBuffer(commandBuffer, (const VkCommandBufferBeginInfo*)local_pBeginInfo);
+    if (local_pBeginInfo) {
         delete local_pBeginInfo;
+    }
     return result;
 }
 
@@ -1446,12 +1953,12 @@ VKAPI_ATTR void VKAPI_CALL CmdBindPipeline(
     VkPipelineBindPoint                         pipelineBindPoint,
     VkPipeline                                  pipeline)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        pipeline = (VkPipeline)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(pipeline)];
+        pipeline = Unwrap(pipeline);
     }
-    dev_data->device_dispatch_table->CmdBindPipeline(commandBuffer, pipelineBindPoint, pipeline);
+    dev_data->dispatch_table.CmdBindPipeline(commandBuffer, pipelineBindPoint, pipeline);
 
 }
 
@@ -1465,19 +1972,19 @@ VKAPI_ATTR void VKAPI_CALL CmdBindDescriptorSets(
     uint32_t                                    dynamicOffsetCount,
     const uint32_t*                             pDynamicOffsets)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     VkDescriptorSet *local_pDescriptorSets = NULL;
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        layout = (VkPipelineLayout)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(layout)];
+        layout = Unwrap(layout);
         if (pDescriptorSets) {
             local_pDescriptorSets = new VkDescriptorSet[descriptorSetCount];
             for (uint32_t index0 = 0; index0 < descriptorSetCount; ++index0) {
-                local_pDescriptorSets[index0] = (VkDescriptorSet)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pDescriptorSets[index0])];
+                local_pDescriptorSets[index0] = Unwrap(pDescriptorSets[index0]);
             }
         }
     }
-    dev_data->device_dispatch_table->CmdBindDescriptorSets(commandBuffer, pipelineBindPoint, layout, firstSet, descriptorSetCount, (const VkDescriptorSet*)local_pDescriptorSets, dynamicOffsetCount, pDynamicOffsets);
+    dev_data->dispatch_table.CmdBindDescriptorSets(commandBuffer, pipelineBindPoint, layout, firstSet, descriptorSetCount, (const VkDescriptorSet*)local_pDescriptorSets, dynamicOffsetCount, pDynamicOffsets);
     if (local_pDescriptorSets)
         delete[] local_pDescriptorSets;
 }
@@ -1488,12 +1995,12 @@ VKAPI_ATTR void VKAPI_CALL CmdBindIndexBuffer(
     VkDeviceSize                                offset,
     VkIndexType                                 indexType)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        buffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(buffer)];
+        buffer = Unwrap(buffer);
     }
-    dev_data->device_dispatch_table->CmdBindIndexBuffer(commandBuffer, buffer, offset, indexType);
+    dev_data->dispatch_table.CmdBindIndexBuffer(commandBuffer, buffer, offset, indexType);
 
 }
 
@@ -1504,18 +2011,18 @@ VKAPI_ATTR void VKAPI_CALL CmdBindVertexBuffers(
     const VkBuffer*                             pBuffers,
     const VkDeviceSize*                         pOffsets)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     VkBuffer *local_pBuffers = NULL;
     {
         std::lock_guard<std::mutex> lock(global_lock);
         if (pBuffers) {
             local_pBuffers = new VkBuffer[bindingCount];
             for (uint32_t index0 = 0; index0 < bindingCount; ++index0) {
-                local_pBuffers[index0] = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pBuffers[index0])];
+                local_pBuffers[index0] = Unwrap(pBuffers[index0]);
             }
         }
     }
-    dev_data->device_dispatch_table->CmdBindVertexBuffers(commandBuffer, firstBinding, bindingCount, (const VkBuffer*)local_pBuffers, pOffsets);
+    dev_data->dispatch_table.CmdBindVertexBuffers(commandBuffer, firstBinding, bindingCount, (const VkBuffer*)local_pBuffers, pOffsets);
     if (local_pBuffers)
         delete[] local_pBuffers;
 }
@@ -1527,12 +2034,12 @@ VKAPI_ATTR void VKAPI_CALL CmdDrawIndirect(
     uint32_t                                    drawCount,
     uint32_t                                    stride)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        buffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(buffer)];
+        buffer = Unwrap(buffer);
     }
-    dev_data->device_dispatch_table->CmdDrawIndirect(commandBuffer, buffer, offset, drawCount, stride);
+    dev_data->dispatch_table.CmdDrawIndirect(commandBuffer, buffer, offset, drawCount, stride);
 
 }
 
@@ -1543,12 +2050,12 @@ VKAPI_ATTR void VKAPI_CALL CmdDrawIndexedIndirect(
     uint32_t                                    drawCount,
     uint32_t                                    stride)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        buffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(buffer)];
+        buffer = Unwrap(buffer);
     }
-    dev_data->device_dispatch_table->CmdDrawIndexedIndirect(commandBuffer, buffer, offset, drawCount, stride);
+    dev_data->dispatch_table.CmdDrawIndexedIndirect(commandBuffer, buffer, offset, drawCount, stride);
 
 }
 
@@ -1557,12 +2064,12 @@ VKAPI_ATTR void VKAPI_CALL CmdDispatchIndirect(
     VkBuffer                                    buffer,
     VkDeviceSize                                offset)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        buffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(buffer)];
+        buffer = Unwrap(buffer);
     }
-    dev_data->device_dispatch_table->CmdDispatchIndirect(commandBuffer, buffer, offset);
+    dev_data->dispatch_table.CmdDispatchIndirect(commandBuffer, buffer, offset);
 
 }
 
@@ -1573,13 +2080,13 @@ VKAPI_ATTR void VKAPI_CALL CmdCopyBuffer(
     uint32_t                                    regionCount,
     const VkBufferCopy*                         pRegions)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        srcBuffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(srcBuffer)];
-        dstBuffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(dstBuffer)];
+        srcBuffer = Unwrap(srcBuffer);
+        dstBuffer = Unwrap(dstBuffer);
     }
-    dev_data->device_dispatch_table->CmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, regionCount, pRegions);
+    dev_data->dispatch_table.CmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, regionCount, pRegions);
 
 }
 
@@ -1592,13 +2099,13 @@ VKAPI_ATTR void VKAPI_CALL CmdCopyImage(
     uint32_t                                    regionCount,
     const VkImageCopy*                          pRegions)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        srcImage = (VkImage)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(srcImage)];
-        dstImage = (VkImage)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(dstImage)];
+        srcImage = Unwrap(srcImage);
+        dstImage = Unwrap(dstImage);
     }
-    dev_data->device_dispatch_table->CmdCopyImage(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions);
+    dev_data->dispatch_table.CmdCopyImage(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions);
 
 }
 
@@ -1612,13 +2119,13 @@ VKAPI_ATTR void VKAPI_CALL CmdBlitImage(
     const VkImageBlit*                          pRegions,
     VkFilter                                    filter)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        srcImage = (VkImage)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(srcImage)];
-        dstImage = (VkImage)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(dstImage)];
+        srcImage = Unwrap(srcImage);
+        dstImage = Unwrap(dstImage);
     }
-    dev_data->device_dispatch_table->CmdBlitImage(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions, filter);
+    dev_data->dispatch_table.CmdBlitImage(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions, filter);
 
 }
 
@@ -1630,13 +2137,13 @@ VKAPI_ATTR void VKAPI_CALL CmdCopyBufferToImage(
     uint32_t                                    regionCount,
     const VkBufferImageCopy*                    pRegions)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        srcBuffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(srcBuffer)];
-        dstImage = (VkImage)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(dstImage)];
+        srcBuffer = Unwrap(srcBuffer);
+        dstImage = Unwrap(dstImage);
     }
-    dev_data->device_dispatch_table->CmdCopyBufferToImage(commandBuffer, srcBuffer, dstImage, dstImageLayout, regionCount, pRegions);
+    dev_data->dispatch_table.CmdCopyBufferToImage(commandBuffer, srcBuffer, dstImage, dstImageLayout, regionCount, pRegions);
 
 }
 
@@ -1648,13 +2155,13 @@ VKAPI_ATTR void VKAPI_CALL CmdCopyImageToBuffer(
     uint32_t                                    regionCount,
     const VkBufferImageCopy*                    pRegions)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        srcImage = (VkImage)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(srcImage)];
-        dstBuffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(dstBuffer)];
+        srcImage = Unwrap(srcImage);
+        dstBuffer = Unwrap(dstBuffer);
     }
-    dev_data->device_dispatch_table->CmdCopyImageToBuffer(commandBuffer, srcImage, srcImageLayout, dstBuffer, regionCount, pRegions);
+    dev_data->dispatch_table.CmdCopyImageToBuffer(commandBuffer, srcImage, srcImageLayout, dstBuffer, regionCount, pRegions);
 
 }
 
@@ -1665,12 +2172,12 @@ VKAPI_ATTR void VKAPI_CALL CmdUpdateBuffer(
     VkDeviceSize                                dataSize,
     const void*                                 pData)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        dstBuffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(dstBuffer)];
+        dstBuffer = Unwrap(dstBuffer);
     }
-    dev_data->device_dispatch_table->CmdUpdateBuffer(commandBuffer, dstBuffer, dstOffset, dataSize, pData);
+    dev_data->dispatch_table.CmdUpdateBuffer(commandBuffer, dstBuffer, dstOffset, dataSize, pData);
 
 }
 
@@ -1681,12 +2188,12 @@ VKAPI_ATTR void VKAPI_CALL CmdFillBuffer(
     VkDeviceSize                                size,
     uint32_t                                    data)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        dstBuffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(dstBuffer)];
+        dstBuffer = Unwrap(dstBuffer);
     }
-    dev_data->device_dispatch_table->CmdFillBuffer(commandBuffer, dstBuffer, dstOffset, size, data);
+    dev_data->dispatch_table.CmdFillBuffer(commandBuffer, dstBuffer, dstOffset, size, data);
 
 }
 
@@ -1698,12 +2205,12 @@ VKAPI_ATTR void VKAPI_CALL CmdClearColorImage(
     uint32_t                                    rangeCount,
     const VkImageSubresourceRange*              pRanges)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        image = (VkImage)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(image)];
+        image = Unwrap(image);
     }
-    dev_data->device_dispatch_table->CmdClearColorImage(commandBuffer, image, imageLayout, pColor, rangeCount, pRanges);
+    dev_data->dispatch_table.CmdClearColorImage(commandBuffer, image, imageLayout, pColor, rangeCount, pRanges);
 
 }
 
@@ -1715,12 +2222,12 @@ VKAPI_ATTR void VKAPI_CALL CmdClearDepthStencilImage(
     uint32_t                                    rangeCount,
     const VkImageSubresourceRange*              pRanges)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        image = (VkImage)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(image)];
+        image = Unwrap(image);
     }
-    dev_data->device_dispatch_table->CmdClearDepthStencilImage(commandBuffer, image, imageLayout, pDepthStencil, rangeCount, pRanges);
+    dev_data->dispatch_table.CmdClearDepthStencilImage(commandBuffer, image, imageLayout, pDepthStencil, rangeCount, pRanges);
 
 }
 
@@ -1733,13 +2240,13 @@ VKAPI_ATTR void VKAPI_CALL CmdResolveImage(
     uint32_t                                    regionCount,
     const VkImageResolve*                       pRegions)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        srcImage = (VkImage)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(srcImage)];
-        dstImage = (VkImage)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(dstImage)];
+        srcImage = Unwrap(srcImage);
+        dstImage = Unwrap(dstImage);
     }
-    dev_data->device_dispatch_table->CmdResolveImage(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions);
+    dev_data->dispatch_table.CmdResolveImage(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions);
 
 }
 
@@ -1748,12 +2255,12 @@ VKAPI_ATTR void VKAPI_CALL CmdSetEvent(
     VkEvent                                     event,
     VkPipelineStageFlags                        stageMask)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        event = (VkEvent)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(event)];
+        event = Unwrap(event);
     }
-    dev_data->device_dispatch_table->CmdSetEvent(commandBuffer, event, stageMask);
+    dev_data->dispatch_table.CmdSetEvent(commandBuffer, event, stageMask);
 
 }
 
@@ -1762,12 +2269,12 @@ VKAPI_ATTR void VKAPI_CALL CmdResetEvent(
     VkEvent                                     event,
     VkPipelineStageFlags                        stageMask)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        event = (VkEvent)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(event)];
+        event = Unwrap(event);
     }
-    dev_data->device_dispatch_table->CmdResetEvent(commandBuffer, event, stageMask);
+    dev_data->dispatch_table.CmdResetEvent(commandBuffer, event, stageMask);
 
 }
 
@@ -1784,7 +2291,7 @@ VKAPI_ATTR void VKAPI_CALL CmdWaitEvents(
     uint32_t                                    imageMemoryBarrierCount,
     const VkImageMemoryBarrier*                 pImageMemoryBarriers)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     VkEvent *local_pEvents = NULL;
     safe_VkBufferMemoryBarrier *local_pBufferMemoryBarriers = NULL;
     safe_VkImageMemoryBarrier *local_pImageMemoryBarriers = NULL;
@@ -1793,7 +2300,7 @@ VKAPI_ATTR void VKAPI_CALL CmdWaitEvents(
         if (pEvents) {
             local_pEvents = new VkEvent[eventCount];
             for (uint32_t index0 = 0; index0 < eventCount; ++index0) {
-                local_pEvents[index0] = (VkEvent)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pEvents[index0])];
+                local_pEvents[index0] = Unwrap(pEvents[index0]);
             }
         }
         if (pBufferMemoryBarriers) {
@@ -1801,7 +2308,7 @@ VKAPI_ATTR void VKAPI_CALL CmdWaitEvents(
             for (uint32_t index0 = 0; index0 < bufferMemoryBarrierCount; ++index0) {
                 local_pBufferMemoryBarriers[index0].initialize(&pBufferMemoryBarriers[index0]);
                 if (pBufferMemoryBarriers[index0].buffer) {
-                    local_pBufferMemoryBarriers[index0].buffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pBufferMemoryBarriers[index0].buffer)];
+                    local_pBufferMemoryBarriers[index0].buffer = Unwrap(pBufferMemoryBarriers[index0].buffer);
                 }
             }
         }
@@ -1810,18 +2317,20 @@ VKAPI_ATTR void VKAPI_CALL CmdWaitEvents(
             for (uint32_t index0 = 0; index0 < imageMemoryBarrierCount; ++index0) {
                 local_pImageMemoryBarriers[index0].initialize(&pImageMemoryBarriers[index0]);
                 if (pImageMemoryBarriers[index0].image) {
-                    local_pImageMemoryBarriers[index0].image = (VkImage)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pImageMemoryBarriers[index0].image)];
+                    local_pImageMemoryBarriers[index0].image = Unwrap(pImageMemoryBarriers[index0].image);
                 }
             }
         }
     }
-    dev_data->device_dispatch_table->CmdWaitEvents(commandBuffer, eventCount, (const VkEvent*)local_pEvents, srcStageMask, dstStageMask, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, (const VkBufferMemoryBarrier*)local_pBufferMemoryBarriers, imageMemoryBarrierCount, (const VkImageMemoryBarrier*)local_pImageMemoryBarriers);
+    dev_data->dispatch_table.CmdWaitEvents(commandBuffer, eventCount, (const VkEvent*)local_pEvents, srcStageMask, dstStageMask, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, (const VkBufferMemoryBarrier*)local_pBufferMemoryBarriers, imageMemoryBarrierCount, (const VkImageMemoryBarrier*)local_pImageMemoryBarriers);
     if (local_pEvents)
         delete[] local_pEvents;
-    if (local_pBufferMemoryBarriers)
+    if (local_pBufferMemoryBarriers) {
         delete[] local_pBufferMemoryBarriers;
-    if (local_pImageMemoryBarriers)
+    }
+    if (local_pImageMemoryBarriers) {
         delete[] local_pImageMemoryBarriers;
+    }
 }
 
 VKAPI_ATTR void VKAPI_CALL CmdPipelineBarrier(
@@ -1836,7 +2345,7 @@ VKAPI_ATTR void VKAPI_CALL CmdPipelineBarrier(
     uint32_t                                    imageMemoryBarrierCount,
     const VkImageMemoryBarrier*                 pImageMemoryBarriers)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     safe_VkBufferMemoryBarrier *local_pBufferMemoryBarriers = NULL;
     safe_VkImageMemoryBarrier *local_pImageMemoryBarriers = NULL;
     {
@@ -1846,7 +2355,7 @@ VKAPI_ATTR void VKAPI_CALL CmdPipelineBarrier(
             for (uint32_t index0 = 0; index0 < bufferMemoryBarrierCount; ++index0) {
                 local_pBufferMemoryBarriers[index0].initialize(&pBufferMemoryBarriers[index0]);
                 if (pBufferMemoryBarriers[index0].buffer) {
-                    local_pBufferMemoryBarriers[index0].buffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pBufferMemoryBarriers[index0].buffer)];
+                    local_pBufferMemoryBarriers[index0].buffer = Unwrap(pBufferMemoryBarriers[index0].buffer);
                 }
             }
         }
@@ -1855,16 +2364,18 @@ VKAPI_ATTR void VKAPI_CALL CmdPipelineBarrier(
             for (uint32_t index0 = 0; index0 < imageMemoryBarrierCount; ++index0) {
                 local_pImageMemoryBarriers[index0].initialize(&pImageMemoryBarriers[index0]);
                 if (pImageMemoryBarriers[index0].image) {
-                    local_pImageMemoryBarriers[index0].image = (VkImage)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pImageMemoryBarriers[index0].image)];
+                    local_pImageMemoryBarriers[index0].image = Unwrap(pImageMemoryBarriers[index0].image);
                 }
             }
         }
     }
-    dev_data->device_dispatch_table->CmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, (const VkBufferMemoryBarrier*)local_pBufferMemoryBarriers, imageMemoryBarrierCount, (const VkImageMemoryBarrier*)local_pImageMemoryBarriers);
-    if (local_pBufferMemoryBarriers)
+    dev_data->dispatch_table.CmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, (const VkBufferMemoryBarrier*)local_pBufferMemoryBarriers, imageMemoryBarrierCount, (const VkImageMemoryBarrier*)local_pImageMemoryBarriers);
+    if (local_pBufferMemoryBarriers) {
         delete[] local_pBufferMemoryBarriers;
-    if (local_pImageMemoryBarriers)
+    }
+    if (local_pImageMemoryBarriers) {
         delete[] local_pImageMemoryBarriers;
+    }
 }
 
 VKAPI_ATTR void VKAPI_CALL CmdBeginQuery(
@@ -1873,12 +2384,12 @@ VKAPI_ATTR void VKAPI_CALL CmdBeginQuery(
     uint32_t                                    query,
     VkQueryControlFlags                         flags)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        queryPool = (VkQueryPool)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(queryPool)];
+        queryPool = Unwrap(queryPool);
     }
-    dev_data->device_dispatch_table->CmdBeginQuery(commandBuffer, queryPool, query, flags);
+    dev_data->dispatch_table.CmdBeginQuery(commandBuffer, queryPool, query, flags);
 
 }
 
@@ -1887,12 +2398,12 @@ VKAPI_ATTR void VKAPI_CALL CmdEndQuery(
     VkQueryPool                                 queryPool,
     uint32_t                                    query)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        queryPool = (VkQueryPool)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(queryPool)];
+        queryPool = Unwrap(queryPool);
     }
-    dev_data->device_dispatch_table->CmdEndQuery(commandBuffer, queryPool, query);
+    dev_data->dispatch_table.CmdEndQuery(commandBuffer, queryPool, query);
 
 }
 
@@ -1902,12 +2413,12 @@ VKAPI_ATTR void VKAPI_CALL CmdResetQueryPool(
     uint32_t                                    firstQuery,
     uint32_t                                    queryCount)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        queryPool = (VkQueryPool)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(queryPool)];
+        queryPool = Unwrap(queryPool);
     }
-    dev_data->device_dispatch_table->CmdResetQueryPool(commandBuffer, queryPool, firstQuery, queryCount);
+    dev_data->dispatch_table.CmdResetQueryPool(commandBuffer, queryPool, firstQuery, queryCount);
 
 }
 
@@ -1917,12 +2428,12 @@ VKAPI_ATTR void VKAPI_CALL CmdWriteTimestamp(
     VkQueryPool                                 queryPool,
     uint32_t                                    query)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        queryPool = (VkQueryPool)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(queryPool)];
+        queryPool = Unwrap(queryPool);
     }
-    dev_data->device_dispatch_table->CmdWriteTimestamp(commandBuffer, pipelineStage, queryPool, query);
+    dev_data->dispatch_table.CmdWriteTimestamp(commandBuffer, pipelineStage, queryPool, query);
 
 }
 
@@ -1936,13 +2447,13 @@ VKAPI_ATTR void VKAPI_CALL CmdCopyQueryPoolResults(
     VkDeviceSize                                stride,
     VkQueryResultFlags                          flags)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        queryPool = (VkQueryPool)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(queryPool)];
-        dstBuffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(dstBuffer)];
+        queryPool = Unwrap(queryPool);
+        dstBuffer = Unwrap(dstBuffer);
     }
-    dev_data->device_dispatch_table->CmdCopyQueryPoolResults(commandBuffer, queryPool, firstQuery, queryCount, dstBuffer, dstOffset, stride, flags);
+    dev_data->dispatch_table.CmdCopyQueryPoolResults(commandBuffer, queryPool, firstQuery, queryCount, dstBuffer, dstOffset, stride, flags);
 
 }
 
@@ -1954,12 +2465,12 @@ VKAPI_ATTR void VKAPI_CALL CmdPushConstants(
     uint32_t                                    size,
     const void*                                 pValues)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        layout = (VkPipelineLayout)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(layout)];
+        layout = Unwrap(layout);
     }
-    dev_data->device_dispatch_table->CmdPushConstants(commandBuffer, layout, stageFlags, offset, size, pValues);
+    dev_data->dispatch_table.CmdPushConstants(commandBuffer, layout, stageFlags, offset, size, pValues);
 
 }
 
@@ -1968,38 +2479,293 @@ VKAPI_ATTR void VKAPI_CALL CmdBeginRenderPass(
     const VkRenderPassBeginInfo*                pRenderPassBegin,
     VkSubpassContents                           contents)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     safe_VkRenderPassBeginInfo *local_pRenderPassBegin = NULL;
     {
         std::lock_guard<std::mutex> lock(global_lock);
         if (pRenderPassBegin) {
             local_pRenderPassBegin = new safe_VkRenderPassBeginInfo(pRenderPassBegin);
             if (pRenderPassBegin->renderPass) {
-                local_pRenderPassBegin->renderPass = (VkRenderPass)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pRenderPassBegin->renderPass)];
+                local_pRenderPassBegin->renderPass = Unwrap(pRenderPassBegin->renderPass);
             }
             if (pRenderPassBegin->framebuffer) {
-                local_pRenderPassBegin->framebuffer = (VkFramebuffer)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pRenderPassBegin->framebuffer)];
+                local_pRenderPassBegin->framebuffer = Unwrap(pRenderPassBegin->framebuffer);
             }
         }
     }
-    dev_data->device_dispatch_table->CmdBeginRenderPass(commandBuffer, (const VkRenderPassBeginInfo*)local_pRenderPassBegin, contents);
-    if (local_pRenderPassBegin)
+    dev_data->dispatch_table.CmdBeginRenderPass(commandBuffer, (const VkRenderPassBeginInfo*)local_pRenderPassBegin, contents);
+    if (local_pRenderPassBegin) {
         delete local_pRenderPassBegin;
+    }
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL BindBufferMemory2(
+    VkDevice                                    device,
+    uint32_t                                    bindInfoCount,
+    const VkBindBufferMemoryInfo*               pBindInfos)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkBindBufferMemoryInfo *local_pBindInfos = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pBindInfos) {
+            local_pBindInfos = new safe_VkBindBufferMemoryInfo[bindInfoCount];
+            for (uint32_t index0 = 0; index0 < bindInfoCount; ++index0) {
+                local_pBindInfos[index0].initialize(&pBindInfos[index0]);
+                if (pBindInfos[index0].buffer) {
+                    local_pBindInfos[index0].buffer = Unwrap(pBindInfos[index0].buffer);
+                }
+                if (pBindInfos[index0].memory) {
+                    local_pBindInfos[index0].memory = Unwrap(pBindInfos[index0].memory);
+                }
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.BindBufferMemory2(device, bindInfoCount, (const VkBindBufferMemoryInfo*)local_pBindInfos);
+    if (local_pBindInfos) {
+        delete[] local_pBindInfos;
+    }
+    return result;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL BindImageMemory2(
+    VkDevice                                    device,
+    uint32_t                                    bindInfoCount,
+    const VkBindImageMemoryInfo*                pBindInfos)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkBindImageMemoryInfo *local_pBindInfos = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pBindInfos) {
+            local_pBindInfos = new safe_VkBindImageMemoryInfo[bindInfoCount];
+            for (uint32_t index0 = 0; index0 < bindInfoCount; ++index0) {
+                local_pBindInfos[index0].initialize(&pBindInfos[index0]);
+                local_pBindInfos[index0].pNext = CreateUnwrappedExtensionStructs(local_pBindInfos[index0].pNext);
+                if (pBindInfos[index0].image) {
+                    local_pBindInfos[index0].image = Unwrap(pBindInfos[index0].image);
+                }
+                if (pBindInfos[index0].memory) {
+                    local_pBindInfos[index0].memory = Unwrap(pBindInfos[index0].memory);
+                }
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.BindImageMemory2(device, bindInfoCount, (const VkBindImageMemoryInfo*)local_pBindInfos);
+    if (local_pBindInfos) {
+        for (uint32_t index0 = 0; index0 < bindInfoCount; ++index0) {
+            FreeUnwrappedExtensionStructs(const_cast<void *>(local_pBindInfos[index0].pNext));
+        }
+        delete[] local_pBindInfos;
+    }
+    return result;
+}
+
+VKAPI_ATTR void VKAPI_CALL GetImageMemoryRequirements2(
+    VkDevice                                    device,
+    const VkImageMemoryRequirementsInfo2*       pInfo,
+    VkMemoryRequirements2*                      pMemoryRequirements)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkImageMemoryRequirementsInfo2 *local_pInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pInfo) {
+            local_pInfo = new safe_VkImageMemoryRequirementsInfo2(pInfo);
+            if (pInfo->image) {
+                local_pInfo->image = Unwrap(pInfo->image);
+            }
+        }
+    }
+    dev_data->dispatch_table.GetImageMemoryRequirements2(device, (const VkImageMemoryRequirementsInfo2*)local_pInfo, pMemoryRequirements);
+    if (local_pInfo) {
+        delete local_pInfo;
+    }
+}
+
+VKAPI_ATTR void VKAPI_CALL GetBufferMemoryRequirements2(
+    VkDevice                                    device,
+    const VkBufferMemoryRequirementsInfo2*      pInfo,
+    VkMemoryRequirements2*                      pMemoryRequirements)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkBufferMemoryRequirementsInfo2 *local_pInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pInfo) {
+            local_pInfo = new safe_VkBufferMemoryRequirementsInfo2(pInfo);
+            if (pInfo->buffer) {
+                local_pInfo->buffer = Unwrap(pInfo->buffer);
+            }
+        }
+    }
+    dev_data->dispatch_table.GetBufferMemoryRequirements2(device, (const VkBufferMemoryRequirementsInfo2*)local_pInfo, pMemoryRequirements);
+    if (local_pInfo) {
+        delete local_pInfo;
+    }
+}
+
+VKAPI_ATTR void VKAPI_CALL GetImageSparseMemoryRequirements2(
+    VkDevice                                    device,
+    const VkImageSparseMemoryRequirementsInfo2* pInfo,
+    uint32_t*                                   pSparseMemoryRequirementCount,
+    VkSparseImageMemoryRequirements2*           pSparseMemoryRequirements)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkImageSparseMemoryRequirementsInfo2 *local_pInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pInfo) {
+            local_pInfo = new safe_VkImageSparseMemoryRequirementsInfo2(pInfo);
+            if (pInfo->image) {
+                local_pInfo->image = Unwrap(pInfo->image);
+            }
+        }
+    }
+    dev_data->dispatch_table.GetImageSparseMemoryRequirements2(device, (const VkImageSparseMemoryRequirementsInfo2*)local_pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
+    if (local_pInfo) {
+        delete local_pInfo;
+    }
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL GetPhysicalDeviceImageFormatProperties2(
+    VkPhysicalDevice                            physicalDevice,
+    const VkPhysicalDeviceImageFormatInfo2*     pImageFormatInfo,
+    VkImageFormatProperties2*                   pImageFormatProperties)
+{
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(physicalDevice), instance_layer_data_map);
+    safe_VkPhysicalDeviceImageFormatInfo2 *local_pImageFormatInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pImageFormatInfo) {
+            local_pImageFormatInfo = new safe_VkPhysicalDeviceImageFormatInfo2(pImageFormatInfo);
+            local_pImageFormatInfo->pNext = CreateUnwrappedExtensionStructs(local_pImageFormatInfo->pNext);
+        }
+    }
+    VkResult result = dev_data->dispatch_table.GetPhysicalDeviceImageFormatProperties2(physicalDevice, (const VkPhysicalDeviceImageFormatInfo2*)local_pImageFormatInfo, pImageFormatProperties);
+    if (local_pImageFormatInfo) {
+        FreeUnwrappedExtensionStructs(const_cast<void *>(local_pImageFormatInfo->pNext));
+        delete local_pImageFormatInfo;
+    }
+    return result;
+}
+
+VKAPI_ATTR void VKAPI_CALL TrimCommandPool(
+    VkDevice                                    device,
+    VkCommandPool                               commandPool,
+    VkCommandPoolTrimFlags                      flags)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        commandPool = Unwrap(commandPool);
+    }
+    dev_data->dispatch_table.TrimCommandPool(device, commandPool, flags);
+
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL CreateSamplerYcbcrConversion(
+    VkDevice                                    device,
+    const VkSamplerYcbcrConversionCreateInfo*   pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkSamplerYcbcrConversion*                   pYcbcrConversion)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkSamplerYcbcrConversionCreateInfo *local_pCreateInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pCreateInfo) {
+            local_pCreateInfo = new safe_VkSamplerYcbcrConversionCreateInfo(pCreateInfo);
+            local_pCreateInfo->pNext = CreateUnwrappedExtensionStructs(local_pCreateInfo->pNext);
+        }
+    }
+    VkResult result = dev_data->dispatch_table.CreateSamplerYcbcrConversion(device, (const VkSamplerYcbcrConversionCreateInfo*)local_pCreateInfo, pAllocator, pYcbcrConversion);
+    if (local_pCreateInfo) {
+        FreeUnwrappedExtensionStructs(const_cast<void *>(local_pCreateInfo->pNext));
+        delete local_pCreateInfo;
+    }
+    if (VK_SUCCESS == result) {
+        std::lock_guard<std::mutex> lock(global_lock);
+        *pYcbcrConversion = WrapNew(*pYcbcrConversion);
+    }
+    return result;
+}
+
+VKAPI_ATTR void VKAPI_CALL DestroySamplerYcbcrConversion(
+    VkDevice                                    device,
+    VkSamplerYcbcrConversion                    ycbcrConversion,
+    const VkAllocationCallbacks*                pAllocator)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    std::unique_lock<std::mutex> lock(global_lock);
+    uint64_t ycbcrConversion_id = reinterpret_cast<uint64_t &>(ycbcrConversion);
+    ycbcrConversion = (VkSamplerYcbcrConversion)unique_id_mapping[ycbcrConversion_id];
+    unique_id_mapping.erase(ycbcrConversion_id);
+    lock.unlock();
+    dev_data->dispatch_table.DestroySamplerYcbcrConversion(device, ycbcrConversion, pAllocator);
+
+}
+
+// Declare only
+VKAPI_ATTR VkResult VKAPI_CALL CreateDescriptorUpdateTemplate(
+    VkDevice                                    device,
+    const VkDescriptorUpdateTemplateCreateInfo* pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkDescriptorUpdateTemplate*                 pDescriptorUpdateTemplate);
+
+// Declare only
+VKAPI_ATTR void VKAPI_CALL DestroyDescriptorUpdateTemplate(
+    VkDevice                                    device,
+    VkDescriptorUpdateTemplate                  descriptorUpdateTemplate,
+    const VkAllocationCallbacks*                pAllocator);
+
+// Declare only
+VKAPI_ATTR void VKAPI_CALL UpdateDescriptorSetWithTemplate(
+    VkDevice                                    device,
+    VkDescriptorSet                             descriptorSet,
+    VkDescriptorUpdateTemplate                  descriptorUpdateTemplate,
+    const void*                                 pData);
+
+VKAPI_ATTR void VKAPI_CALL GetDescriptorSetLayoutSupport(
+    VkDevice                                    device,
+    const VkDescriptorSetLayoutCreateInfo*      pCreateInfo,
+    VkDescriptorSetLayoutSupport*               pSupport)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkDescriptorSetLayoutCreateInfo *local_pCreateInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pCreateInfo) {
+            local_pCreateInfo = new safe_VkDescriptorSetLayoutCreateInfo(pCreateInfo);
+            if (local_pCreateInfo->pBindings) {
+                for (uint32_t index1 = 0; index1 < local_pCreateInfo->bindingCount; ++index1) {
+                    if (local_pCreateInfo->pBindings[index1].pImmutableSamplers) {
+                        for (uint32_t index2 = 0; index2 < local_pCreateInfo->pBindings[index1].descriptorCount; ++index2) {
+                            local_pCreateInfo->pBindings[index1].pImmutableSamplers[index2] = Unwrap(local_pCreateInfo->pBindings[index1].pImmutableSamplers[index2]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    dev_data->dispatch_table.GetDescriptorSetLayoutSupport(device, (const VkDescriptorSetLayoutCreateInfo*)local_pCreateInfo, pSupport);
+    if (local_pCreateInfo) {
+        delete local_pCreateInfo;
+    }
+}
 
 VKAPI_ATTR void VKAPI_CALL DestroySurfaceKHR(
     VkInstance                                  instance,
     VkSurfaceKHR                                surface,
     const VkAllocationCallbacks*                pAllocator)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(instance), layer_data_map);
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(instance), instance_layer_data_map);
     std::unique_lock<std::mutex> lock(global_lock);
     uint64_t surface_id = reinterpret_cast<uint64_t &>(surface);
-    surface = (VkSurfaceKHR)dev_data->unique_id_mapping[surface_id];
-    dev_data->unique_id_mapping.erase(surface_id);
+    surface = (VkSurfaceKHR)unique_id_mapping[surface_id];
+    unique_id_mapping.erase(surface_id);
     lock.unlock();
-    dev_data->instance_dispatch_table->DestroySurfaceKHR(instance, surface, pAllocator);
+    dev_data->dispatch_table.DestroySurfaceKHR(instance, surface, pAllocator);
 
 }
 
@@ -2009,12 +2775,12 @@ VKAPI_ATTR VkResult VKAPI_CALL GetPhysicalDeviceSurfaceSupportKHR(
     VkSurfaceKHR                                surface,
     VkBool32*                                   pSupported)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(physicalDevice), layer_data_map);
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(physicalDevice), instance_layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        surface = (VkSurfaceKHR)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(surface)];
+        surface = Unwrap(surface);
     }
-    VkResult result = dev_data->instance_dispatch_table->GetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamilyIndex, surface, pSupported);
+    VkResult result = dev_data->dispatch_table.GetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamilyIndex, surface, pSupported);
 
     return result;
 }
@@ -2024,12 +2790,12 @@ VKAPI_ATTR VkResult VKAPI_CALL GetPhysicalDeviceSurfaceCapabilitiesKHR(
     VkSurfaceKHR                                surface,
     VkSurfaceCapabilitiesKHR*                   pSurfaceCapabilities)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(physicalDevice), layer_data_map);
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(physicalDevice), instance_layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        surface = (VkSurfaceKHR)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(surface)];
+        surface = Unwrap(surface);
     }
-    VkResult result = dev_data->instance_dispatch_table->GetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, pSurfaceCapabilities);
+    VkResult result = dev_data->dispatch_table.GetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, pSurfaceCapabilities);
 
     return result;
 }
@@ -2040,12 +2806,12 @@ VKAPI_ATTR VkResult VKAPI_CALL GetPhysicalDeviceSurfaceFormatsKHR(
     uint32_t*                                   pSurfaceFormatCount,
     VkSurfaceFormatKHR*                         pSurfaceFormats)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(physicalDevice), layer_data_map);
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(physicalDevice), instance_layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        surface = (VkSurfaceKHR)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(surface)];
+        surface = Unwrap(surface);
     }
-    VkResult result = dev_data->instance_dispatch_table->GetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, pSurfaceFormatCount, pSurfaceFormats);
+    VkResult result = dev_data->dispatch_table.GetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, pSurfaceFormatCount, pSurfaceFormats);
 
     return result;
 }
@@ -2056,16 +2822,15 @@ VKAPI_ATTR VkResult VKAPI_CALL GetPhysicalDeviceSurfacePresentModesKHR(
     uint32_t*                                   pPresentModeCount,
     VkPresentModeKHR*                           pPresentModes)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(physicalDevice), layer_data_map);
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(physicalDevice), instance_layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        surface = (VkSurfaceKHR)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(surface)];
+        surface = Unwrap(surface);
     }
-    VkResult result = dev_data->instance_dispatch_table->GetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, pPresentModeCount, pPresentModes);
+    VkResult result = dev_data->dispatch_table.GetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, pPresentModeCount, pPresentModes);
 
     return result;
 }
-
 
 // Declare only
 VKAPI_ATTR VkResult VKAPI_CALL CreateSwapchainKHR(
@@ -2074,20 +2839,11 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateSwapchainKHR(
     const VkAllocationCallbacks*                pAllocator,
     VkSwapchainKHR*                             pSwapchain);
 
+// Declare only
 VKAPI_ATTR void VKAPI_CALL DestroySwapchainKHR(
     VkDevice                                    device,
     VkSwapchainKHR                              swapchain,
-    const VkAllocationCallbacks*                pAllocator)
-{
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
-    std::unique_lock<std::mutex> lock(global_lock);
-    uint64_t swapchain_id = reinterpret_cast<uint64_t &>(swapchain);
-    swapchain = (VkSwapchainKHR)dev_data->unique_id_mapping[swapchain_id];
-    dev_data->unique_id_mapping.erase(swapchain_id);
-    lock.unlock();
-    dev_data->device_dispatch_table->DestroySwapchainKHR(device, swapchain, pAllocator);
-
-}
+    const VkAllocationCallbacks*                pAllocator);
 
 // Declare only
 VKAPI_ATTR VkResult VKAPI_CALL GetSwapchainImagesKHR(
@@ -2104,46 +2860,108 @@ VKAPI_ATTR VkResult VKAPI_CALL AcquireNextImageKHR(
     VkFence                                     fence,
     uint32_t*                                   pImageIndex)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        swapchain = (VkSwapchainKHR)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(swapchain)];
-        semaphore = (VkSemaphore)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(semaphore)];
-        fence = (VkFence)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(fence)];
+        swapchain = Unwrap(swapchain);
+        semaphore = Unwrap(semaphore);
+        fence = Unwrap(fence);
     }
-    VkResult result = dev_data->device_dispatch_table->AcquireNextImageKHR(device, swapchain, timeout, semaphore, fence, pImageIndex);
+    VkResult result = dev_data->dispatch_table.AcquireNextImageKHR(device, swapchain, timeout, semaphore, fence, pImageIndex);
 
     return result;
 }
 
+// Declare only
 VKAPI_ATTR VkResult VKAPI_CALL QueuePresentKHR(
     VkQueue                                     queue,
-    const VkPresentInfoKHR*                     pPresentInfo)
+    const VkPresentInfoKHR*                     pPresentInfo);
+
+VKAPI_ATTR VkResult VKAPI_CALL GetDeviceGroupSurfacePresentModesKHR(
+    VkDevice                                    device,
+    VkSurfaceKHR                                surface,
+    VkDeviceGroupPresentModeFlagsKHR*           pModes)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(queue), layer_data_map);
-    safe_VkPresentInfoKHR *local_pPresentInfo = NULL;
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        if (pPresentInfo) {
-            local_pPresentInfo = new safe_VkPresentInfoKHR(pPresentInfo);
-            if (local_pPresentInfo->pWaitSemaphores) {
-                for (uint32_t index1 = 0; index1 < local_pPresentInfo->waitSemaphoreCount; ++index1) {
-                    local_pPresentInfo->pWaitSemaphores[index1] = (VkSemaphore)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(local_pPresentInfo->pWaitSemaphores[index1])];
-                }
+        surface = Unwrap(surface);
+    }
+    VkResult result = dev_data->dispatch_table.GetDeviceGroupSurfacePresentModesKHR(device, surface, pModes);
+
+    return result;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL GetPhysicalDevicePresentRectanglesKHR(
+    VkPhysicalDevice                            physicalDevice,
+    VkSurfaceKHR                                surface,
+    uint32_t*                                   pRectCount,
+    VkRect2D*                                   pRects)
+{
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(physicalDevice), instance_layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        surface = Unwrap(surface);
+    }
+    VkResult result = dev_data->dispatch_table.GetPhysicalDevicePresentRectanglesKHR(physicalDevice, surface, pRectCount, pRects);
+
+    return result;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL AcquireNextImage2KHR(
+    VkDevice                                    device,
+    const VkAcquireNextImageInfoKHR*            pAcquireInfo,
+    uint32_t*                                   pImageIndex)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkAcquireNextImageInfoKHR *local_pAcquireInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pAcquireInfo) {
+            local_pAcquireInfo = new safe_VkAcquireNextImageInfoKHR(pAcquireInfo);
+            if (pAcquireInfo->swapchain) {
+                local_pAcquireInfo->swapchain = Unwrap(pAcquireInfo->swapchain);
             }
-            if (local_pPresentInfo->pSwapchains) {
-                for (uint32_t index1 = 0; index1 < local_pPresentInfo->swapchainCount; ++index1) {
-                    local_pPresentInfo->pSwapchains[index1] = (VkSwapchainKHR)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(local_pPresentInfo->pSwapchains[index1])];
-                }
+            if (pAcquireInfo->semaphore) {
+                local_pAcquireInfo->semaphore = Unwrap(pAcquireInfo->semaphore);
+            }
+            if (pAcquireInfo->fence) {
+                local_pAcquireInfo->fence = Unwrap(pAcquireInfo->fence);
             }
         }
     }
-    VkResult result = dev_data->device_dispatch_table->QueuePresentKHR(queue, (const VkPresentInfoKHR*)local_pPresentInfo);
-    if (local_pPresentInfo)
-        delete local_pPresentInfo;
+    VkResult result = dev_data->dispatch_table.AcquireNextImage2KHR(device, (const VkAcquireNextImageInfoKHR*)local_pAcquireInfo, pImageIndex);
+    if (local_pAcquireInfo) {
+        delete local_pAcquireInfo;
+    }
     return result;
 }
 
+// Declare only
+VKAPI_ATTR VkResult VKAPI_CALL GetPhysicalDeviceDisplayPropertiesKHR(
+    VkPhysicalDevice                            physicalDevice,
+    uint32_t*                                   pPropertyCount,
+    VkDisplayPropertiesKHR*                     pProperties);
+
+// Declare only
+VKAPI_ATTR VkResult VKAPI_CALL GetPhysicalDeviceDisplayPlanePropertiesKHR(
+    VkPhysicalDevice                            physicalDevice,
+    uint32_t*                                   pPropertyCount,
+    VkDisplayPlanePropertiesKHR*                pProperties);
+
+// Declare only
+VKAPI_ATTR VkResult VKAPI_CALL GetDisplayPlaneSupportedDisplaysKHR(
+    VkPhysicalDevice                            physicalDevice,
+    uint32_t                                    planeIndex,
+    uint32_t*                                   pDisplayCount,
+    VkDisplayKHR*                               pDisplays);
+
+// Declare only
+VKAPI_ATTR VkResult VKAPI_CALL GetDisplayModePropertiesKHR(
+    VkPhysicalDevice                            physicalDevice,
+    VkDisplayKHR                                display,
+    uint32_t*                                   pPropertyCount,
+    VkDisplayModePropertiesKHR*                 pProperties);
 
 VKAPI_ATTR VkResult VKAPI_CALL CreateDisplayModeKHR(
     VkPhysicalDevice                            physicalDevice,
@@ -2152,13 +2970,15 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateDisplayModeKHR(
     const VkAllocationCallbacks*                pAllocator,
     VkDisplayModeKHR*                           pMode)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(physicalDevice), layer_data_map);
-    VkResult result = dev_data->instance_dispatch_table->CreateDisplayModeKHR(physicalDevice, display, pCreateInfo, pAllocator, pMode);
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(physicalDevice), instance_layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        display = Unwrap(display);
+    }
+    VkResult result = dev_data->dispatch_table.CreateDisplayModeKHR(physicalDevice, display, pCreateInfo, pAllocator, pMode);
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pMode);
-        *pMode = reinterpret_cast<VkDisplayModeKHR&>(unique_id);
+        *pMode = WrapNew(*pMode);
     }
     return result;
 }
@@ -2169,12 +2989,12 @@ VKAPI_ATTR VkResult VKAPI_CALL GetDisplayPlaneCapabilitiesKHR(
     uint32_t                                    planeIndex,
     VkDisplayPlaneCapabilitiesKHR*              pCapabilities)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(physicalDevice), layer_data_map);
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(physicalDevice), instance_layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        mode = (VkDisplayModeKHR)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(mode)];
+        mode = Unwrap(mode);
     }
-    VkResult result = dev_data->instance_dispatch_table->GetDisplayPlaneCapabilitiesKHR(physicalDevice, mode, planeIndex, pCapabilities);
+    VkResult result = dev_data->dispatch_table.GetDisplayPlaneCapabilitiesKHR(physicalDevice, mode, planeIndex, pCapabilities);
 
     return result;
 }
@@ -2185,49 +3005,35 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateDisplayPlaneSurfaceKHR(
     const VkAllocationCallbacks*                pAllocator,
     VkSurfaceKHR*                               pSurface)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(instance), layer_data_map);
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(instance), instance_layer_data_map);
     safe_VkDisplaySurfaceCreateInfoKHR *local_pCreateInfo = NULL;
     {
         std::lock_guard<std::mutex> lock(global_lock);
         if (pCreateInfo) {
             local_pCreateInfo = new safe_VkDisplaySurfaceCreateInfoKHR(pCreateInfo);
             if (pCreateInfo->displayMode) {
-                local_pCreateInfo->displayMode = (VkDisplayModeKHR)dev_data->unique_id_mapping[reinterpret_cast<const uint64_t &>(pCreateInfo->displayMode)];
+                local_pCreateInfo->displayMode = Unwrap(pCreateInfo->displayMode);
             }
         }
     }
-    VkResult result = dev_data->instance_dispatch_table->CreateDisplayPlaneSurfaceKHR(instance, (const VkDisplaySurfaceCreateInfoKHR*)local_pCreateInfo, pAllocator, pSurface);
-    if (local_pCreateInfo)
+    VkResult result = dev_data->dispatch_table.CreateDisplayPlaneSurfaceKHR(instance, (const VkDisplaySurfaceCreateInfoKHR*)local_pCreateInfo, pAllocator, pSurface);
+    if (local_pCreateInfo) {
         delete local_pCreateInfo;
+    }
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pSurface);
-        *pSurface = reinterpret_cast<VkSurfaceKHR&>(unique_id);
+        *pSurface = WrapNew(*pSurface);
     }
     return result;
 }
 
-
+// Declare only
 VKAPI_ATTR VkResult VKAPI_CALL CreateSharedSwapchainsKHR(
     VkDevice                                    device,
     uint32_t                                    swapchainCount,
     const VkSwapchainCreateInfoKHR*             pCreateInfos,
     const VkAllocationCallbacks*                pAllocator,
-    VkSwapchainKHR*                             pSwapchains)
-{
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
-    VkResult result = dev_data->device_dispatch_table->CreateSharedSwapchainsKHR(device, swapchainCount, pCreateInfos, pAllocator, pSwapchains);
-    if (VK_SUCCESS == result) {
-        std::lock_guard<std::mutex> lock(global_lock);
-        for (uint32_t index0 = 0; index0 < swapchainCount; index0++) {
-            uint64_t unique_id = global_unique_id++;
-            dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(pSwapchains[index0]);
-            pSwapchains[index0] = reinterpret_cast<VkSwapchainKHR&>(unique_id);
-        }
-    }
-    return result;
-}
+    VkSwapchainKHR*                             pSwapchains);
 
 #ifdef VK_USE_PLATFORM_XLIB_KHR
 
@@ -2237,13 +3043,11 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateXlibSurfaceKHR(
     const VkAllocationCallbacks*                pAllocator,
     VkSurfaceKHR*                               pSurface)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(instance), layer_data_map);
-    VkResult result = dev_data->instance_dispatch_table->CreateXlibSurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(instance), instance_layer_data_map);
+    VkResult result = dev_data->dispatch_table.CreateXlibSurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pSurface);
-        *pSurface = reinterpret_cast<VkSurfaceKHR&>(unique_id);
+        *pSurface = WrapNew(*pSurface);
     }
     return result;
 }
@@ -2257,13 +3061,11 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateXcbSurfaceKHR(
     const VkAllocationCallbacks*                pAllocator,
     VkSurfaceKHR*                               pSurface)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(instance), layer_data_map);
-    VkResult result = dev_data->instance_dispatch_table->CreateXcbSurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(instance), instance_layer_data_map);
+    VkResult result = dev_data->dispatch_table.CreateXcbSurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pSurface);
-        *pSurface = reinterpret_cast<VkSurfaceKHR&>(unique_id);
+        *pSurface = WrapNew(*pSurface);
     }
     return result;
 }
@@ -2277,13 +3079,11 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateWaylandSurfaceKHR(
     const VkAllocationCallbacks*                pAllocator,
     VkSurfaceKHR*                               pSurface)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(instance), layer_data_map);
-    VkResult result = dev_data->instance_dispatch_table->CreateWaylandSurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(instance), instance_layer_data_map);
+    VkResult result = dev_data->dispatch_table.CreateWaylandSurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pSurface);
-        *pSurface = reinterpret_cast<VkSurfaceKHR&>(unique_id);
+        *pSurface = WrapNew(*pSurface);
     }
     return result;
 }
@@ -2297,13 +3097,11 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateMirSurfaceKHR(
     const VkAllocationCallbacks*                pAllocator,
     VkSurfaceKHR*                               pSurface)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(instance), layer_data_map);
-    VkResult result = dev_data->instance_dispatch_table->CreateMirSurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(instance), instance_layer_data_map);
+    VkResult result = dev_data->dispatch_table.CreateMirSurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pSurface);
-        *pSurface = reinterpret_cast<VkSurfaceKHR&>(unique_id);
+        *pSurface = WrapNew(*pSurface);
     }
     return result;
 }
@@ -2317,13 +3115,11 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateAndroidSurfaceKHR(
     const VkAllocationCallbacks*                pAllocator,
     VkSurfaceKHR*                               pSurface)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(instance), layer_data_map);
-    VkResult result = dev_data->instance_dispatch_table->CreateAndroidSurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(instance), instance_layer_data_map);
+    VkResult result = dev_data->dispatch_table.CreateAndroidSurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pSurface);
-        *pSurface = reinterpret_cast<VkSurfaceKHR&>(unique_id);
+        *pSurface = WrapNew(*pSurface);
     }
     return result;
 }
@@ -2337,38 +3133,900 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateWin32SurfaceKHR(
     const VkAllocationCallbacks*                pAllocator,
     VkSurfaceKHR*                               pSurface)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(instance), layer_data_map);
-    VkResult result = dev_data->instance_dispatch_table->CreateWin32SurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(instance), instance_layer_data_map);
+    VkResult result = dev_data->dispatch_table.CreateWin32SurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
     if (VK_SUCCESS == result) {
         std::lock_guard<std::mutex> lock(global_lock);
-        uint64_t unique_id = global_unique_id++;
-        dev_data->unique_id_mapping[unique_id] = reinterpret_cast<uint64_t &>(*pSurface);
-        *pSurface = reinterpret_cast<VkSurfaceKHR&>(unique_id);
+        *pSurface = WrapNew(*pSurface);
     }
     return result;
 }
 #endif // VK_USE_PLATFORM_WIN32_KHR
 
+VKAPI_ATTR VkResult VKAPI_CALL GetPhysicalDeviceImageFormatProperties2KHR(
+    VkPhysicalDevice                            physicalDevice,
+    const VkPhysicalDeviceImageFormatInfo2*     pImageFormatInfo,
+    VkImageFormatProperties2*                   pImageFormatProperties)
+{
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(physicalDevice), instance_layer_data_map);
+    safe_VkPhysicalDeviceImageFormatInfo2 *local_pImageFormatInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pImageFormatInfo) {
+            local_pImageFormatInfo = new safe_VkPhysicalDeviceImageFormatInfo2(pImageFormatInfo);
+            local_pImageFormatInfo->pNext = CreateUnwrappedExtensionStructs(local_pImageFormatInfo->pNext);
+        }
+    }
+    VkResult result = dev_data->dispatch_table.GetPhysicalDeviceImageFormatProperties2KHR(physicalDevice, (const VkPhysicalDeviceImageFormatInfo2*)local_pImageFormatInfo, pImageFormatProperties);
+    if (local_pImageFormatInfo) {
+        FreeUnwrappedExtensionStructs(const_cast<void *>(local_pImageFormatInfo->pNext));
+        delete local_pImageFormatInfo;
+    }
+    return result;
+}
 
+VKAPI_ATTR void VKAPI_CALL TrimCommandPoolKHR(
+    VkDevice                                    device,
+    VkCommandPool                               commandPool,
+    VkCommandPoolTrimFlags                      flags)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        commandPool = Unwrap(commandPool);
+    }
+    dev_data->dispatch_table.TrimCommandPoolKHR(device, commandPool, flags);
 
+}
 
+#ifdef VK_USE_PLATFORM_WIN32_KHR
 
+VKAPI_ATTR VkResult VKAPI_CALL GetMemoryWin32HandleKHR(
+    VkDevice                                    device,
+    const VkMemoryGetWin32HandleInfoKHR*        pGetWin32HandleInfo,
+    HANDLE*                                     pHandle)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkMemoryGetWin32HandleInfoKHR *local_pGetWin32HandleInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pGetWin32HandleInfo) {
+            local_pGetWin32HandleInfo = new safe_VkMemoryGetWin32HandleInfoKHR(pGetWin32HandleInfo);
+            if (pGetWin32HandleInfo->memory) {
+                local_pGetWin32HandleInfo->memory = Unwrap(pGetWin32HandleInfo->memory);
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.GetMemoryWin32HandleKHR(device, (const VkMemoryGetWin32HandleInfoKHR*)local_pGetWin32HandleInfo, pHandle);
+    if (local_pGetWin32HandleInfo) {
+        delete local_pGetWin32HandleInfo;
+    }
+    return result;
+}
+#endif // VK_USE_PLATFORM_WIN32_KHR
 
+VKAPI_ATTR VkResult VKAPI_CALL GetMemoryFdKHR(
+    VkDevice                                    device,
+    const VkMemoryGetFdInfoKHR*                 pGetFdInfo,
+    int*                                        pFd)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkMemoryGetFdInfoKHR *local_pGetFdInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pGetFdInfo) {
+            local_pGetFdInfo = new safe_VkMemoryGetFdInfoKHR(pGetFdInfo);
+            if (pGetFdInfo->memory) {
+                local_pGetFdInfo->memory = Unwrap(pGetFdInfo->memory);
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.GetMemoryFdKHR(device, (const VkMemoryGetFdInfoKHR*)local_pGetFdInfo, pFd);
+    if (local_pGetFdInfo) {
+        delete local_pGetFdInfo;
+    }
+    return result;
+}
 
+#ifdef VK_USE_PLATFORM_WIN32_KHR
 
+VKAPI_ATTR VkResult VKAPI_CALL ImportSemaphoreWin32HandleKHR(
+    VkDevice                                    device,
+    const VkImportSemaphoreWin32HandleInfoKHR*  pImportSemaphoreWin32HandleInfo)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkImportSemaphoreWin32HandleInfoKHR *local_pImportSemaphoreWin32HandleInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pImportSemaphoreWin32HandleInfo) {
+            local_pImportSemaphoreWin32HandleInfo = new safe_VkImportSemaphoreWin32HandleInfoKHR(pImportSemaphoreWin32HandleInfo);
+            if (pImportSemaphoreWin32HandleInfo->semaphore) {
+                local_pImportSemaphoreWin32HandleInfo->semaphore = Unwrap(pImportSemaphoreWin32HandleInfo->semaphore);
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.ImportSemaphoreWin32HandleKHR(device, (const VkImportSemaphoreWin32HandleInfoKHR*)local_pImportSemaphoreWin32HandleInfo);
+    if (local_pImportSemaphoreWin32HandleInfo) {
+        delete local_pImportSemaphoreWin32HandleInfo;
+    }
+    return result;
+}
+#endif // VK_USE_PLATFORM_WIN32_KHR
 
+#ifdef VK_USE_PLATFORM_WIN32_KHR
 
+VKAPI_ATTR VkResult VKAPI_CALL GetSemaphoreWin32HandleKHR(
+    VkDevice                                    device,
+    const VkSemaphoreGetWin32HandleInfoKHR*     pGetWin32HandleInfo,
+    HANDLE*                                     pHandle)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkSemaphoreGetWin32HandleInfoKHR *local_pGetWin32HandleInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pGetWin32HandleInfo) {
+            local_pGetWin32HandleInfo = new safe_VkSemaphoreGetWin32HandleInfoKHR(pGetWin32HandleInfo);
+            if (pGetWin32HandleInfo->semaphore) {
+                local_pGetWin32HandleInfo->semaphore = Unwrap(pGetWin32HandleInfo->semaphore);
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.GetSemaphoreWin32HandleKHR(device, (const VkSemaphoreGetWin32HandleInfoKHR*)local_pGetWin32HandleInfo, pHandle);
+    if (local_pGetWin32HandleInfo) {
+        delete local_pGetWin32HandleInfo;
+    }
+    return result;
+}
+#endif // VK_USE_PLATFORM_WIN32_KHR
 
+VKAPI_ATTR VkResult VKAPI_CALL ImportSemaphoreFdKHR(
+    VkDevice                                    device,
+    const VkImportSemaphoreFdInfoKHR*           pImportSemaphoreFdInfo)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkImportSemaphoreFdInfoKHR *local_pImportSemaphoreFdInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pImportSemaphoreFdInfo) {
+            local_pImportSemaphoreFdInfo = new safe_VkImportSemaphoreFdInfoKHR(pImportSemaphoreFdInfo);
+            if (pImportSemaphoreFdInfo->semaphore) {
+                local_pImportSemaphoreFdInfo->semaphore = Unwrap(pImportSemaphoreFdInfo->semaphore);
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.ImportSemaphoreFdKHR(device, (const VkImportSemaphoreFdInfoKHR*)local_pImportSemaphoreFdInfo);
+    if (local_pImportSemaphoreFdInfo) {
+        delete local_pImportSemaphoreFdInfo;
+    }
+    return result;
+}
 
+VKAPI_ATTR VkResult VKAPI_CALL GetSemaphoreFdKHR(
+    VkDevice                                    device,
+    const VkSemaphoreGetFdInfoKHR*              pGetFdInfo,
+    int*                                        pFd)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkSemaphoreGetFdInfoKHR *local_pGetFdInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pGetFdInfo) {
+            local_pGetFdInfo = new safe_VkSemaphoreGetFdInfoKHR(pGetFdInfo);
+            if (pGetFdInfo->semaphore) {
+                local_pGetFdInfo->semaphore = Unwrap(pGetFdInfo->semaphore);
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.GetSemaphoreFdKHR(device, (const VkSemaphoreGetFdInfoKHR*)local_pGetFdInfo, pFd);
+    if (local_pGetFdInfo) {
+        delete local_pGetFdInfo;
+    }
+    return result;
+}
 
+VKAPI_ATTR void VKAPI_CALL CmdPushDescriptorSetKHR(
+    VkCommandBuffer                             commandBuffer,
+    VkPipelineBindPoint                         pipelineBindPoint,
+    VkPipelineLayout                            layout,
+    uint32_t                                    set,
+    uint32_t                                    descriptorWriteCount,
+    const VkWriteDescriptorSet*                 pDescriptorWrites)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
+    safe_VkWriteDescriptorSet *local_pDescriptorWrites = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        layout = Unwrap(layout);
+        if (pDescriptorWrites) {
+            local_pDescriptorWrites = new safe_VkWriteDescriptorSet[descriptorWriteCount];
+            for (uint32_t index0 = 0; index0 < descriptorWriteCount; ++index0) {
+                local_pDescriptorWrites[index0].initialize(&pDescriptorWrites[index0]);
+                local_pDescriptorWrites[index0].pNext = CreateUnwrappedExtensionStructs(local_pDescriptorWrites[index0].pNext);
+                if (pDescriptorWrites[index0].dstSet) {
+                    local_pDescriptorWrites[index0].dstSet = Unwrap(pDescriptorWrites[index0].dstSet);
+                }
+                if (local_pDescriptorWrites[index0].pImageInfo) {
+                    for (uint32_t index1 = 0; index1 < local_pDescriptorWrites[index0].descriptorCount; ++index1) {
+                        if (pDescriptorWrites[index0].pImageInfo[index1].sampler) {
+                            local_pDescriptorWrites[index0].pImageInfo[index1].sampler = Unwrap(pDescriptorWrites[index0].pImageInfo[index1].sampler);
+                        }
+                        if (pDescriptorWrites[index0].pImageInfo[index1].imageView) {
+                            local_pDescriptorWrites[index0].pImageInfo[index1].imageView = Unwrap(pDescriptorWrites[index0].pImageInfo[index1].imageView);
+                        }
+                    }
+                }
+                if (local_pDescriptorWrites[index0].pBufferInfo) {
+                    for (uint32_t index1 = 0; index1 < local_pDescriptorWrites[index0].descriptorCount; ++index1) {
+                        if (pDescriptorWrites[index0].pBufferInfo[index1].buffer) {
+                            local_pDescriptorWrites[index0].pBufferInfo[index1].buffer = Unwrap(pDescriptorWrites[index0].pBufferInfo[index1].buffer);
+                        }
+                    }
+                }
+                if (local_pDescriptorWrites[index0].pTexelBufferView) {
+                    for (uint32_t index1 = 0; index1 < local_pDescriptorWrites[index0].descriptorCount; ++index1) {
+                        local_pDescriptorWrites[index0].pTexelBufferView[index1] = Unwrap(local_pDescriptorWrites[index0].pTexelBufferView[index1]);
+                    }
+                }
+            }
+        }
+    }
+    dev_data->dispatch_table.CmdPushDescriptorSetKHR(commandBuffer, pipelineBindPoint, layout, set, descriptorWriteCount, (const VkWriteDescriptorSet*)local_pDescriptorWrites);
+    if (local_pDescriptorWrites) {
+        for (uint32_t index0 = 0; index0 < descriptorWriteCount; ++index0) {
+            FreeUnwrappedExtensionStructs(const_cast<void *>(local_pDescriptorWrites[index0].pNext));
+        }
+        delete[] local_pDescriptorWrites;
+    }
+}
 
+// Declare only
+VKAPI_ATTR void VKAPI_CALL CmdPushDescriptorSetWithTemplateKHR(
+    VkCommandBuffer                             commandBuffer,
+    VkDescriptorUpdateTemplate                  descriptorUpdateTemplate,
+    VkPipelineLayout                            layout,
+    uint32_t                                    set,
+    const void*                                 pData);
 
+// Declare only
+VKAPI_ATTR VkResult VKAPI_CALL CreateDescriptorUpdateTemplateKHR(
+    VkDevice                                    device,
+    const VkDescriptorUpdateTemplateCreateInfo* pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkDescriptorUpdateTemplate*                 pDescriptorUpdateTemplate);
 
+// Declare only
+VKAPI_ATTR void VKAPI_CALL DestroyDescriptorUpdateTemplateKHR(
+    VkDevice                                    device,
+    VkDescriptorUpdateTemplate                  descriptorUpdateTemplate,
+    const VkAllocationCallbacks*                pAllocator);
 
+// Declare only
+VKAPI_ATTR void VKAPI_CALL UpdateDescriptorSetWithTemplateKHR(
+    VkDevice                                    device,
+    VkDescriptorSet                             descriptorSet,
+    VkDescriptorUpdateTemplate                  descriptorUpdateTemplate,
+    const void*                                 pData);
 
+// Declare only
+VKAPI_ATTR VkResult VKAPI_CALL CreateRenderPass2KHR(
+    VkDevice                                    device,
+    const VkRenderPassCreateInfo2KHR*           pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkRenderPass*                               pRenderPass);
 
+VKAPI_ATTR void VKAPI_CALL CmdBeginRenderPass2KHR(
+    VkCommandBuffer                             commandBuffer,
+    const VkRenderPassBeginInfo*                pRenderPassBegin,
+    const VkSubpassBeginInfoKHR*                pSubpassBeginInfo)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
+    safe_VkRenderPassBeginInfo *local_pRenderPassBegin = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pRenderPassBegin) {
+            local_pRenderPassBegin = new safe_VkRenderPassBeginInfo(pRenderPassBegin);
+            if (pRenderPassBegin->renderPass) {
+                local_pRenderPassBegin->renderPass = Unwrap(pRenderPassBegin->renderPass);
+            }
+            if (pRenderPassBegin->framebuffer) {
+                local_pRenderPassBegin->framebuffer = Unwrap(pRenderPassBegin->framebuffer);
+            }
+        }
+    }
+    dev_data->dispatch_table.CmdBeginRenderPass2KHR(commandBuffer, (const VkRenderPassBeginInfo*)local_pRenderPassBegin, pSubpassBeginInfo);
+    if (local_pRenderPassBegin) {
+        delete local_pRenderPassBegin;
+    }
+}
 
+VKAPI_ATTR VkResult VKAPI_CALL GetSwapchainStatusKHR(
+    VkDevice                                    device,
+    VkSwapchainKHR                              swapchain)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        swapchain = Unwrap(swapchain);
+    }
+    VkResult result = dev_data->dispatch_table.GetSwapchainStatusKHR(device, swapchain);
 
+    return result;
+}
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+
+VKAPI_ATTR VkResult VKAPI_CALL ImportFenceWin32HandleKHR(
+    VkDevice                                    device,
+    const VkImportFenceWin32HandleInfoKHR*      pImportFenceWin32HandleInfo)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkImportFenceWin32HandleInfoKHR *local_pImportFenceWin32HandleInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pImportFenceWin32HandleInfo) {
+            local_pImportFenceWin32HandleInfo = new safe_VkImportFenceWin32HandleInfoKHR(pImportFenceWin32HandleInfo);
+            if (pImportFenceWin32HandleInfo->fence) {
+                local_pImportFenceWin32HandleInfo->fence = Unwrap(pImportFenceWin32HandleInfo->fence);
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.ImportFenceWin32HandleKHR(device, (const VkImportFenceWin32HandleInfoKHR*)local_pImportFenceWin32HandleInfo);
+    if (local_pImportFenceWin32HandleInfo) {
+        delete local_pImportFenceWin32HandleInfo;
+    }
+    return result;
+}
+#endif // VK_USE_PLATFORM_WIN32_KHR
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+
+VKAPI_ATTR VkResult VKAPI_CALL GetFenceWin32HandleKHR(
+    VkDevice                                    device,
+    const VkFenceGetWin32HandleInfoKHR*         pGetWin32HandleInfo,
+    HANDLE*                                     pHandle)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkFenceGetWin32HandleInfoKHR *local_pGetWin32HandleInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pGetWin32HandleInfo) {
+            local_pGetWin32HandleInfo = new safe_VkFenceGetWin32HandleInfoKHR(pGetWin32HandleInfo);
+            if (pGetWin32HandleInfo->fence) {
+                local_pGetWin32HandleInfo->fence = Unwrap(pGetWin32HandleInfo->fence);
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.GetFenceWin32HandleKHR(device, (const VkFenceGetWin32HandleInfoKHR*)local_pGetWin32HandleInfo, pHandle);
+    if (local_pGetWin32HandleInfo) {
+        delete local_pGetWin32HandleInfo;
+    }
+    return result;
+}
+#endif // VK_USE_PLATFORM_WIN32_KHR
+
+VKAPI_ATTR VkResult VKAPI_CALL ImportFenceFdKHR(
+    VkDevice                                    device,
+    const VkImportFenceFdInfoKHR*               pImportFenceFdInfo)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkImportFenceFdInfoKHR *local_pImportFenceFdInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pImportFenceFdInfo) {
+            local_pImportFenceFdInfo = new safe_VkImportFenceFdInfoKHR(pImportFenceFdInfo);
+            if (pImportFenceFdInfo->fence) {
+                local_pImportFenceFdInfo->fence = Unwrap(pImportFenceFdInfo->fence);
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.ImportFenceFdKHR(device, (const VkImportFenceFdInfoKHR*)local_pImportFenceFdInfo);
+    if (local_pImportFenceFdInfo) {
+        delete local_pImportFenceFdInfo;
+    }
+    return result;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL GetFenceFdKHR(
+    VkDevice                                    device,
+    const VkFenceGetFdInfoKHR*                  pGetFdInfo,
+    int*                                        pFd)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkFenceGetFdInfoKHR *local_pGetFdInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pGetFdInfo) {
+            local_pGetFdInfo = new safe_VkFenceGetFdInfoKHR(pGetFdInfo);
+            if (pGetFdInfo->fence) {
+                local_pGetFdInfo->fence = Unwrap(pGetFdInfo->fence);
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.GetFenceFdKHR(device, (const VkFenceGetFdInfoKHR*)local_pGetFdInfo, pFd);
+    if (local_pGetFdInfo) {
+        delete local_pGetFdInfo;
+    }
+    return result;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL GetPhysicalDeviceSurfaceCapabilities2KHR(
+    VkPhysicalDevice                            physicalDevice,
+    const VkPhysicalDeviceSurfaceInfo2KHR*      pSurfaceInfo,
+    VkSurfaceCapabilities2KHR*                  pSurfaceCapabilities)
+{
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(physicalDevice), instance_layer_data_map);
+    safe_VkPhysicalDeviceSurfaceInfo2KHR *local_pSurfaceInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pSurfaceInfo) {
+            local_pSurfaceInfo = new safe_VkPhysicalDeviceSurfaceInfo2KHR(pSurfaceInfo);
+            if (pSurfaceInfo->surface) {
+                local_pSurfaceInfo->surface = Unwrap(pSurfaceInfo->surface);
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.GetPhysicalDeviceSurfaceCapabilities2KHR(physicalDevice, (const VkPhysicalDeviceSurfaceInfo2KHR*)local_pSurfaceInfo, pSurfaceCapabilities);
+    if (local_pSurfaceInfo) {
+        delete local_pSurfaceInfo;
+    }
+    return result;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL GetPhysicalDeviceSurfaceFormats2KHR(
+    VkPhysicalDevice                            physicalDevice,
+    const VkPhysicalDeviceSurfaceInfo2KHR*      pSurfaceInfo,
+    uint32_t*                                   pSurfaceFormatCount,
+    VkSurfaceFormat2KHR*                        pSurfaceFormats)
+{
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(physicalDevice), instance_layer_data_map);
+    safe_VkPhysicalDeviceSurfaceInfo2KHR *local_pSurfaceInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pSurfaceInfo) {
+            local_pSurfaceInfo = new safe_VkPhysicalDeviceSurfaceInfo2KHR(pSurfaceInfo);
+            if (pSurfaceInfo->surface) {
+                local_pSurfaceInfo->surface = Unwrap(pSurfaceInfo->surface);
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.GetPhysicalDeviceSurfaceFormats2KHR(physicalDevice, (const VkPhysicalDeviceSurfaceInfo2KHR*)local_pSurfaceInfo, pSurfaceFormatCount, pSurfaceFormats);
+    if (local_pSurfaceInfo) {
+        delete local_pSurfaceInfo;
+    }
+    return result;
+}
+
+// Declare only
+VKAPI_ATTR VkResult VKAPI_CALL GetPhysicalDeviceDisplayProperties2KHR(
+    VkPhysicalDevice                            physicalDevice,
+    uint32_t*                                   pPropertyCount,
+    VkDisplayProperties2KHR*                    pProperties);
+
+// Declare only
+VKAPI_ATTR VkResult VKAPI_CALL GetPhysicalDeviceDisplayPlaneProperties2KHR(
+    VkPhysicalDevice                            physicalDevice,
+    uint32_t*                                   pPropertyCount,
+    VkDisplayPlaneProperties2KHR*               pProperties);
+
+// Declare only
+VKAPI_ATTR VkResult VKAPI_CALL GetDisplayModeProperties2KHR(
+    VkPhysicalDevice                            physicalDevice,
+    VkDisplayKHR                                display,
+    uint32_t*                                   pPropertyCount,
+    VkDisplayModeProperties2KHR*                pProperties);
+
+VKAPI_ATTR VkResult VKAPI_CALL GetDisplayPlaneCapabilities2KHR(
+    VkPhysicalDevice                            physicalDevice,
+    const VkDisplayPlaneInfo2KHR*               pDisplayPlaneInfo,
+    VkDisplayPlaneCapabilities2KHR*             pCapabilities)
+{
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(physicalDevice), instance_layer_data_map);
+    safe_VkDisplayPlaneInfo2KHR *local_pDisplayPlaneInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pDisplayPlaneInfo) {
+            local_pDisplayPlaneInfo = new safe_VkDisplayPlaneInfo2KHR(pDisplayPlaneInfo);
+            if (pDisplayPlaneInfo->mode) {
+                local_pDisplayPlaneInfo->mode = Unwrap(pDisplayPlaneInfo->mode);
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.GetDisplayPlaneCapabilities2KHR(physicalDevice, (const VkDisplayPlaneInfo2KHR*)local_pDisplayPlaneInfo, pCapabilities);
+    if (local_pDisplayPlaneInfo) {
+        delete local_pDisplayPlaneInfo;
+    }
+    return result;
+}
+
+VKAPI_ATTR void VKAPI_CALL GetImageMemoryRequirements2KHR(
+    VkDevice                                    device,
+    const VkImageMemoryRequirementsInfo2*       pInfo,
+    VkMemoryRequirements2*                      pMemoryRequirements)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkImageMemoryRequirementsInfo2 *local_pInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pInfo) {
+            local_pInfo = new safe_VkImageMemoryRequirementsInfo2(pInfo);
+            if (pInfo->image) {
+                local_pInfo->image = Unwrap(pInfo->image);
+            }
+        }
+    }
+    dev_data->dispatch_table.GetImageMemoryRequirements2KHR(device, (const VkImageMemoryRequirementsInfo2*)local_pInfo, pMemoryRequirements);
+    if (local_pInfo) {
+        delete local_pInfo;
+    }
+}
+
+VKAPI_ATTR void VKAPI_CALL GetBufferMemoryRequirements2KHR(
+    VkDevice                                    device,
+    const VkBufferMemoryRequirementsInfo2*      pInfo,
+    VkMemoryRequirements2*                      pMemoryRequirements)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkBufferMemoryRequirementsInfo2 *local_pInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pInfo) {
+            local_pInfo = new safe_VkBufferMemoryRequirementsInfo2(pInfo);
+            if (pInfo->buffer) {
+                local_pInfo->buffer = Unwrap(pInfo->buffer);
+            }
+        }
+    }
+    dev_data->dispatch_table.GetBufferMemoryRequirements2KHR(device, (const VkBufferMemoryRequirementsInfo2*)local_pInfo, pMemoryRequirements);
+    if (local_pInfo) {
+        delete local_pInfo;
+    }
+}
+
+VKAPI_ATTR void VKAPI_CALL GetImageSparseMemoryRequirements2KHR(
+    VkDevice                                    device,
+    const VkImageSparseMemoryRequirementsInfo2* pInfo,
+    uint32_t*                                   pSparseMemoryRequirementCount,
+    VkSparseImageMemoryRequirements2*           pSparseMemoryRequirements)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkImageSparseMemoryRequirementsInfo2 *local_pInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pInfo) {
+            local_pInfo = new safe_VkImageSparseMemoryRequirementsInfo2(pInfo);
+            if (pInfo->image) {
+                local_pInfo->image = Unwrap(pInfo->image);
+            }
+        }
+    }
+    dev_data->dispatch_table.GetImageSparseMemoryRequirements2KHR(device, (const VkImageSparseMemoryRequirementsInfo2*)local_pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
+    if (local_pInfo) {
+        delete local_pInfo;
+    }
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL CreateSamplerYcbcrConversionKHR(
+    VkDevice                                    device,
+    const VkSamplerYcbcrConversionCreateInfo*   pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkSamplerYcbcrConversion*                   pYcbcrConversion)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkSamplerYcbcrConversionCreateInfo *local_pCreateInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pCreateInfo) {
+            local_pCreateInfo = new safe_VkSamplerYcbcrConversionCreateInfo(pCreateInfo);
+            local_pCreateInfo->pNext = CreateUnwrappedExtensionStructs(local_pCreateInfo->pNext);
+        }
+    }
+    VkResult result = dev_data->dispatch_table.CreateSamplerYcbcrConversionKHR(device, (const VkSamplerYcbcrConversionCreateInfo*)local_pCreateInfo, pAllocator, pYcbcrConversion);
+    if (local_pCreateInfo) {
+        FreeUnwrappedExtensionStructs(const_cast<void *>(local_pCreateInfo->pNext));
+        delete local_pCreateInfo;
+    }
+    if (VK_SUCCESS == result) {
+        std::lock_guard<std::mutex> lock(global_lock);
+        *pYcbcrConversion = WrapNew(*pYcbcrConversion);
+    }
+    return result;
+}
+
+VKAPI_ATTR void VKAPI_CALL DestroySamplerYcbcrConversionKHR(
+    VkDevice                                    device,
+    VkSamplerYcbcrConversion                    ycbcrConversion,
+    const VkAllocationCallbacks*                pAllocator)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    std::unique_lock<std::mutex> lock(global_lock);
+    uint64_t ycbcrConversion_id = reinterpret_cast<uint64_t &>(ycbcrConversion);
+    ycbcrConversion = (VkSamplerYcbcrConversion)unique_id_mapping[ycbcrConversion_id];
+    unique_id_mapping.erase(ycbcrConversion_id);
+    lock.unlock();
+    dev_data->dispatch_table.DestroySamplerYcbcrConversionKHR(device, ycbcrConversion, pAllocator);
+
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL BindBufferMemory2KHR(
+    VkDevice                                    device,
+    uint32_t                                    bindInfoCount,
+    const VkBindBufferMemoryInfo*               pBindInfos)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkBindBufferMemoryInfo *local_pBindInfos = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pBindInfos) {
+            local_pBindInfos = new safe_VkBindBufferMemoryInfo[bindInfoCount];
+            for (uint32_t index0 = 0; index0 < bindInfoCount; ++index0) {
+                local_pBindInfos[index0].initialize(&pBindInfos[index0]);
+                if (pBindInfos[index0].buffer) {
+                    local_pBindInfos[index0].buffer = Unwrap(pBindInfos[index0].buffer);
+                }
+                if (pBindInfos[index0].memory) {
+                    local_pBindInfos[index0].memory = Unwrap(pBindInfos[index0].memory);
+                }
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.BindBufferMemory2KHR(device, bindInfoCount, (const VkBindBufferMemoryInfo*)local_pBindInfos);
+    if (local_pBindInfos) {
+        delete[] local_pBindInfos;
+    }
+    return result;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL BindImageMemory2KHR(
+    VkDevice                                    device,
+    uint32_t                                    bindInfoCount,
+    const VkBindImageMemoryInfo*                pBindInfos)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkBindImageMemoryInfo *local_pBindInfos = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pBindInfos) {
+            local_pBindInfos = new safe_VkBindImageMemoryInfo[bindInfoCount];
+            for (uint32_t index0 = 0; index0 < bindInfoCount; ++index0) {
+                local_pBindInfos[index0].initialize(&pBindInfos[index0]);
+                local_pBindInfos[index0].pNext = CreateUnwrappedExtensionStructs(local_pBindInfos[index0].pNext);
+                if (pBindInfos[index0].image) {
+                    local_pBindInfos[index0].image = Unwrap(pBindInfos[index0].image);
+                }
+                if (pBindInfos[index0].memory) {
+                    local_pBindInfos[index0].memory = Unwrap(pBindInfos[index0].memory);
+                }
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.BindImageMemory2KHR(device, bindInfoCount, (const VkBindImageMemoryInfo*)local_pBindInfos);
+    if (local_pBindInfos) {
+        for (uint32_t index0 = 0; index0 < bindInfoCount; ++index0) {
+            FreeUnwrappedExtensionStructs(const_cast<void *>(local_pBindInfos[index0].pNext));
+        }
+        delete[] local_pBindInfos;
+    }
+    return result;
+}
+
+VKAPI_ATTR void VKAPI_CALL GetDescriptorSetLayoutSupportKHR(
+    VkDevice                                    device,
+    const VkDescriptorSetLayoutCreateInfo*      pCreateInfo,
+    VkDescriptorSetLayoutSupport*               pSupport)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkDescriptorSetLayoutCreateInfo *local_pCreateInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pCreateInfo) {
+            local_pCreateInfo = new safe_VkDescriptorSetLayoutCreateInfo(pCreateInfo);
+            if (local_pCreateInfo->pBindings) {
+                for (uint32_t index1 = 0; index1 < local_pCreateInfo->bindingCount; ++index1) {
+                    if (local_pCreateInfo->pBindings[index1].pImmutableSamplers) {
+                        for (uint32_t index2 = 0; index2 < local_pCreateInfo->pBindings[index1].descriptorCount; ++index2) {
+                            local_pCreateInfo->pBindings[index1].pImmutableSamplers[index2] = Unwrap(local_pCreateInfo->pBindings[index1].pImmutableSamplers[index2]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    dev_data->dispatch_table.GetDescriptorSetLayoutSupportKHR(device, (const VkDescriptorSetLayoutCreateInfo*)local_pCreateInfo, pSupport);
+    if (local_pCreateInfo) {
+        delete local_pCreateInfo;
+    }
+}
+
+VKAPI_ATTR void VKAPI_CALL CmdDrawIndirectCountKHR(
+    VkCommandBuffer                             commandBuffer,
+    VkBuffer                                    buffer,
+    VkDeviceSize                                offset,
+    VkBuffer                                    countBuffer,
+    VkDeviceSize                                countBufferOffset,
+    uint32_t                                    maxDrawCount,
+    uint32_t                                    stride)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        buffer = Unwrap(buffer);
+        countBuffer = Unwrap(countBuffer);
+    }
+    dev_data->dispatch_table.CmdDrawIndirectCountKHR(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
+
+}
+
+VKAPI_ATTR void VKAPI_CALL CmdDrawIndexedIndirectCountKHR(
+    VkCommandBuffer                             commandBuffer,
+    VkBuffer                                    buffer,
+    VkDeviceSize                                offset,
+    VkBuffer                                    countBuffer,
+    VkDeviceSize                                countBufferOffset,
+    uint32_t                                    maxDrawCount,
+    uint32_t                                    stride)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        buffer = Unwrap(buffer);
+        countBuffer = Unwrap(countBuffer);
+    }
+    dev_data->dispatch_table.CmdDrawIndexedIndirectCountKHR(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
+
+}
+
+// Declare only
+VKAPI_ATTR VkResult VKAPI_CALL CreateDebugReportCallbackEXT(
+    VkInstance                                  instance,
+    const VkDebugReportCallbackCreateInfoEXT*   pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkDebugReportCallbackEXT*                   pCallback);
+
+// Declare only
+VKAPI_ATTR void VKAPI_CALL DestroyDebugReportCallbackEXT(
+    VkInstance                                  instance,
+    VkDebugReportCallbackEXT                    callback,
+    const VkAllocationCallbacks*                pAllocator);
+
+// Declare only
+VKAPI_ATTR void VKAPI_CALL DebugReportMessageEXT(
+    VkInstance                                  instance,
+    VkDebugReportFlagsEXT                       flags,
+    VkDebugReportObjectTypeEXT                  objectType,
+    uint64_t                                    object,
+    size_t                                      location,
+    int32_t                                     messageCode,
+    const char*                                 pLayerPrefix,
+    const char*                                 pMessage);
+
+// Declare only
+VKAPI_ATTR VkResult VKAPI_CALL DebugMarkerSetObjectTagEXT(
+    VkDevice                                    device,
+    const VkDebugMarkerObjectTagInfoEXT*        pTagInfo);
+
+// Declare only
+VKAPI_ATTR VkResult VKAPI_CALL DebugMarkerSetObjectNameEXT(
+    VkDevice                                    device,
+    const VkDebugMarkerObjectNameInfoEXT*       pNameInfo);
+
+VKAPI_ATTR void VKAPI_CALL CmdBindTransformFeedbackBuffersEXT(
+    VkCommandBuffer                             commandBuffer,
+    uint32_t                                    firstBinding,
+    uint32_t                                    bindingCount,
+    const VkBuffer*                             pBuffers,
+    const VkDeviceSize*                         pOffsets,
+    const VkDeviceSize*                         pSizes)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
+    VkBuffer *local_pBuffers = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pBuffers) {
+            local_pBuffers = new VkBuffer[bindingCount];
+            for (uint32_t index0 = 0; index0 < bindingCount; ++index0) {
+                local_pBuffers[index0] = Unwrap(pBuffers[index0]);
+            }
+        }
+    }
+    dev_data->dispatch_table.CmdBindTransformFeedbackBuffersEXT(commandBuffer, firstBinding, bindingCount, (const VkBuffer*)local_pBuffers, pOffsets, pSizes);
+    if (local_pBuffers)
+        delete[] local_pBuffers;
+}
+
+VKAPI_ATTR void VKAPI_CALL CmdBeginTransformFeedbackEXT(
+    VkCommandBuffer                             commandBuffer,
+    uint32_t                                    firstCounterBuffer,
+    uint32_t                                    counterBufferCount,
+    const VkBuffer*                             pCounterBuffers,
+    const VkDeviceSize*                         pCounterBufferOffsets)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
+    VkBuffer *local_pCounterBuffers = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pCounterBuffers) {
+            local_pCounterBuffers = new VkBuffer[counterBufferCount];
+            for (uint32_t index0 = 0; index0 < counterBufferCount; ++index0) {
+                local_pCounterBuffers[index0] = Unwrap(pCounterBuffers[index0]);
+            }
+        }
+    }
+    dev_data->dispatch_table.CmdBeginTransformFeedbackEXT(commandBuffer, firstCounterBuffer, counterBufferCount, (const VkBuffer*)local_pCounterBuffers, pCounterBufferOffsets);
+    if (local_pCounterBuffers)
+        delete[] local_pCounterBuffers;
+}
+
+VKAPI_ATTR void VKAPI_CALL CmdEndTransformFeedbackEXT(
+    VkCommandBuffer                             commandBuffer,
+    uint32_t                                    firstCounterBuffer,
+    uint32_t                                    counterBufferCount,
+    const VkBuffer*                             pCounterBuffers,
+    const VkDeviceSize*                         pCounterBufferOffsets)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
+    VkBuffer *local_pCounterBuffers = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pCounterBuffers) {
+            local_pCounterBuffers = new VkBuffer[counterBufferCount];
+            for (uint32_t index0 = 0; index0 < counterBufferCount; ++index0) {
+                local_pCounterBuffers[index0] = Unwrap(pCounterBuffers[index0]);
+            }
+        }
+    }
+    dev_data->dispatch_table.CmdEndTransformFeedbackEXT(commandBuffer, firstCounterBuffer, counterBufferCount, (const VkBuffer*)local_pCounterBuffers, pCounterBufferOffsets);
+    if (local_pCounterBuffers)
+        delete[] local_pCounterBuffers;
+}
+
+VKAPI_ATTR void VKAPI_CALL CmdBeginQueryIndexedEXT(
+    VkCommandBuffer                             commandBuffer,
+    VkQueryPool                                 queryPool,
+    uint32_t                                    query,
+    VkQueryControlFlags                         flags,
+    uint32_t                                    index)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        queryPool = Unwrap(queryPool);
+    }
+    dev_data->dispatch_table.CmdBeginQueryIndexedEXT(commandBuffer, queryPool, query, flags, index);
+
+}
+
+VKAPI_ATTR void VKAPI_CALL CmdEndQueryIndexedEXT(
+    VkCommandBuffer                             commandBuffer,
+    VkQueryPool                                 queryPool,
+    uint32_t                                    query,
+    uint32_t                                    index)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        queryPool = Unwrap(queryPool);
+    }
+    dev_data->dispatch_table.CmdEndQueryIndexedEXT(commandBuffer, queryPool, query, index);
+
+}
+
+VKAPI_ATTR void VKAPI_CALL CmdDrawIndirectByteCountEXT(
+    VkCommandBuffer                             commandBuffer,
+    uint32_t                                    instanceCount,
+    uint32_t                                    firstInstance,
+    VkBuffer                                    counterBuffer,
+    VkDeviceSize                                counterBufferOffset,
+    uint32_t                                    counterOffset,
+    uint32_t                                    vertexStride)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        counterBuffer = Unwrap(counterBuffer);
+    }
+    dev_data->dispatch_table.CmdDrawIndirectByteCountEXT(commandBuffer, instanceCount, firstInstance, counterBuffer, counterBufferOffset, counterOffset, vertexStride);
+
+}
 
 VKAPI_ATTR void VKAPI_CALL CmdDrawIndirectCountAMD(
     VkCommandBuffer                             commandBuffer,
@@ -2379,13 +4037,13 @@ VKAPI_ATTR void VKAPI_CALL CmdDrawIndirectCountAMD(
     uint32_t                                    maxDrawCount,
     uint32_t                                    stride)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        buffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(buffer)];
-        countBuffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(countBuffer)];
+        buffer = Unwrap(buffer);
+        countBuffer = Unwrap(countBuffer);
     }
-    dev_data->device_dispatch_table->CmdDrawIndirectCountAMD(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
+    dev_data->dispatch_table.CmdDrawIndirectCountAMD(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
 
 }
 
@@ -2398,27 +4056,33 @@ VKAPI_ATTR void VKAPI_CALL CmdDrawIndexedIndirectCountAMD(
     uint32_t                                    maxDrawCount,
     uint32_t                                    stride)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(commandBuffer), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        buffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(buffer)];
-        countBuffer = (VkBuffer)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(countBuffer)];
+        buffer = Unwrap(buffer);
+        countBuffer = Unwrap(countBuffer);
     }
-    dev_data->device_dispatch_table->CmdDrawIndexedIndirectCountAMD(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
+    dev_data->dispatch_table.CmdDrawIndexedIndirectCountAMD(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
 
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL GetShaderInfoAMD(
+    VkDevice                                    device,
+    VkPipeline                                  pipeline,
+    VkShaderStageFlagBits                       shaderStage,
+    VkShaderInfoTypeAMD                         infoType,
+    size_t*                                     pInfoSize,
+    void*                                       pInfo)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        pipeline = Unwrap(pipeline);
+    }
+    VkResult result = dev_data->dispatch_table.GetShaderInfoAMD(device, pipeline, shaderStage, infoType, pInfoSize, pInfo);
 
-
-
-
-
-
-
-
-
-
-
+    return result;
+}
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 
@@ -2428,168 +4092,1272 @@ VKAPI_ATTR VkResult VKAPI_CALL GetMemoryWin32HandleNV(
     VkExternalMemoryHandleTypeFlagsNV           handleType,
     HANDLE*                                     pHandle)
 {
-    layer_data *dev_data = get_my_data_ptr(get_dispatch_key(device), layer_data_map);
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
     {
         std::lock_guard<std::mutex> lock(global_lock);
-        memory = (VkDeviceMemory)dev_data->unique_id_mapping[reinterpret_cast<uint64_t &>(memory)];
+        memory = Unwrap(memory);
     }
-    VkResult result = dev_data->device_dispatch_table->GetMemoryWin32HandleNV(device, memory, handleType, pHandle);
+    VkResult result = dev_data->dispatch_table.GetMemoryWin32HandleNV(device, memory, handleType, pHandle);
 
     return result;
 }
 #endif // VK_USE_PLATFORM_WIN32_KHR
 
-#ifdef VK_USE_PLATFORM_WIN32_KHR
+#ifdef VK_USE_PLATFORM_VI_NN
 
-#endif // VK_USE_PLATFORM_WIN32_KHR
+VKAPI_ATTR VkResult VKAPI_CALL CreateViSurfaceNN(
+    VkInstance                                  instance,
+    const VkViSurfaceCreateInfoNN*              pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkSurfaceKHR*                               pSurface)
+{
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(instance), instance_layer_data_map);
+    VkResult result = dev_data->dispatch_table.CreateViSurfaceNN(instance, pCreateInfo, pAllocator, pSurface);
+    if (VK_SUCCESS == result) {
+        std::lock_guard<std::mutex> lock(global_lock);
+        *pSurface = WrapNew(*pSurface);
+    }
+    return result;
+}
+#endif // VK_USE_PLATFORM_VI_NN
 
+VKAPI_ATTR void VKAPI_CALL CmdBeginConditionalRenderingEXT(
+    VkCommandBuffer                             commandBuffer,
+    const VkConditionalRenderingBeginInfoEXT*   pConditionalRenderingBegin)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
+    safe_VkConditionalRenderingBeginInfoEXT *local_pConditionalRenderingBegin = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pConditionalRenderingBegin) {
+            local_pConditionalRenderingBegin = new safe_VkConditionalRenderingBeginInfoEXT(pConditionalRenderingBegin);
+            if (pConditionalRenderingBegin->buffer) {
+                local_pConditionalRenderingBegin->buffer = Unwrap(pConditionalRenderingBegin->buffer);
+            }
+        }
+    }
+    dev_data->dispatch_table.CmdBeginConditionalRenderingEXT(commandBuffer, (const VkConditionalRenderingBeginInfoEXT*)local_pConditionalRenderingBegin);
+    if (local_pConditionalRenderingBegin) {
+        delete local_pConditionalRenderingBegin;
+    }
+}
 
+VKAPI_ATTR void VKAPI_CALL CmdProcessCommandsNVX(
+    VkCommandBuffer                             commandBuffer,
+    const VkCmdProcessCommandsInfoNVX*          pProcessCommandsInfo)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
+    safe_VkCmdProcessCommandsInfoNVX *local_pProcessCommandsInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pProcessCommandsInfo) {
+            local_pProcessCommandsInfo = new safe_VkCmdProcessCommandsInfoNVX(pProcessCommandsInfo);
+            if (pProcessCommandsInfo->objectTable) {
+                local_pProcessCommandsInfo->objectTable = Unwrap(pProcessCommandsInfo->objectTable);
+            }
+            if (pProcessCommandsInfo->indirectCommandsLayout) {
+                local_pProcessCommandsInfo->indirectCommandsLayout = Unwrap(pProcessCommandsInfo->indirectCommandsLayout);
+            }
+            if (local_pProcessCommandsInfo->pIndirectCommandsTokens) {
+                for (uint32_t index1 = 0; index1 < local_pProcessCommandsInfo->indirectCommandsTokenCount; ++index1) {
+                    if (pProcessCommandsInfo->pIndirectCommandsTokens[index1].buffer) {
+                        local_pProcessCommandsInfo->pIndirectCommandsTokens[index1].buffer = Unwrap(pProcessCommandsInfo->pIndirectCommandsTokens[index1].buffer);
+                    }
+                }
+            }
+            if (pProcessCommandsInfo->sequencesCountBuffer) {
+                local_pProcessCommandsInfo->sequencesCountBuffer = Unwrap(pProcessCommandsInfo->sequencesCountBuffer);
+            }
+            if (pProcessCommandsInfo->sequencesIndexBuffer) {
+                local_pProcessCommandsInfo->sequencesIndexBuffer = Unwrap(pProcessCommandsInfo->sequencesIndexBuffer);
+            }
+        }
+    }
+    dev_data->dispatch_table.CmdProcessCommandsNVX(commandBuffer, (const VkCmdProcessCommandsInfoNVX*)local_pProcessCommandsInfo);
+    if (local_pProcessCommandsInfo) {
+        delete local_pProcessCommandsInfo;
+    }
+}
 
-// intercepts
-struct { const char* name; PFN_vkVoidFunction pFunc;} procmap[] = {
-    {"vkCreateInstance", reinterpret_cast<PFN_vkVoidFunction>(CreateInstance)},
-    {"vkDestroyInstance", reinterpret_cast<PFN_vkVoidFunction>(DestroyInstance)},
-    {"vkGetInstanceProcAddr", reinterpret_cast<PFN_vkVoidFunction>(GetInstanceProcAddr)},
-    {"vkGetDeviceProcAddr", reinterpret_cast<PFN_vkVoidFunction>(GetDeviceProcAddr)},
-    {"vkCreateDevice", reinterpret_cast<PFN_vkVoidFunction>(CreateDevice)},
-    {"vkDestroyDevice", reinterpret_cast<PFN_vkVoidFunction>(DestroyDevice)},
-    {"vkEnumerateInstanceExtensionProperties", reinterpret_cast<PFN_vkVoidFunction>(EnumerateInstanceExtensionProperties)},
-    {"vkEnumerateInstanceLayerProperties", reinterpret_cast<PFN_vkVoidFunction>(EnumerateInstanceLayerProperties)},
-    {"vkEnumerateDeviceLayerProperties", reinterpret_cast<PFN_vkVoidFunction>(EnumerateDeviceLayerProperties)},
-    {"vkQueueSubmit", reinterpret_cast<PFN_vkVoidFunction>(QueueSubmit)},
-    {"vkAllocateMemory", reinterpret_cast<PFN_vkVoidFunction>(AllocateMemory)},
-    {"vkFreeMemory", reinterpret_cast<PFN_vkVoidFunction>(FreeMemory)},
-    {"vkMapMemory", reinterpret_cast<PFN_vkVoidFunction>(MapMemory)},
-    {"vkUnmapMemory", reinterpret_cast<PFN_vkVoidFunction>(UnmapMemory)},
-    {"vkFlushMappedMemoryRanges", reinterpret_cast<PFN_vkVoidFunction>(FlushMappedMemoryRanges)},
-    {"vkInvalidateMappedMemoryRanges", reinterpret_cast<PFN_vkVoidFunction>(InvalidateMappedMemoryRanges)},
-    {"vkGetDeviceMemoryCommitment", reinterpret_cast<PFN_vkVoidFunction>(GetDeviceMemoryCommitment)},
-    {"vkBindBufferMemory", reinterpret_cast<PFN_vkVoidFunction>(BindBufferMemory)},
-    {"vkBindImageMemory", reinterpret_cast<PFN_vkVoidFunction>(BindImageMemory)},
-    {"vkGetBufferMemoryRequirements", reinterpret_cast<PFN_vkVoidFunction>(GetBufferMemoryRequirements)},
-    {"vkGetImageMemoryRequirements", reinterpret_cast<PFN_vkVoidFunction>(GetImageMemoryRequirements)},
-    {"vkGetImageSparseMemoryRequirements", reinterpret_cast<PFN_vkVoidFunction>(GetImageSparseMemoryRequirements)},
-    {"vkQueueBindSparse", reinterpret_cast<PFN_vkVoidFunction>(QueueBindSparse)},
-    {"vkCreateFence", reinterpret_cast<PFN_vkVoidFunction>(CreateFence)},
-    {"vkDestroyFence", reinterpret_cast<PFN_vkVoidFunction>(DestroyFence)},
-    {"vkResetFences", reinterpret_cast<PFN_vkVoidFunction>(ResetFences)},
-    {"vkGetFenceStatus", reinterpret_cast<PFN_vkVoidFunction>(GetFenceStatus)},
-    {"vkWaitForFences", reinterpret_cast<PFN_vkVoidFunction>(WaitForFences)},
-    {"vkCreateSemaphore", reinterpret_cast<PFN_vkVoidFunction>(CreateSemaphore)},
-    {"vkDestroySemaphore", reinterpret_cast<PFN_vkVoidFunction>(DestroySemaphore)},
-    {"vkCreateEvent", reinterpret_cast<PFN_vkVoidFunction>(CreateEvent)},
-    {"vkDestroyEvent", reinterpret_cast<PFN_vkVoidFunction>(DestroyEvent)},
-    {"vkGetEventStatus", reinterpret_cast<PFN_vkVoidFunction>(GetEventStatus)},
-    {"vkSetEvent", reinterpret_cast<PFN_vkVoidFunction>(SetEvent)},
-    {"vkResetEvent", reinterpret_cast<PFN_vkVoidFunction>(ResetEvent)},
-    {"vkCreateQueryPool", reinterpret_cast<PFN_vkVoidFunction>(CreateQueryPool)},
-    {"vkDestroyQueryPool", reinterpret_cast<PFN_vkVoidFunction>(DestroyQueryPool)},
-    {"vkGetQueryPoolResults", reinterpret_cast<PFN_vkVoidFunction>(GetQueryPoolResults)},
-    {"vkCreateBuffer", reinterpret_cast<PFN_vkVoidFunction>(CreateBuffer)},
-    {"vkDestroyBuffer", reinterpret_cast<PFN_vkVoidFunction>(DestroyBuffer)},
-    {"vkCreateBufferView", reinterpret_cast<PFN_vkVoidFunction>(CreateBufferView)},
-    {"vkDestroyBufferView", reinterpret_cast<PFN_vkVoidFunction>(DestroyBufferView)},
-    {"vkCreateImage", reinterpret_cast<PFN_vkVoidFunction>(CreateImage)},
-    {"vkDestroyImage", reinterpret_cast<PFN_vkVoidFunction>(DestroyImage)},
-    {"vkGetImageSubresourceLayout", reinterpret_cast<PFN_vkVoidFunction>(GetImageSubresourceLayout)},
-    {"vkCreateImageView", reinterpret_cast<PFN_vkVoidFunction>(CreateImageView)},
-    {"vkDestroyImageView", reinterpret_cast<PFN_vkVoidFunction>(DestroyImageView)},
-    {"vkCreateShaderModule", reinterpret_cast<PFN_vkVoidFunction>(CreateShaderModule)},
-    {"vkDestroyShaderModule", reinterpret_cast<PFN_vkVoidFunction>(DestroyShaderModule)},
-    {"vkCreatePipelineCache", reinterpret_cast<PFN_vkVoidFunction>(CreatePipelineCache)},
-    {"vkDestroyPipelineCache", reinterpret_cast<PFN_vkVoidFunction>(DestroyPipelineCache)},
-    {"vkGetPipelineCacheData", reinterpret_cast<PFN_vkVoidFunction>(GetPipelineCacheData)},
-    {"vkMergePipelineCaches", reinterpret_cast<PFN_vkVoidFunction>(MergePipelineCaches)},
-    {"vkCreateGraphicsPipelines", reinterpret_cast<PFN_vkVoidFunction>(CreateGraphicsPipelines)},
-    {"vkCreateComputePipelines", reinterpret_cast<PFN_vkVoidFunction>(CreateComputePipelines)},
-    {"vkDestroyPipeline", reinterpret_cast<PFN_vkVoidFunction>(DestroyPipeline)},
-    {"vkCreatePipelineLayout", reinterpret_cast<PFN_vkVoidFunction>(CreatePipelineLayout)},
-    {"vkDestroyPipelineLayout", reinterpret_cast<PFN_vkVoidFunction>(DestroyPipelineLayout)},
-    {"vkCreateSampler", reinterpret_cast<PFN_vkVoidFunction>(CreateSampler)},
-    {"vkDestroySampler", reinterpret_cast<PFN_vkVoidFunction>(DestroySampler)},
-    {"vkCreateDescriptorSetLayout", reinterpret_cast<PFN_vkVoidFunction>(CreateDescriptorSetLayout)},
-    {"vkDestroyDescriptorSetLayout", reinterpret_cast<PFN_vkVoidFunction>(DestroyDescriptorSetLayout)},
-    {"vkCreateDescriptorPool", reinterpret_cast<PFN_vkVoidFunction>(CreateDescriptorPool)},
-    {"vkDestroyDescriptorPool", reinterpret_cast<PFN_vkVoidFunction>(DestroyDescriptorPool)},
-    {"vkResetDescriptorPool", reinterpret_cast<PFN_vkVoidFunction>(ResetDescriptorPool)},
-    {"vkAllocateDescriptorSets", reinterpret_cast<PFN_vkVoidFunction>(AllocateDescriptorSets)},
-    {"vkFreeDescriptorSets", reinterpret_cast<PFN_vkVoidFunction>(FreeDescriptorSets)},
-    {"vkUpdateDescriptorSets", reinterpret_cast<PFN_vkVoidFunction>(UpdateDescriptorSets)},
-    {"vkCreateFramebuffer", reinterpret_cast<PFN_vkVoidFunction>(CreateFramebuffer)},
-    {"vkDestroyFramebuffer", reinterpret_cast<PFN_vkVoidFunction>(DestroyFramebuffer)},
-    {"vkCreateRenderPass", reinterpret_cast<PFN_vkVoidFunction>(CreateRenderPass)},
-    {"vkDestroyRenderPass", reinterpret_cast<PFN_vkVoidFunction>(DestroyRenderPass)},
-    {"vkGetRenderAreaGranularity", reinterpret_cast<PFN_vkVoidFunction>(GetRenderAreaGranularity)},
-    {"vkCreateCommandPool", reinterpret_cast<PFN_vkVoidFunction>(CreateCommandPool)},
-    {"vkDestroyCommandPool", reinterpret_cast<PFN_vkVoidFunction>(DestroyCommandPool)},
-    {"vkResetCommandPool", reinterpret_cast<PFN_vkVoidFunction>(ResetCommandPool)},
-    {"vkAllocateCommandBuffers", reinterpret_cast<PFN_vkVoidFunction>(AllocateCommandBuffers)},
-    {"vkFreeCommandBuffers", reinterpret_cast<PFN_vkVoidFunction>(FreeCommandBuffers)},
-    {"vkBeginCommandBuffer", reinterpret_cast<PFN_vkVoidFunction>(BeginCommandBuffer)},
-    {"vkCmdBindPipeline", reinterpret_cast<PFN_vkVoidFunction>(CmdBindPipeline)},
-    {"vkCmdBindDescriptorSets", reinterpret_cast<PFN_vkVoidFunction>(CmdBindDescriptorSets)},
-    {"vkCmdBindIndexBuffer", reinterpret_cast<PFN_vkVoidFunction>(CmdBindIndexBuffer)},
-    {"vkCmdBindVertexBuffers", reinterpret_cast<PFN_vkVoidFunction>(CmdBindVertexBuffers)},
-    {"vkCmdDrawIndirect", reinterpret_cast<PFN_vkVoidFunction>(CmdDrawIndirect)},
-    {"vkCmdDrawIndexedIndirect", reinterpret_cast<PFN_vkVoidFunction>(CmdDrawIndexedIndirect)},
-    {"vkCmdDispatchIndirect", reinterpret_cast<PFN_vkVoidFunction>(CmdDispatchIndirect)},
-    {"vkCmdCopyBuffer", reinterpret_cast<PFN_vkVoidFunction>(CmdCopyBuffer)},
-    {"vkCmdCopyImage", reinterpret_cast<PFN_vkVoidFunction>(CmdCopyImage)},
-    {"vkCmdBlitImage", reinterpret_cast<PFN_vkVoidFunction>(CmdBlitImage)},
-    {"vkCmdCopyBufferToImage", reinterpret_cast<PFN_vkVoidFunction>(CmdCopyBufferToImage)},
-    {"vkCmdCopyImageToBuffer", reinterpret_cast<PFN_vkVoidFunction>(CmdCopyImageToBuffer)},
-    {"vkCmdUpdateBuffer", reinterpret_cast<PFN_vkVoidFunction>(CmdUpdateBuffer)},
-    {"vkCmdFillBuffer", reinterpret_cast<PFN_vkVoidFunction>(CmdFillBuffer)},
-    {"vkCmdClearColorImage", reinterpret_cast<PFN_vkVoidFunction>(CmdClearColorImage)},
-    {"vkCmdClearDepthStencilImage", reinterpret_cast<PFN_vkVoidFunction>(CmdClearDepthStencilImage)},
-    {"vkCmdResolveImage", reinterpret_cast<PFN_vkVoidFunction>(CmdResolveImage)},
-    {"vkCmdSetEvent", reinterpret_cast<PFN_vkVoidFunction>(CmdSetEvent)},
-    {"vkCmdResetEvent", reinterpret_cast<PFN_vkVoidFunction>(CmdResetEvent)},
-    {"vkCmdWaitEvents", reinterpret_cast<PFN_vkVoidFunction>(CmdWaitEvents)},
-    {"vkCmdPipelineBarrier", reinterpret_cast<PFN_vkVoidFunction>(CmdPipelineBarrier)},
-    {"vkCmdBeginQuery", reinterpret_cast<PFN_vkVoidFunction>(CmdBeginQuery)},
-    {"vkCmdEndQuery", reinterpret_cast<PFN_vkVoidFunction>(CmdEndQuery)},
-    {"vkCmdResetQueryPool", reinterpret_cast<PFN_vkVoidFunction>(CmdResetQueryPool)},
-    {"vkCmdWriteTimestamp", reinterpret_cast<PFN_vkVoidFunction>(CmdWriteTimestamp)},
-    {"vkCmdCopyQueryPoolResults", reinterpret_cast<PFN_vkVoidFunction>(CmdCopyQueryPoolResults)},
-    {"vkCmdPushConstants", reinterpret_cast<PFN_vkVoidFunction>(CmdPushConstants)},
-    {"vkCmdBeginRenderPass", reinterpret_cast<PFN_vkVoidFunction>(CmdBeginRenderPass)},
-    {"vkDestroySurfaceKHR", reinterpret_cast<PFN_vkVoidFunction>(DestroySurfaceKHR)},
-    {"vkGetPhysicalDeviceSurfaceSupportKHR", reinterpret_cast<PFN_vkVoidFunction>(GetPhysicalDeviceSurfaceSupportKHR)},
-    {"vkGetPhysicalDeviceSurfaceCapabilitiesKHR", reinterpret_cast<PFN_vkVoidFunction>(GetPhysicalDeviceSurfaceCapabilitiesKHR)},
-    {"vkGetPhysicalDeviceSurfaceFormatsKHR", reinterpret_cast<PFN_vkVoidFunction>(GetPhysicalDeviceSurfaceFormatsKHR)},
-    {"vkGetPhysicalDeviceSurfacePresentModesKHR", reinterpret_cast<PFN_vkVoidFunction>(GetPhysicalDeviceSurfacePresentModesKHR)},
-    {"vkCreateSwapchainKHR", reinterpret_cast<PFN_vkVoidFunction>(CreateSwapchainKHR)},
-    {"vkDestroySwapchainKHR", reinterpret_cast<PFN_vkVoidFunction>(DestroySwapchainKHR)},
-    {"vkGetSwapchainImagesKHR", reinterpret_cast<PFN_vkVoidFunction>(GetSwapchainImagesKHR)},
-    {"vkAcquireNextImageKHR", reinterpret_cast<PFN_vkVoidFunction>(AcquireNextImageKHR)},
-    {"vkQueuePresentKHR", reinterpret_cast<PFN_vkVoidFunction>(QueuePresentKHR)},
-    {"vkCreateDisplayModeKHR", reinterpret_cast<PFN_vkVoidFunction>(CreateDisplayModeKHR)},
-    {"vkGetDisplayPlaneCapabilitiesKHR", reinterpret_cast<PFN_vkVoidFunction>(GetDisplayPlaneCapabilitiesKHR)},
-    {"vkCreateDisplayPlaneSurfaceKHR", reinterpret_cast<PFN_vkVoidFunction>(CreateDisplayPlaneSurfaceKHR)},
-    {"vkCreateSharedSwapchainsKHR", reinterpret_cast<PFN_vkVoidFunction>(CreateSharedSwapchainsKHR)},
+VKAPI_ATTR void VKAPI_CALL CmdReserveSpaceForCommandsNVX(
+    VkCommandBuffer                             commandBuffer,
+    const VkCmdReserveSpaceForCommandsInfoNVX*  pReserveSpaceInfo)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
+    safe_VkCmdReserveSpaceForCommandsInfoNVX *local_pReserveSpaceInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pReserveSpaceInfo) {
+            local_pReserveSpaceInfo = new safe_VkCmdReserveSpaceForCommandsInfoNVX(pReserveSpaceInfo);
+            if (pReserveSpaceInfo->objectTable) {
+                local_pReserveSpaceInfo->objectTable = Unwrap(pReserveSpaceInfo->objectTable);
+            }
+            if (pReserveSpaceInfo->indirectCommandsLayout) {
+                local_pReserveSpaceInfo->indirectCommandsLayout = Unwrap(pReserveSpaceInfo->indirectCommandsLayout);
+            }
+        }
+    }
+    dev_data->dispatch_table.CmdReserveSpaceForCommandsNVX(commandBuffer, (const VkCmdReserveSpaceForCommandsInfoNVX*)local_pReserveSpaceInfo);
+    if (local_pReserveSpaceInfo) {
+        delete local_pReserveSpaceInfo;
+    }
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL CreateIndirectCommandsLayoutNVX(
+    VkDevice                                    device,
+    const VkIndirectCommandsLayoutCreateInfoNVX* pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkIndirectCommandsLayoutNVX*                pIndirectCommandsLayout)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    VkResult result = dev_data->dispatch_table.CreateIndirectCommandsLayoutNVX(device, pCreateInfo, pAllocator, pIndirectCommandsLayout);
+    if (VK_SUCCESS == result) {
+        std::lock_guard<std::mutex> lock(global_lock);
+        *pIndirectCommandsLayout = WrapNew(*pIndirectCommandsLayout);
+    }
+    return result;
+}
+
+VKAPI_ATTR void VKAPI_CALL DestroyIndirectCommandsLayoutNVX(
+    VkDevice                                    device,
+    VkIndirectCommandsLayoutNVX                 indirectCommandsLayout,
+    const VkAllocationCallbacks*                pAllocator)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    std::unique_lock<std::mutex> lock(global_lock);
+    uint64_t indirectCommandsLayout_id = reinterpret_cast<uint64_t &>(indirectCommandsLayout);
+    indirectCommandsLayout = (VkIndirectCommandsLayoutNVX)unique_id_mapping[indirectCommandsLayout_id];
+    unique_id_mapping.erase(indirectCommandsLayout_id);
+    lock.unlock();
+    dev_data->dispatch_table.DestroyIndirectCommandsLayoutNVX(device, indirectCommandsLayout, pAllocator);
+
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL CreateObjectTableNVX(
+    VkDevice                                    device,
+    const VkObjectTableCreateInfoNVX*           pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkObjectTableNVX*                           pObjectTable)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    VkResult result = dev_data->dispatch_table.CreateObjectTableNVX(device, pCreateInfo, pAllocator, pObjectTable);
+    if (VK_SUCCESS == result) {
+        std::lock_guard<std::mutex> lock(global_lock);
+        *pObjectTable = WrapNew(*pObjectTable);
+    }
+    return result;
+}
+
+VKAPI_ATTR void VKAPI_CALL DestroyObjectTableNVX(
+    VkDevice                                    device,
+    VkObjectTableNVX                            objectTable,
+    const VkAllocationCallbacks*                pAllocator)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    std::unique_lock<std::mutex> lock(global_lock);
+    uint64_t objectTable_id = reinterpret_cast<uint64_t &>(objectTable);
+    objectTable = (VkObjectTableNVX)unique_id_mapping[objectTable_id];
+    unique_id_mapping.erase(objectTable_id);
+    lock.unlock();
+    dev_data->dispatch_table.DestroyObjectTableNVX(device, objectTable, pAllocator);
+
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL RegisterObjectsNVX(
+    VkDevice                                    device,
+    VkObjectTableNVX                            objectTable,
+    uint32_t                                    objectCount,
+    const VkObjectTableEntryNVX* const*         ppObjectTableEntries,
+    const uint32_t*                             pObjectIndices)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        objectTable = Unwrap(objectTable);
+    }
+    VkResult result = dev_data->dispatch_table.RegisterObjectsNVX(device, objectTable, objectCount, ppObjectTableEntries, pObjectIndices);
+
+    return result;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL UnregisterObjectsNVX(
+    VkDevice                                    device,
+    VkObjectTableNVX                            objectTable,
+    uint32_t                                    objectCount,
+    const VkObjectEntryTypeNVX*                 pObjectEntryTypes,
+    const uint32_t*                             pObjectIndices)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        objectTable = Unwrap(objectTable);
+    }
+    VkResult result = dev_data->dispatch_table.UnregisterObjectsNVX(device, objectTable, objectCount, pObjectEntryTypes, pObjectIndices);
+
+    return result;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL ReleaseDisplayEXT(
+    VkPhysicalDevice                            physicalDevice,
+    VkDisplayKHR                                display)
+{
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(physicalDevice), instance_layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        display = Unwrap(display);
+    }
+    VkResult result = dev_data->dispatch_table.ReleaseDisplayEXT(physicalDevice, display);
+
+    return result;
+}
+
+#ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
+
+VKAPI_ATTR VkResult VKAPI_CALL AcquireXlibDisplayEXT(
+    VkPhysicalDevice                            physicalDevice,
+    Display*                                    dpy,
+    VkDisplayKHR                                display)
+{
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(physicalDevice), instance_layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        display = Unwrap(display);
+    }
+    VkResult result = dev_data->dispatch_table.AcquireXlibDisplayEXT(physicalDevice, dpy, display);
+
+    return result;
+}
+#endif // VK_USE_PLATFORM_XLIB_XRANDR_EXT
+
+#ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
+
+VKAPI_ATTR VkResult VKAPI_CALL GetRandROutputDisplayEXT(
+    VkPhysicalDevice                            physicalDevice,
+    Display*                                    dpy,
+    RROutput                                    rrOutput,
+    VkDisplayKHR*                               pDisplay)
+{
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(physicalDevice), instance_layer_data_map);
+    VkResult result = dev_data->dispatch_table.GetRandROutputDisplayEXT(physicalDevice, dpy, rrOutput, pDisplay);
+    if (VK_SUCCESS == result) {
+        std::lock_guard<std::mutex> lock(global_lock);
+        *pDisplay = WrapNew(*pDisplay);
+    }
+    return result;
+}
+#endif // VK_USE_PLATFORM_XLIB_XRANDR_EXT
+
+VKAPI_ATTR VkResult VKAPI_CALL GetPhysicalDeviceSurfaceCapabilities2EXT(
+    VkPhysicalDevice                            physicalDevice,
+    VkSurfaceKHR                                surface,
+    VkSurfaceCapabilities2EXT*                  pSurfaceCapabilities)
+{
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(physicalDevice), instance_layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        surface = Unwrap(surface);
+    }
+    VkResult result = dev_data->dispatch_table.GetPhysicalDeviceSurfaceCapabilities2EXT(physicalDevice, surface, pSurfaceCapabilities);
+
+    return result;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL DisplayPowerControlEXT(
+    VkDevice                                    device,
+    VkDisplayKHR                                display,
+    const VkDisplayPowerInfoEXT*                pDisplayPowerInfo)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        display = Unwrap(display);
+    }
+    VkResult result = dev_data->dispatch_table.DisplayPowerControlEXT(device, display, pDisplayPowerInfo);
+
+    return result;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL RegisterDeviceEventEXT(
+    VkDevice                                    device,
+    const VkDeviceEventInfoEXT*                 pDeviceEventInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkFence*                                    pFence)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    VkResult result = dev_data->dispatch_table.RegisterDeviceEventEXT(device, pDeviceEventInfo, pAllocator, pFence);
+    if (VK_SUCCESS == result) {
+        std::lock_guard<std::mutex> lock(global_lock);
+        *pFence = WrapNew(*pFence);
+    }
+    return result;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL RegisterDisplayEventEXT(
+    VkDevice                                    device,
+    VkDisplayKHR                                display,
+    const VkDisplayEventInfoEXT*                pDisplayEventInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkFence*                                    pFence)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        display = Unwrap(display);
+    }
+    VkResult result = dev_data->dispatch_table.RegisterDisplayEventEXT(device, display, pDisplayEventInfo, pAllocator, pFence);
+    if (VK_SUCCESS == result) {
+        std::lock_guard<std::mutex> lock(global_lock);
+        *pFence = WrapNew(*pFence);
+    }
+    return result;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL GetSwapchainCounterEXT(
+    VkDevice                                    device,
+    VkSwapchainKHR                              swapchain,
+    VkSurfaceCounterFlagBitsEXT                 counter,
+    uint64_t*                                   pCounterValue)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        swapchain = Unwrap(swapchain);
+    }
+    VkResult result = dev_data->dispatch_table.GetSwapchainCounterEXT(device, swapchain, counter, pCounterValue);
+
+    return result;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL GetRefreshCycleDurationGOOGLE(
+    VkDevice                                    device,
+    VkSwapchainKHR                              swapchain,
+    VkRefreshCycleDurationGOOGLE*               pDisplayTimingProperties)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        swapchain = Unwrap(swapchain);
+    }
+    VkResult result = dev_data->dispatch_table.GetRefreshCycleDurationGOOGLE(device, swapchain, pDisplayTimingProperties);
+
+    return result;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL GetPastPresentationTimingGOOGLE(
+    VkDevice                                    device,
+    VkSwapchainKHR                              swapchain,
+    uint32_t*                                   pPresentationTimingCount,
+    VkPastPresentationTimingGOOGLE*             pPresentationTimings)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        swapchain = Unwrap(swapchain);
+    }
+    VkResult result = dev_data->dispatch_table.GetPastPresentationTimingGOOGLE(device, swapchain, pPresentationTimingCount, pPresentationTimings);
+
+    return result;
+}
+
+VKAPI_ATTR void VKAPI_CALL SetHdrMetadataEXT(
+    VkDevice                                    device,
+    uint32_t                                    swapchainCount,
+    const VkSwapchainKHR*                       pSwapchains,
+    const VkHdrMetadataEXT*                     pMetadata)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    VkSwapchainKHR *local_pSwapchains = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pSwapchains) {
+            local_pSwapchains = new VkSwapchainKHR[swapchainCount];
+            for (uint32_t index0 = 0; index0 < swapchainCount; ++index0) {
+                local_pSwapchains[index0] = Unwrap(pSwapchains[index0]);
+            }
+        }
+    }
+    dev_data->dispatch_table.SetHdrMetadataEXT(device, swapchainCount, (const VkSwapchainKHR*)local_pSwapchains, pMetadata);
+    if (local_pSwapchains)
+        delete[] local_pSwapchains;
+}
+
+#ifdef VK_USE_PLATFORM_IOS_MVK
+
+VKAPI_ATTR VkResult VKAPI_CALL CreateIOSSurfaceMVK(
+    VkInstance                                  instance,
+    const VkIOSSurfaceCreateInfoMVK*            pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkSurfaceKHR*                               pSurface)
+{
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(instance), instance_layer_data_map);
+    VkResult result = dev_data->dispatch_table.CreateIOSSurfaceMVK(instance, pCreateInfo, pAllocator, pSurface);
+    if (VK_SUCCESS == result) {
+        std::lock_guard<std::mutex> lock(global_lock);
+        *pSurface = WrapNew(*pSurface);
+    }
+    return result;
+}
+#endif // VK_USE_PLATFORM_IOS_MVK
+
+#ifdef VK_USE_PLATFORM_MACOS_MVK
+
+VKAPI_ATTR VkResult VKAPI_CALL CreateMacOSSurfaceMVK(
+    VkInstance                                  instance,
+    const VkMacOSSurfaceCreateInfoMVK*          pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkSurfaceKHR*                               pSurface)
+{
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(instance), instance_layer_data_map);
+    VkResult result = dev_data->dispatch_table.CreateMacOSSurfaceMVK(instance, pCreateInfo, pAllocator, pSurface);
+    if (VK_SUCCESS == result) {
+        std::lock_guard<std::mutex> lock(global_lock);
+        *pSurface = WrapNew(*pSurface);
+    }
+    return result;
+}
+#endif // VK_USE_PLATFORM_MACOS_MVK
+
+// Declare only
+VKAPI_ATTR VkResult VKAPI_CALL SetDebugUtilsObjectNameEXT(
+    VkDevice                                    device,
+    const VkDebugUtilsObjectNameInfoEXT*        pNameInfo);
+
+// Declare only
+VKAPI_ATTR VkResult VKAPI_CALL SetDebugUtilsObjectTagEXT(
+    VkDevice                                    device,
+    const VkDebugUtilsObjectTagInfoEXT*         pTagInfo);
+
+// Declare only
+VKAPI_ATTR VkResult VKAPI_CALL CreateDebugUtilsMessengerEXT(
+    VkInstance                                  instance,
+    const VkDebugUtilsMessengerCreateInfoEXT*   pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkDebugUtilsMessengerEXT*                   pMessenger);
+
+// Declare only
+VKAPI_ATTR void VKAPI_CALL DestroyDebugUtilsMessengerEXT(
+    VkInstance                                  instance,
+    VkDebugUtilsMessengerEXT                    messenger,
+    const VkAllocationCallbacks*                pAllocator);
+
+// Declare only
+VKAPI_ATTR void VKAPI_CALL SubmitDebugUtilsMessageEXT(
+    VkInstance                                  instance,
+    VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT             messageTypes,
+    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData);
+
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+
+VKAPI_ATTR VkResult VKAPI_CALL GetMemoryAndroidHardwareBufferANDROID(
+    VkDevice                                    device,
+    const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo,
+    struct AHardwareBuffer**                    pBuffer)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkMemoryGetAndroidHardwareBufferInfoANDROID *local_pInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pInfo) {
+            local_pInfo = new safe_VkMemoryGetAndroidHardwareBufferInfoANDROID(pInfo);
+            if (pInfo->memory) {
+                local_pInfo->memory = Unwrap(pInfo->memory);
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.GetMemoryAndroidHardwareBufferANDROID(device, (const VkMemoryGetAndroidHardwareBufferInfoANDROID*)local_pInfo, pBuffer);
+    if (local_pInfo) {
+        delete local_pInfo;
+    }
+    return result;
+}
+#endif // VK_USE_PLATFORM_ANDROID_KHR
+
+VKAPI_ATTR VkResult VKAPI_CALL GetImageDrmFormatModifierPropertiesEXT(
+    VkDevice                                    device,
+    VkImage                                     image,
+    VkImageDrmFormatModifierPropertiesEXT*      pProperties)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        image = Unwrap(image);
+    }
+    VkResult result = dev_data->dispatch_table.GetImageDrmFormatModifierPropertiesEXT(device, image, pProperties);
+
+    return result;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL CreateValidationCacheEXT(
+    VkDevice                                    device,
+    const VkValidationCacheCreateInfoEXT*       pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkValidationCacheEXT*                       pValidationCache)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    VkResult result = dev_data->dispatch_table.CreateValidationCacheEXT(device, pCreateInfo, pAllocator, pValidationCache);
+    if (VK_SUCCESS == result) {
+        std::lock_guard<std::mutex> lock(global_lock);
+        *pValidationCache = WrapNew(*pValidationCache);
+    }
+    return result;
+}
+
+VKAPI_ATTR void VKAPI_CALL DestroyValidationCacheEXT(
+    VkDevice                                    device,
+    VkValidationCacheEXT                        validationCache,
+    const VkAllocationCallbacks*                pAllocator)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    std::unique_lock<std::mutex> lock(global_lock);
+    uint64_t validationCache_id = reinterpret_cast<uint64_t &>(validationCache);
+    validationCache = (VkValidationCacheEXT)unique_id_mapping[validationCache_id];
+    unique_id_mapping.erase(validationCache_id);
+    lock.unlock();
+    dev_data->dispatch_table.DestroyValidationCacheEXT(device, validationCache, pAllocator);
+
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL MergeValidationCachesEXT(
+    VkDevice                                    device,
+    VkValidationCacheEXT                        dstCache,
+    uint32_t                                    srcCacheCount,
+    const VkValidationCacheEXT*                 pSrcCaches)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    VkValidationCacheEXT *local_pSrcCaches = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        dstCache = Unwrap(dstCache);
+        if (pSrcCaches) {
+            local_pSrcCaches = new VkValidationCacheEXT[srcCacheCount];
+            for (uint32_t index0 = 0; index0 < srcCacheCount; ++index0) {
+                local_pSrcCaches[index0] = Unwrap(pSrcCaches[index0]);
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.MergeValidationCachesEXT(device, dstCache, srcCacheCount, (const VkValidationCacheEXT*)local_pSrcCaches);
+    if (local_pSrcCaches)
+        delete[] local_pSrcCaches;
+    return result;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL GetValidationCacheDataEXT(
+    VkDevice                                    device,
+    VkValidationCacheEXT                        validationCache,
+    size_t*                                     pDataSize,
+    void*                                       pData)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        validationCache = Unwrap(validationCache);
+    }
+    VkResult result = dev_data->dispatch_table.GetValidationCacheDataEXT(device, validationCache, pDataSize, pData);
+
+    return result;
+}
+
+VKAPI_ATTR void VKAPI_CALL CmdBindShadingRateImageNV(
+    VkCommandBuffer                             commandBuffer,
+    VkImageView                                 imageView,
+    VkImageLayout                               imageLayout)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        imageView = Unwrap(imageView);
+    }
+    dev_data->dispatch_table.CmdBindShadingRateImageNV(commandBuffer, imageView, imageLayout);
+
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL CreateAccelerationStructureNVX(
+    VkDevice                                    device,
+    const VkAccelerationStructureCreateInfoNVX* pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkAccelerationStructureNVX*                 pAccelerationStructure)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkAccelerationStructureCreateInfoNVX *local_pCreateInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pCreateInfo) {
+            local_pCreateInfo = new safe_VkAccelerationStructureCreateInfoNVX(pCreateInfo);
+            if (local_pCreateInfo->pGeometries) {
+                for (uint32_t index1 = 0; index1 < local_pCreateInfo->geometryCount; ++index1) {
+                    if (pCreateInfo->pGeometries[index1].geometry.triangles.vertexData) {
+                        local_pCreateInfo->pGeometries[index1].geometry.triangles.vertexData = Unwrap(pCreateInfo->pGeometries[index1].geometry.triangles.vertexData);
+                    }
+                    if (pCreateInfo->pGeometries[index1].geometry.triangles.indexData) {
+                        local_pCreateInfo->pGeometries[index1].geometry.triangles.indexData = Unwrap(pCreateInfo->pGeometries[index1].geometry.triangles.indexData);
+                    }
+                    if (pCreateInfo->pGeometries[index1].geometry.triangles.transformData) {
+                        local_pCreateInfo->pGeometries[index1].geometry.triangles.transformData = Unwrap(pCreateInfo->pGeometries[index1].geometry.triangles.transformData);
+                    }
+                    if (pCreateInfo->pGeometries[index1].geometry.aabbs.aabbData) {
+                        local_pCreateInfo->pGeometries[index1].geometry.aabbs.aabbData = Unwrap(pCreateInfo->pGeometries[index1].geometry.aabbs.aabbData);
+                    }
+                }
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.CreateAccelerationStructureNVX(device, (const VkAccelerationStructureCreateInfoNVX*)local_pCreateInfo, pAllocator, pAccelerationStructure);
+    if (local_pCreateInfo) {
+        delete local_pCreateInfo;
+    }
+    if (VK_SUCCESS == result) {
+        std::lock_guard<std::mutex> lock(global_lock);
+        *pAccelerationStructure = WrapNew(*pAccelerationStructure);
+    }
+    return result;
+}
+
+VKAPI_ATTR void VKAPI_CALL DestroyAccelerationStructureNVX(
+    VkDevice                                    device,
+    VkAccelerationStructureNVX                  accelerationStructure,
+    const VkAllocationCallbacks*                pAllocator)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    std::unique_lock<std::mutex> lock(global_lock);
+    uint64_t accelerationStructure_id = reinterpret_cast<uint64_t &>(accelerationStructure);
+    accelerationStructure = (VkAccelerationStructureNVX)unique_id_mapping[accelerationStructure_id];
+    unique_id_mapping.erase(accelerationStructure_id);
+    lock.unlock();
+    dev_data->dispatch_table.DestroyAccelerationStructureNVX(device, accelerationStructure, pAllocator);
+
+}
+
+VKAPI_ATTR void VKAPI_CALL GetAccelerationStructureMemoryRequirementsNVX(
+    VkDevice                                    device,
+    const VkAccelerationStructureMemoryRequirementsInfoNVX* pInfo,
+    VkMemoryRequirements2KHR*                   pMemoryRequirements)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkAccelerationStructureMemoryRequirementsInfoNVX *local_pInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pInfo) {
+            local_pInfo = new safe_VkAccelerationStructureMemoryRequirementsInfoNVX(pInfo);
+            if (pInfo->accelerationStructure) {
+                local_pInfo->accelerationStructure = Unwrap(pInfo->accelerationStructure);
+            }
+        }
+    }
+    dev_data->dispatch_table.GetAccelerationStructureMemoryRequirementsNVX(device, (const VkAccelerationStructureMemoryRequirementsInfoNVX*)local_pInfo, pMemoryRequirements);
+    if (local_pInfo) {
+        delete local_pInfo;
+    }
+}
+
+VKAPI_ATTR void VKAPI_CALL GetAccelerationStructureScratchMemoryRequirementsNVX(
+    VkDevice                                    device,
+    const VkAccelerationStructureMemoryRequirementsInfoNVX* pInfo,
+    VkMemoryRequirements2KHR*                   pMemoryRequirements)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkAccelerationStructureMemoryRequirementsInfoNVX *local_pInfo = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pInfo) {
+            local_pInfo = new safe_VkAccelerationStructureMemoryRequirementsInfoNVX(pInfo);
+            if (pInfo->accelerationStructure) {
+                local_pInfo->accelerationStructure = Unwrap(pInfo->accelerationStructure);
+            }
+        }
+    }
+    dev_data->dispatch_table.GetAccelerationStructureScratchMemoryRequirementsNVX(device, (const VkAccelerationStructureMemoryRequirementsInfoNVX*)local_pInfo, pMemoryRequirements);
+    if (local_pInfo) {
+        delete local_pInfo;
+    }
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL BindAccelerationStructureMemoryNVX(
+    VkDevice                                    device,
+    uint32_t                                    bindInfoCount,
+    const VkBindAccelerationStructureMemoryInfoNVX* pBindInfos)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkBindAccelerationStructureMemoryInfoNVX *local_pBindInfos = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        if (pBindInfos) {
+            local_pBindInfos = new safe_VkBindAccelerationStructureMemoryInfoNVX[bindInfoCount];
+            for (uint32_t index0 = 0; index0 < bindInfoCount; ++index0) {
+                local_pBindInfos[index0].initialize(&pBindInfos[index0]);
+                if (pBindInfos[index0].accelerationStructure) {
+                    local_pBindInfos[index0].accelerationStructure = Unwrap(pBindInfos[index0].accelerationStructure);
+                }
+                if (pBindInfos[index0].memory) {
+                    local_pBindInfos[index0].memory = Unwrap(pBindInfos[index0].memory);
+                }
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.BindAccelerationStructureMemoryNVX(device, bindInfoCount, (const VkBindAccelerationStructureMemoryInfoNVX*)local_pBindInfos);
+    if (local_pBindInfos) {
+        delete[] local_pBindInfos;
+    }
+    return result;
+}
+
+VKAPI_ATTR void VKAPI_CALL CmdBuildAccelerationStructureNVX(
+    VkCommandBuffer                             commandBuffer,
+    VkAccelerationStructureTypeNVX              type,
+    uint32_t                                    instanceCount,
+    VkBuffer                                    instanceData,
+    VkDeviceSize                                instanceOffset,
+    uint32_t                                    geometryCount,
+    const VkGeometryNVX*                        pGeometries,
+    VkBuildAccelerationStructureFlagsNVX        flags,
+    VkBool32                                    update,
+    VkAccelerationStructureNVX                  dst,
+    VkAccelerationStructureNVX                  src,
+    VkBuffer                                    scratch,
+    VkDeviceSize                                scratchOffset)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
+    safe_VkGeometryNVX *local_pGeometries = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        instanceData = Unwrap(instanceData);
+        if (pGeometries) {
+            local_pGeometries = new safe_VkGeometryNVX[geometryCount];
+            for (uint32_t index0 = 0; index0 < geometryCount; ++index0) {
+                local_pGeometries[index0].initialize(&pGeometries[index0]);
+                if (pGeometries[index0].geometry.triangles.vertexData) {
+                    local_pGeometries[index0].geometry.triangles.vertexData = Unwrap(pGeometries[index0].geometry.triangles.vertexData);
+                }
+                if (pGeometries[index0].geometry.triangles.indexData) {
+                    local_pGeometries[index0].geometry.triangles.indexData = Unwrap(pGeometries[index0].geometry.triangles.indexData);
+                }
+                if (pGeometries[index0].geometry.triangles.transformData) {
+                    local_pGeometries[index0].geometry.triangles.transformData = Unwrap(pGeometries[index0].geometry.triangles.transformData);
+                }
+                if (pGeometries[index0].geometry.aabbs.aabbData) {
+                    local_pGeometries[index0].geometry.aabbs.aabbData = Unwrap(pGeometries[index0].geometry.aabbs.aabbData);
+                }
+            }
+        }
+        dst = Unwrap(dst);
+        src = Unwrap(src);
+        scratch = Unwrap(scratch);
+    }
+    dev_data->dispatch_table.CmdBuildAccelerationStructureNVX(commandBuffer, type, instanceCount, instanceData, instanceOffset, geometryCount, (const VkGeometryNVX*)local_pGeometries, flags, update, dst, src, scratch, scratchOffset);
+    if (local_pGeometries) {
+        delete[] local_pGeometries;
+    }
+}
+
+VKAPI_ATTR void VKAPI_CALL CmdCopyAccelerationStructureNVX(
+    VkCommandBuffer                             commandBuffer,
+    VkAccelerationStructureNVX                  dst,
+    VkAccelerationStructureNVX                  src,
+    VkCopyAccelerationStructureModeNVX          mode)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        dst = Unwrap(dst);
+        src = Unwrap(src);
+    }
+    dev_data->dispatch_table.CmdCopyAccelerationStructureNVX(commandBuffer, dst, src, mode);
+
+}
+
+VKAPI_ATTR void VKAPI_CALL CmdTraceRaysNVX(
+    VkCommandBuffer                             commandBuffer,
+    VkBuffer                                    raygenShaderBindingTableBuffer,
+    VkDeviceSize                                raygenShaderBindingOffset,
+    VkBuffer                                    missShaderBindingTableBuffer,
+    VkDeviceSize                                missShaderBindingOffset,
+    VkDeviceSize                                missShaderBindingStride,
+    VkBuffer                                    hitShaderBindingTableBuffer,
+    VkDeviceSize                                hitShaderBindingOffset,
+    VkDeviceSize                                hitShaderBindingStride,
+    uint32_t                                    width,
+    uint32_t                                    height)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        raygenShaderBindingTableBuffer = Unwrap(raygenShaderBindingTableBuffer);
+        missShaderBindingTableBuffer = Unwrap(missShaderBindingTableBuffer);
+        hitShaderBindingTableBuffer = Unwrap(hitShaderBindingTableBuffer);
+    }
+    dev_data->dispatch_table.CmdTraceRaysNVX(commandBuffer, raygenShaderBindingTableBuffer, raygenShaderBindingOffset, missShaderBindingTableBuffer, missShaderBindingOffset, missShaderBindingStride, hitShaderBindingTableBuffer, hitShaderBindingOffset, hitShaderBindingStride, width, height);
+
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL CreateRaytracingPipelinesNVX(
+    VkDevice                                    device,
+    VkPipelineCache                             pipelineCache,
+    uint32_t                                    createInfoCount,
+    const VkRaytracingPipelineCreateInfoNVX*    pCreateInfos,
+    const VkAllocationCallbacks*                pAllocator,
+    VkPipeline*                                 pPipelines)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    safe_VkRaytracingPipelineCreateInfoNVX *local_pCreateInfos = NULL;
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        pipelineCache = Unwrap(pipelineCache);
+        if (pCreateInfos) {
+            local_pCreateInfos = new safe_VkRaytracingPipelineCreateInfoNVX[createInfoCount];
+            for (uint32_t index0 = 0; index0 < createInfoCount; ++index0) {
+                local_pCreateInfos[index0].initialize(&pCreateInfos[index0]);
+                if (local_pCreateInfos[index0].pStages) {
+                    for (uint32_t index1 = 0; index1 < local_pCreateInfos[index0].stageCount; ++index1) {
+                        if (pCreateInfos[index0].pStages[index1].module) {
+                            local_pCreateInfos[index0].pStages[index1].module = Unwrap(pCreateInfos[index0].pStages[index1].module);
+                        }
+                    }
+                }
+                if (pCreateInfos[index0].layout) {
+                    local_pCreateInfos[index0].layout = Unwrap(pCreateInfos[index0].layout);
+                }
+                if (pCreateInfos[index0].basePipelineHandle) {
+                    local_pCreateInfos[index0].basePipelineHandle = Unwrap(pCreateInfos[index0].basePipelineHandle);
+                }
+            }
+        }
+    }
+    VkResult result = dev_data->dispatch_table.CreateRaytracingPipelinesNVX(device, pipelineCache, createInfoCount, (const VkRaytracingPipelineCreateInfoNVX*)local_pCreateInfos, pAllocator, pPipelines);
+    if (local_pCreateInfos) {
+        delete[] local_pCreateInfos;
+    }
+    if (VK_SUCCESS == result) {
+        std::lock_guard<std::mutex> lock(global_lock);
+        for (uint32_t index0 = 0; index0 < createInfoCount; index0++) {
+            pPipelines[index0] = WrapNew(pPipelines[index0]);
+        }
+    }
+    return result;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL GetRaytracingShaderHandlesNVX(
+    VkDevice                                    device,
+    VkPipeline                                  pipeline,
+    uint32_t                                    firstGroup,
+    uint32_t                                    groupCount,
+    size_t                                      dataSize,
+    void*                                       pData)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        pipeline = Unwrap(pipeline);
+    }
+    VkResult result = dev_data->dispatch_table.GetRaytracingShaderHandlesNVX(device, pipeline, firstGroup, groupCount, dataSize, pData);
+
+    return result;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL GetAccelerationStructureHandleNVX(
+    VkDevice                                    device,
+    VkAccelerationStructureNVX                  accelerationStructure,
+    size_t                                      dataSize,
+    void*                                       pData)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        accelerationStructure = Unwrap(accelerationStructure);
+    }
+    VkResult result = dev_data->dispatch_table.GetAccelerationStructureHandleNVX(device, accelerationStructure, dataSize, pData);
+
+    return result;
+}
+
+VKAPI_ATTR void VKAPI_CALL CmdWriteAccelerationStructurePropertiesNVX(
+    VkCommandBuffer                             commandBuffer,
+    VkAccelerationStructureNVX                  accelerationStructure,
+    VkQueryType                                 queryType,
+    VkQueryPool                                 queryPool,
+    uint32_t                                    query)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        accelerationStructure = Unwrap(accelerationStructure);
+        queryPool = Unwrap(queryPool);
+    }
+    dev_data->dispatch_table.CmdWriteAccelerationStructurePropertiesNVX(commandBuffer, accelerationStructure, queryType, queryPool, query);
+
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL CompileDeferredNVX(
+    VkDevice                                    device,
+    VkPipeline                                  pipeline,
+    uint32_t                                    shader)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        pipeline = Unwrap(pipeline);
+    }
+    VkResult result = dev_data->dispatch_table.CompileDeferredNVX(device, pipeline, shader);
+
+    return result;
+}
+
+VKAPI_ATTR void VKAPI_CALL CmdWriteBufferMarkerAMD(
+    VkCommandBuffer                             commandBuffer,
+    VkPipelineStageFlagBits                     pipelineStage,
+    VkBuffer                                    dstBuffer,
+    VkDeviceSize                                dstOffset,
+    uint32_t                                    marker)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        dstBuffer = Unwrap(dstBuffer);
+    }
+    dev_data->dispatch_table.CmdWriteBufferMarkerAMD(commandBuffer, pipelineStage, dstBuffer, dstOffset, marker);
+
+}
+
+VKAPI_ATTR void VKAPI_CALL CmdDrawMeshTasksIndirectNV(
+    VkCommandBuffer                             commandBuffer,
+    VkBuffer                                    buffer,
+    VkDeviceSize                                offset,
+    uint32_t                                    drawCount,
+    uint32_t                                    stride)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        buffer = Unwrap(buffer);
+    }
+    dev_data->dispatch_table.CmdDrawMeshTasksIndirectNV(commandBuffer, buffer, offset, drawCount, stride);
+
+}
+
+VKAPI_ATTR void VKAPI_CALL CmdDrawMeshTasksIndirectCountNV(
+    VkCommandBuffer                             commandBuffer,
+    VkBuffer                                    buffer,
+    VkDeviceSize                                offset,
+    VkBuffer                                    countBuffer,
+    VkDeviceSize                                countBufferOffset,
+    uint32_t                                    maxDrawCount,
+    uint32_t                                    stride)
+{
+    layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
+    {
+        std::lock_guard<std::mutex> lock(global_lock);
+        buffer = Unwrap(buffer);
+        countBuffer = Unwrap(countBuffer);
+    }
+    dev_data->dispatch_table.CmdDrawMeshTasksIndirectCountNV(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
+
+}
+
+#ifdef VK_USE_PLATFORM_FUCHSIA
+
+VKAPI_ATTR VkResult VKAPI_CALL CreateImagePipeSurfaceFUCHSIA(
+    VkInstance                                  instance,
+    const VkImagePipeSurfaceCreateInfoFUCHSIA*  pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkSurfaceKHR*                               pSurface)
+{
+    instance_layer_data *dev_data = GetLayerDataPtr(get_dispatch_key(instance), instance_layer_data_map);
+    VkResult result = dev_data->dispatch_table.CreateImagePipeSurfaceFUCHSIA(instance, pCreateInfo, pAllocator, pSurface);
+    if (VK_SUCCESS == result) {
+        std::lock_guard<std::mutex> lock(global_lock);
+        *pSurface = WrapNew(*pSurface);
+    }
+    return result;
+}
+#endif // VK_USE_PLATFORM_FUCHSIA
+// Map of all APIs to be intercepted by this layer
+static const std::unordered_map<std::string, void*> name_to_funcptr_map = {
+    {"vkCreateInstance", (void *)CreateInstance},
+    {"vkDestroyInstance", (void *)DestroyInstance},
+    {"vkGetInstanceProcAddr", (void *)GetInstanceProcAddr},
+    {"vkGetDeviceProcAddr", (void *)GetDeviceProcAddr},
+    {"vkCreateDevice", (void *)CreateDevice},
+    {"vkDestroyDevice", (void *)DestroyDevice},
+    {"vkEnumerateInstanceExtensionProperties", (void *)EnumerateInstanceExtensionProperties},
+    {"vkEnumerateInstanceLayerProperties", (void *)EnumerateInstanceLayerProperties},
+    {"vkEnumerateDeviceLayerProperties", (void *)EnumerateDeviceLayerProperties},
+    {"vkQueueSubmit", (void*)QueueSubmit},
+    {"vkAllocateMemory", (void*)AllocateMemory},
+    {"vkFreeMemory", (void*)FreeMemory},
+    {"vkMapMemory", (void*)MapMemory},
+    {"vkUnmapMemory", (void*)UnmapMemory},
+    {"vkFlushMappedMemoryRanges", (void*)FlushMappedMemoryRanges},
+    {"vkInvalidateMappedMemoryRanges", (void*)InvalidateMappedMemoryRanges},
+    {"vkGetDeviceMemoryCommitment", (void*)GetDeviceMemoryCommitment},
+    {"vkBindBufferMemory", (void*)BindBufferMemory},
+    {"vkBindImageMemory", (void*)BindImageMemory},
+    {"vkGetBufferMemoryRequirements", (void*)GetBufferMemoryRequirements},
+    {"vkGetImageMemoryRequirements", (void*)GetImageMemoryRequirements},
+    {"vkGetImageSparseMemoryRequirements", (void*)GetImageSparseMemoryRequirements},
+    {"vkQueueBindSparse", (void*)QueueBindSparse},
+    {"vkCreateFence", (void*)CreateFence},
+    {"vkDestroyFence", (void*)DestroyFence},
+    {"vkResetFences", (void*)ResetFences},
+    {"vkGetFenceStatus", (void*)GetFenceStatus},
+    {"vkWaitForFences", (void*)WaitForFences},
+    {"vkCreateSemaphore", (void*)CreateSemaphore},
+    {"vkDestroySemaphore", (void*)DestroySemaphore},
+    {"vkCreateEvent", (void*)CreateEvent},
+    {"vkDestroyEvent", (void*)DestroyEvent},
+    {"vkGetEventStatus", (void*)GetEventStatus},
+    {"vkSetEvent", (void*)SetEvent},
+    {"vkResetEvent", (void*)ResetEvent},
+    {"vkCreateQueryPool", (void*)CreateQueryPool},
+    {"vkDestroyQueryPool", (void*)DestroyQueryPool},
+    {"vkGetQueryPoolResults", (void*)GetQueryPoolResults},
+    {"vkCreateBuffer", (void*)CreateBuffer},
+    {"vkDestroyBuffer", (void*)DestroyBuffer},
+    {"vkCreateBufferView", (void*)CreateBufferView},
+    {"vkDestroyBufferView", (void*)DestroyBufferView},
+    {"vkCreateImage", (void*)CreateImage},
+    {"vkDestroyImage", (void*)DestroyImage},
+    {"vkGetImageSubresourceLayout", (void*)GetImageSubresourceLayout},
+    {"vkCreateImageView", (void*)CreateImageView},
+    {"vkDestroyImageView", (void*)DestroyImageView},
+    {"vkCreateShaderModule", (void*)CreateShaderModule},
+    {"vkDestroyShaderModule", (void*)DestroyShaderModule},
+    {"vkCreatePipelineCache", (void*)CreatePipelineCache},
+    {"vkDestroyPipelineCache", (void*)DestroyPipelineCache},
+    {"vkGetPipelineCacheData", (void*)GetPipelineCacheData},
+    {"vkMergePipelineCaches", (void*)MergePipelineCaches},
+    {"vkCreateGraphicsPipelines", (void *)CreateGraphicsPipelines},
+    {"vkCreateComputePipelines", (void *)CreateComputePipelines},
+    {"vkDestroyPipeline", (void*)DestroyPipeline},
+    {"vkCreatePipelineLayout", (void*)CreatePipelineLayout},
+    {"vkDestroyPipelineLayout", (void*)DestroyPipelineLayout},
+    {"vkCreateSampler", (void*)CreateSampler},
+    {"vkDestroySampler", (void*)DestroySampler},
+    {"vkCreateDescriptorSetLayout", (void*)CreateDescriptorSetLayout},
+    {"vkDestroyDescriptorSetLayout", (void*)DestroyDescriptorSetLayout},
+    {"vkCreateDescriptorPool", (void*)CreateDescriptorPool},
+    {"vkDestroyDescriptorPool", (void*)DestroyDescriptorPool},
+    {"vkResetDescriptorPool", (void*)ResetDescriptorPool},
+    {"vkAllocateDescriptorSets", (void*)AllocateDescriptorSets},
+    {"vkFreeDescriptorSets", (void*)FreeDescriptorSets},
+    {"vkUpdateDescriptorSets", (void*)UpdateDescriptorSets},
+    {"vkCreateFramebuffer", (void*)CreateFramebuffer},
+    {"vkDestroyFramebuffer", (void*)DestroyFramebuffer},
+    {"vkCreateRenderPass", (void *)CreateRenderPass},
+    {"vkDestroyRenderPass", (void *)DestroyRenderPass},
+    {"vkGetRenderAreaGranularity", (void*)GetRenderAreaGranularity},
+    {"vkCreateCommandPool", (void*)CreateCommandPool},
+    {"vkDestroyCommandPool", (void*)DestroyCommandPool},
+    {"vkResetCommandPool", (void*)ResetCommandPool},
+    {"vkAllocateCommandBuffers", (void*)AllocateCommandBuffers},
+    {"vkFreeCommandBuffers", (void*)FreeCommandBuffers},
+    {"vkBeginCommandBuffer", (void*)BeginCommandBuffer},
+    {"vkCmdBindPipeline", (void*)CmdBindPipeline},
+    {"vkCmdBindDescriptorSets", (void*)CmdBindDescriptorSets},
+    {"vkCmdBindIndexBuffer", (void*)CmdBindIndexBuffer},
+    {"vkCmdBindVertexBuffers", (void*)CmdBindVertexBuffers},
+    {"vkCmdDrawIndirect", (void*)CmdDrawIndirect},
+    {"vkCmdDrawIndexedIndirect", (void*)CmdDrawIndexedIndirect},
+    {"vkCmdDispatchIndirect", (void*)CmdDispatchIndirect},
+    {"vkCmdCopyBuffer", (void*)CmdCopyBuffer},
+    {"vkCmdCopyImage", (void*)CmdCopyImage},
+    {"vkCmdBlitImage", (void*)CmdBlitImage},
+    {"vkCmdCopyBufferToImage", (void*)CmdCopyBufferToImage},
+    {"vkCmdCopyImageToBuffer", (void*)CmdCopyImageToBuffer},
+    {"vkCmdUpdateBuffer", (void*)CmdUpdateBuffer},
+    {"vkCmdFillBuffer", (void*)CmdFillBuffer},
+    {"vkCmdClearColorImage", (void*)CmdClearColorImage},
+    {"vkCmdClearDepthStencilImage", (void*)CmdClearDepthStencilImage},
+    {"vkCmdResolveImage", (void*)CmdResolveImage},
+    {"vkCmdSetEvent", (void*)CmdSetEvent},
+    {"vkCmdResetEvent", (void*)CmdResetEvent},
+    {"vkCmdWaitEvents", (void*)CmdWaitEvents},
+    {"vkCmdPipelineBarrier", (void*)CmdPipelineBarrier},
+    {"vkCmdBeginQuery", (void*)CmdBeginQuery},
+    {"vkCmdEndQuery", (void*)CmdEndQuery},
+    {"vkCmdResetQueryPool", (void*)CmdResetQueryPool},
+    {"vkCmdWriteTimestamp", (void*)CmdWriteTimestamp},
+    {"vkCmdCopyQueryPoolResults", (void*)CmdCopyQueryPoolResults},
+    {"vkCmdPushConstants", (void*)CmdPushConstants},
+    {"vkCmdBeginRenderPass", (void*)CmdBeginRenderPass},
+    {"vkBindBufferMemory2", (void*)BindBufferMemory2},
+    {"vkBindImageMemory2", (void*)BindImageMemory2},
+    {"vkGetImageMemoryRequirements2", (void*)GetImageMemoryRequirements2},
+    {"vkGetBufferMemoryRequirements2", (void*)GetBufferMemoryRequirements2},
+    {"vkGetImageSparseMemoryRequirements2", (void*)GetImageSparseMemoryRequirements2},
+    {"vkGetPhysicalDeviceImageFormatProperties2", (void*)GetPhysicalDeviceImageFormatProperties2},
+    {"vkTrimCommandPool", (void*)TrimCommandPool},
+    {"vkCreateSamplerYcbcrConversion", (void*)CreateSamplerYcbcrConversion},
+    {"vkDestroySamplerYcbcrConversion", (void*)DestroySamplerYcbcrConversion},
+    {"vkCreateDescriptorUpdateTemplate", (void *)CreateDescriptorUpdateTemplate},
+    {"vkDestroyDescriptorUpdateTemplate", (void *)DestroyDescriptorUpdateTemplate},
+    {"vkUpdateDescriptorSetWithTemplate", (void *)UpdateDescriptorSetWithTemplate},
+    {"vkGetDescriptorSetLayoutSupport", (void*)GetDescriptorSetLayoutSupport},
+    {"vkDestroySurfaceKHR", (void*)DestroySurfaceKHR},
+    {"vkGetPhysicalDeviceSurfaceSupportKHR", (void*)GetPhysicalDeviceSurfaceSupportKHR},
+    {"vkGetPhysicalDeviceSurfaceCapabilitiesKHR", (void*)GetPhysicalDeviceSurfaceCapabilitiesKHR},
+    {"vkGetPhysicalDeviceSurfaceFormatsKHR", (void*)GetPhysicalDeviceSurfaceFormatsKHR},
+    {"vkGetPhysicalDeviceSurfacePresentModesKHR", (void*)GetPhysicalDeviceSurfacePresentModesKHR},
+    {"vkCreateSwapchainKHR", (void *)CreateSwapchainKHR},
+    {"vkDestroySwapchainKHR", (void *)DestroySwapchainKHR},
+    {"vkGetSwapchainImagesKHR", (void *)GetSwapchainImagesKHR},
+    {"vkAcquireNextImageKHR", (void*)AcquireNextImageKHR},
+    {"vkQueuePresentKHR", (void *)QueuePresentKHR},
+    {"vkGetDeviceGroupSurfacePresentModesKHR", (void*)GetDeviceGroupSurfacePresentModesKHR},
+    {"vkGetPhysicalDevicePresentRectanglesKHR", (void*)GetPhysicalDevicePresentRectanglesKHR},
+    {"vkAcquireNextImage2KHR", (void*)AcquireNextImage2KHR},
+    {"vkGetPhysicalDeviceDisplayPropertiesKHR", (void *)GetPhysicalDeviceDisplayPropertiesKHR},
+    {"vkGetPhysicalDeviceDisplayPlanePropertiesKHR", (void *)GetPhysicalDeviceDisplayPlanePropertiesKHR},
+    {"vkGetDisplayPlaneSupportedDisplaysKHR", (void *)GetDisplayPlaneSupportedDisplaysKHR},
+    {"vkGetDisplayModePropertiesKHR", (void *)GetDisplayModePropertiesKHR},
+    {"vkCreateDisplayModeKHR", (void*)CreateDisplayModeKHR},
+    {"vkGetDisplayPlaneCapabilitiesKHR", (void*)GetDisplayPlaneCapabilitiesKHR},
+    {"vkCreateDisplayPlaneSurfaceKHR", (void*)CreateDisplayPlaneSurfaceKHR},
+    {"vkCreateSharedSwapchainsKHR", (void *)CreateSharedSwapchainsKHR},
 #ifdef VK_USE_PLATFORM_XLIB_KHR
-    {"vkCreateXlibSurfaceKHR", reinterpret_cast<PFN_vkVoidFunction>(CreateXlibSurfaceKHR)},
+    {"vkCreateXlibSurfaceKHR", (void*)CreateXlibSurfaceKHR},
 #endif
 #ifdef VK_USE_PLATFORM_XCB_KHR
-    {"vkCreateXcbSurfaceKHR", reinterpret_cast<PFN_vkVoidFunction>(CreateXcbSurfaceKHR)},
+    {"vkCreateXcbSurfaceKHR", (void*)CreateXcbSurfaceKHR},
 #endif
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
-    {"vkCreateWaylandSurfaceKHR", reinterpret_cast<PFN_vkVoidFunction>(CreateWaylandSurfaceKHR)},
+    {"vkCreateWaylandSurfaceKHR", (void*)CreateWaylandSurfaceKHR},
 #endif
 #ifdef VK_USE_PLATFORM_MIR_KHR
-    {"vkCreateMirSurfaceKHR", reinterpret_cast<PFN_vkVoidFunction>(CreateMirSurfaceKHR)},
+    {"vkCreateMirSurfaceKHR", (void*)CreateMirSurfaceKHR},
 #endif
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
-    {"vkCreateAndroidSurfaceKHR", reinterpret_cast<PFN_vkVoidFunction>(CreateAndroidSurfaceKHR)},
+    {"vkCreateAndroidSurfaceKHR", (void*)CreateAndroidSurfaceKHR},
 #endif
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-    {"vkCreateWin32SurfaceKHR", reinterpret_cast<PFN_vkVoidFunction>(CreateWin32SurfaceKHR)},
+    {"vkCreateWin32SurfaceKHR", (void*)CreateWin32SurfaceKHR},
 #endif
-    {"vkCmdDrawIndirectCountAMD", reinterpret_cast<PFN_vkVoidFunction>(CmdDrawIndirectCountAMD)},
-    {"vkCmdDrawIndexedIndirectCountAMD", reinterpret_cast<PFN_vkVoidFunction>(CmdDrawIndexedIndirectCountAMD)},
+    {"vkGetPhysicalDeviceImageFormatProperties2KHR", (void*)GetPhysicalDeviceImageFormatProperties2KHR},
+    {"vkTrimCommandPoolKHR", (void*)TrimCommandPoolKHR},
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-    {"vkGetMemoryWin32HandleNV", reinterpret_cast<PFN_vkVoidFunction>(GetMemoryWin32HandleNV)},
+    {"vkGetMemoryWin32HandleKHR", (void*)GetMemoryWin32HandleKHR},
+#endif
+    {"vkGetMemoryFdKHR", (void*)GetMemoryFdKHR},
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+    {"vkImportSemaphoreWin32HandleKHR", (void*)ImportSemaphoreWin32HandleKHR},
+#endif
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+    {"vkGetSemaphoreWin32HandleKHR", (void*)GetSemaphoreWin32HandleKHR},
+#endif
+    {"vkImportSemaphoreFdKHR", (void*)ImportSemaphoreFdKHR},
+    {"vkGetSemaphoreFdKHR", (void*)GetSemaphoreFdKHR},
+    {"vkCmdPushDescriptorSetKHR", (void*)CmdPushDescriptorSetKHR},
+    {"vkCmdPushDescriptorSetWithTemplateKHR", (void *)CmdPushDescriptorSetWithTemplateKHR},
+    {"vkCreateDescriptorUpdateTemplateKHR", (void *)CreateDescriptorUpdateTemplateKHR},
+    {"vkDestroyDescriptorUpdateTemplateKHR", (void *)DestroyDescriptorUpdateTemplateKHR},
+    {"vkUpdateDescriptorSetWithTemplateKHR", (void *)UpdateDescriptorSetWithTemplateKHR},
+    {"vkCreateRenderPass2KHR", (void *)CreateRenderPass2KHR},
+    {"vkCmdBeginRenderPass2KHR", (void*)CmdBeginRenderPass2KHR},
+    {"vkGetSwapchainStatusKHR", (void*)GetSwapchainStatusKHR},
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+    {"vkImportFenceWin32HandleKHR", (void*)ImportFenceWin32HandleKHR},
+#endif
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+    {"vkGetFenceWin32HandleKHR", (void*)GetFenceWin32HandleKHR},
+#endif
+    {"vkImportFenceFdKHR", (void*)ImportFenceFdKHR},
+    {"vkGetFenceFdKHR", (void*)GetFenceFdKHR},
+    {"vkGetPhysicalDeviceSurfaceCapabilities2KHR", (void*)GetPhysicalDeviceSurfaceCapabilities2KHR},
+    {"vkGetPhysicalDeviceSurfaceFormats2KHR", (void*)GetPhysicalDeviceSurfaceFormats2KHR},
+    {"vkGetPhysicalDeviceDisplayProperties2KHR", (void *)GetPhysicalDeviceDisplayProperties2KHR},
+    {"vkGetPhysicalDeviceDisplayPlaneProperties2KHR", (void *)GetPhysicalDeviceDisplayPlaneProperties2KHR},
+    {"vkGetDisplayModeProperties2KHR", (void *)GetDisplayModeProperties2KHR},
+    {"vkGetDisplayPlaneCapabilities2KHR", (void*)GetDisplayPlaneCapabilities2KHR},
+    {"vkGetImageMemoryRequirements2KHR", (void*)GetImageMemoryRequirements2KHR},
+    {"vkGetBufferMemoryRequirements2KHR", (void*)GetBufferMemoryRequirements2KHR},
+    {"vkGetImageSparseMemoryRequirements2KHR", (void*)GetImageSparseMemoryRequirements2KHR},
+    {"vkCreateSamplerYcbcrConversionKHR", (void*)CreateSamplerYcbcrConversionKHR},
+    {"vkDestroySamplerYcbcrConversionKHR", (void*)DestroySamplerYcbcrConversionKHR},
+    {"vkBindBufferMemory2KHR", (void*)BindBufferMemory2KHR},
+    {"vkBindImageMemory2KHR", (void*)BindImageMemory2KHR},
+    {"vkGetDescriptorSetLayoutSupportKHR", (void*)GetDescriptorSetLayoutSupportKHR},
+    {"vkCmdDrawIndirectCountKHR", (void*)CmdDrawIndirectCountKHR},
+    {"vkCmdDrawIndexedIndirectCountKHR", (void*)CmdDrawIndexedIndirectCountKHR},
+    {"vkCreateDebugReportCallbackEXT", (void *)CreateDebugReportCallbackEXT},
+    {"vkDestroyDebugReportCallbackEXT", (void *)DestroyDebugReportCallbackEXT},
+    {"vkDebugReportMessageEXT", (void *)DebugReportMessageEXT},
+    {"vkDebugMarkerSetObjectTagEXT", (void *)DebugMarkerSetObjectTagEXT},
+    {"vkDebugMarkerSetObjectNameEXT", (void *)DebugMarkerSetObjectNameEXT},
+    {"vkCmdBindTransformFeedbackBuffersEXT", (void*)CmdBindTransformFeedbackBuffersEXT},
+    {"vkCmdBeginTransformFeedbackEXT", (void*)CmdBeginTransformFeedbackEXT},
+    {"vkCmdEndTransformFeedbackEXT", (void*)CmdEndTransformFeedbackEXT},
+    {"vkCmdBeginQueryIndexedEXT", (void*)CmdBeginQueryIndexedEXT},
+    {"vkCmdEndQueryIndexedEXT", (void*)CmdEndQueryIndexedEXT},
+    {"vkCmdDrawIndirectByteCountEXT", (void*)CmdDrawIndirectByteCountEXT},
+    {"vkCmdDrawIndirectCountAMD", (void*)CmdDrawIndirectCountAMD},
+    {"vkCmdDrawIndexedIndirectCountAMD", (void*)CmdDrawIndexedIndirectCountAMD},
+    {"vkGetShaderInfoAMD", (void*)GetShaderInfoAMD},
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+    {"vkGetMemoryWin32HandleNV", (void*)GetMemoryWin32HandleNV},
+#endif
+#ifdef VK_USE_PLATFORM_VI_NN
+    {"vkCreateViSurfaceNN", (void*)CreateViSurfaceNN},
+#endif
+    {"vkCmdBeginConditionalRenderingEXT", (void*)CmdBeginConditionalRenderingEXT},
+    {"vkCmdProcessCommandsNVX", (void*)CmdProcessCommandsNVX},
+    {"vkCmdReserveSpaceForCommandsNVX", (void*)CmdReserveSpaceForCommandsNVX},
+    {"vkCreateIndirectCommandsLayoutNVX", (void*)CreateIndirectCommandsLayoutNVX},
+    {"vkDestroyIndirectCommandsLayoutNVX", (void*)DestroyIndirectCommandsLayoutNVX},
+    {"vkCreateObjectTableNVX", (void*)CreateObjectTableNVX},
+    {"vkDestroyObjectTableNVX", (void*)DestroyObjectTableNVX},
+    {"vkRegisterObjectsNVX", (void*)RegisterObjectsNVX},
+    {"vkUnregisterObjectsNVX", (void*)UnregisterObjectsNVX},
+    {"vkReleaseDisplayEXT", (void*)ReleaseDisplayEXT},
+#ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
+    {"vkAcquireXlibDisplayEXT", (void*)AcquireXlibDisplayEXT},
+#endif
+#ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
+    {"vkGetRandROutputDisplayEXT", (void*)GetRandROutputDisplayEXT},
+#endif
+    {"vkGetPhysicalDeviceSurfaceCapabilities2EXT", (void*)GetPhysicalDeviceSurfaceCapabilities2EXT},
+    {"vkDisplayPowerControlEXT", (void*)DisplayPowerControlEXT},
+    {"vkRegisterDeviceEventEXT", (void*)RegisterDeviceEventEXT},
+    {"vkRegisterDisplayEventEXT", (void*)RegisterDisplayEventEXT},
+    {"vkGetSwapchainCounterEXT", (void*)GetSwapchainCounterEXT},
+    {"vkGetRefreshCycleDurationGOOGLE", (void*)GetRefreshCycleDurationGOOGLE},
+    {"vkGetPastPresentationTimingGOOGLE", (void*)GetPastPresentationTimingGOOGLE},
+    {"vkSetHdrMetadataEXT", (void*)SetHdrMetadataEXT},
+#ifdef VK_USE_PLATFORM_IOS_MVK
+    {"vkCreateIOSSurfaceMVK", (void*)CreateIOSSurfaceMVK},
+#endif
+#ifdef VK_USE_PLATFORM_MACOS_MVK
+    {"vkCreateMacOSSurfaceMVK", (void*)CreateMacOSSurfaceMVK},
+#endif
+    {"vkSetDebugUtilsObjectNameEXT", (void *)SetDebugUtilsObjectNameEXT},
+    {"vkSetDebugUtilsObjectTagEXT", (void *)SetDebugUtilsObjectTagEXT},
+    {"vkCreateDebugUtilsMessengerEXT", (void *)CreateDebugUtilsMessengerEXT},
+    {"vkDestroyDebugUtilsMessengerEXT", (void *)DestroyDebugUtilsMessengerEXT},
+    {"vkSubmitDebugUtilsMessageEXT", (void *)SubmitDebugUtilsMessageEXT},
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+    {"vkGetMemoryAndroidHardwareBufferANDROID", (void*)GetMemoryAndroidHardwareBufferANDROID},
+#endif
+    {"vkGetImageDrmFormatModifierPropertiesEXT", (void*)GetImageDrmFormatModifierPropertiesEXT},
+    {"vkCreateValidationCacheEXT", (void*)CreateValidationCacheEXT},
+    {"vkDestroyValidationCacheEXT", (void*)DestroyValidationCacheEXT},
+    {"vkMergeValidationCachesEXT", (void*)MergeValidationCachesEXT},
+    {"vkGetValidationCacheDataEXT", (void*)GetValidationCacheDataEXT},
+    {"vkCmdBindShadingRateImageNV", (void*)CmdBindShadingRateImageNV},
+    {"vkCreateAccelerationStructureNVX", (void*)CreateAccelerationStructureNVX},
+    {"vkDestroyAccelerationStructureNVX", (void*)DestroyAccelerationStructureNVX},
+    {"vkGetAccelerationStructureMemoryRequirementsNVX", (void*)GetAccelerationStructureMemoryRequirementsNVX},
+    {"vkGetAccelerationStructureScratchMemoryRequirementsNVX", (void*)GetAccelerationStructureScratchMemoryRequirementsNVX},
+    {"vkBindAccelerationStructureMemoryNVX", (void*)BindAccelerationStructureMemoryNVX},
+    {"vkCmdBuildAccelerationStructureNVX", (void*)CmdBuildAccelerationStructureNVX},
+    {"vkCmdCopyAccelerationStructureNVX", (void*)CmdCopyAccelerationStructureNVX},
+    {"vkCmdTraceRaysNVX", (void*)CmdTraceRaysNVX},
+    {"vkCreateRaytracingPipelinesNVX", (void*)CreateRaytracingPipelinesNVX},
+    {"vkGetRaytracingShaderHandlesNVX", (void*)GetRaytracingShaderHandlesNVX},
+    {"vkGetAccelerationStructureHandleNVX", (void*)GetAccelerationStructureHandleNVX},
+    {"vkCmdWriteAccelerationStructurePropertiesNVX", (void*)CmdWriteAccelerationStructurePropertiesNVX},
+    {"vkCompileDeferredNVX", (void*)CompileDeferredNVX},
+    {"vkCmdWriteBufferMarkerAMD", (void*)CmdWriteBufferMarkerAMD},
+    {"vkCmdDrawMeshTasksIndirectNV", (void*)CmdDrawMeshTasksIndirectNV},
+    {"vkCmdDrawMeshTasksIndirectCountNV", (void*)CmdDrawMeshTasksIndirectCountNV},
+#ifdef VK_USE_PLATFORM_FUCHSIA
+    {"vkCreateImagePipeSurfaceFUCHSIA", (void*)CreateImagePipeSurfaceFUCHSIA},
 #endif
 };
 

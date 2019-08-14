@@ -59,7 +59,7 @@ void checkLongLongTypes() {
   static_assert((0 != ATOMIC_LLONG_LOCK_FREE) == ExpectLockFree, "");
 }
 
-int main()
+void run()
 {
 // structs and unions can't be defined in the template invocation.
 // Work around this with a typedef.
@@ -89,6 +89,7 @@ int main()
     CHECK_ALWAYS_LOCK_FREE(float);
     CHECK_ALWAYS_LOCK_FREE(double);
     CHECK_ALWAYS_LOCK_FREE(long double);
+#if __has_attribute(vector_size) && defined(_LIBCPP_VERSION)
     CHECK_ALWAYS_LOCK_FREE(int __attribute__((vector_size(1 * sizeof(int)))));
     CHECK_ALWAYS_LOCK_FREE(int __attribute__((vector_size(2 * sizeof(int)))));
     CHECK_ALWAYS_LOCK_FREE(int __attribute__((vector_size(4 * sizeof(int)))));
@@ -104,6 +105,7 @@ int main()
     CHECK_ALWAYS_LOCK_FREE(double __attribute__((vector_size(4 * sizeof(double)))));
     CHECK_ALWAYS_LOCK_FREE(double __attribute__((vector_size(16 * sizeof(double)))));
     CHECK_ALWAYS_LOCK_FREE(double __attribute__((vector_size(32 * sizeof(double)))));
+#endif // __has_attribute(vector_size) && defined(_LIBCPP_VERSION)
     CHECK_ALWAYS_LOCK_FREE(struct Empty {});
     CHECK_ALWAYS_LOCK_FREE(struct OneInt { int i; });
     CHECK_ALWAYS_LOCK_FREE(struct IntArr2 { int i[2]; });
@@ -132,3 +134,5 @@ int main()
     static_assert(std::atomic<void*>::is_always_lock_free == (2 == ATOMIC_POINTER_LOCK_FREE));
     static_assert(std::atomic<std::nullptr_t>::is_always_lock_free == (2 == ATOMIC_POINTER_LOCK_FREE));
 }
+
+int main() { run(); }

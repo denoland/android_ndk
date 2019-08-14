@@ -19,7 +19,6 @@ from __future__ import print_function
 
 import argparse
 import contextlib
-import multiprocessing
 import os
 import operator
 import posixpath
@@ -35,12 +34,25 @@ import logging
 # ndk-gdb is installed to $NDK/prebuilt/<platform>/bin
 NDK_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
 sys.path.append(os.path.join(NDK_PATH, "python-packages"))
+import adb
 import gdbrunner
 
 
 def log(msg):
     logger = logging.getLogger(__name__)
     logger.info(msg)
+
+
+def enable_verbose_logging():
+    logger = logging.getLogger(__name__)
+    handler = logging.StreamHandler(sys.stdout)
+    formatter = logging.Formatter()
+
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.propagate = False
+
+    logger.setLevel(logging.INFO)
 
 
 def error(msg):
@@ -108,12 +120,6 @@ class ArgumentParser(gdbrunner.ArgumentParser):
         debug_group.add_argument(
             "-t", "--tui", action="store_true", dest="tui",
             help=tui_help)
-
-        debug_group.add_argument(
-            "--stdcxx-py-pr", dest="stdcxxpypr",
-            help="use C++ library pretty-printer",
-            choices=["auto", "none", "gnustl", "stlport"],
-            default="auto")
 
 
 def extract_package_name(xmlroot):
@@ -198,15 +204,7 @@ def handle_args():
         args.nowait = True
 
     if args.verbose:
-        logger = logging.getLogger(__name__)
-        handler = logging.StreamHandler(sys.stdout)
-        formatter = logging.Formatter()
-
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-        logger.propagate = False
-
-        logger.setLevel(logging.INFO)
+        enable_verbose_logging()
 
     return args
 
@@ -473,7 +471,7 @@ def pull_binaries(device, out_dir, app_64bit):
         except:
             device.pull("/system/bin/app_process", destination)
 
-def generate_gdb_script(args, sysroot, binary_path, app_64bit, connect_timeout=5):
+def generate_gdb_script(args, sysroot, binary_path, app_64bit, jdb_pid, connect_timeout=5):
     if sys.platform.startswith("win"):
         # GDB expects paths to use forward slashes.
         sysroot = sysroot.replace("\\", "/")
@@ -516,15 +514,27 @@ target_remote_with_retry(':{}', {})
 end
 """.format(args.port, connect_timeout)
 
-    # Set up the pretty printer if needed
-    if args.pypr_dir is not None and args.pypr_fn is not None:
+    if jdb_pid is not None:
+        # After we've interrupted the app, reinvoke ndk-gdb.py to start jdb and
+        # wake up the app.
         gdb_commands += """
 python
-import sys
-sys.path.append("{pypr_dir}")
-from printers import {pypr_fn}
-{pypr_fn}(None)
-end""".format(pypr_dir=args.pypr_dir.replace("\\", "/"), pypr_fn=args.pypr_fn)
+def start_jdb_to_unblock_app():
+  import subprocess
+  subprocess.Popen({})
+start_jdb_to_unblock_app()
+end
+    """.format(repr(
+            [
+                sys.executable,
+                os.path.realpath(__file__),
+                "--internal-wakeup-pid-with-jdb",
+                args.device.adb_path,
+                args.device.serial,
+                args.jdb_cmd,
+                str(jdb_pid),
+                str(bool(args.verbose)),
+            ]))
 
     if args.exec_file is not None:
         try:
@@ -538,41 +548,12 @@ end""".format(pypr_dir=args.pypr_dir.replace("\\", "/"), pypr_fn=args.pypr_fn)
     return gdb_commands
 
 
-def detect_stl_pretty_printer(args):
-    stl = dump_var(args, "APP_STL")
-    if not stl:
-        detected = "none"
-        if args.stdcxxpypr == "auto":
-            log("APP_STL not found, disabling pretty printer")
-    elif stl.startswith("stlport"):
-        detected = "stlport"
-    elif stl.startswith("gnustl"):
-        detected = "gnustl"
-    else:
-        detected = "none"
+def start_jdb(adb_path, serial, jdb_cmd, pid, verbose):
+    pid = int(pid)
+    device = adb.get_device(serial, adb_path=adb_path)
+    if verbose == "True":
+        enable_verbose_logging()
 
-    if args.stdcxxpypr == "auto":
-        log("Detected pretty printer: {}".format(detected))
-        return detected
-    if detected != args.stdcxxpypr and args.stdcxxpypr != "none":
-        print("WARNING: detected APP_STL ('{}') does not match pretty printer".format(detected))
-    log("Using specified pretty printer: {}".format(args.stdcxxpypr))
-    return args.stdcxxpypr
-
-
-def find_pretty_printer(pretty_printer):
-    if pretty_printer == "gnustl":
-        path = os.path.join("libstdcxx", "gcc-4.9")
-        function = "register_libstdcxx_printers"
-    elif pretty_printer == "stlport":
-        path = os.path.join("stlport", "stlport")
-        function = "register_stlport_printers"
-    pp_path = os.path.join(
-        ndk_bin_path(), "..", "share", "pretty-printers", path)
-    return pp_path, function
-
-
-def start_jdb(args, pid):
     log("Starting jdb to unblock application.")
 
     # Do setup stuff to keep ^C in the parent from killing us.
@@ -581,12 +562,9 @@ def start_jdb(args, pid):
     if not windows:
         os.setpgrp()
 
-    # Wait until gdbserver has interrupted the program.
-    time.sleep(0.5)
-
     jdb_port = 65534
-    args.device.forward("tcp:{}".format(jdb_port), "jdwp:{}".format(pid))
-    jdb_cmd = [args.jdb_cmd, "-connect",
+    device.forward("tcp:{}".format(jdb_port), "jdwp:{}".format(pid))
+    jdb_cmd = [jdb_cmd, "-connect",
                "com.sun.jdi.SocketAttach:hostname=localhost,port={}".format(jdb_port)]
 
     flags = subprocess.CREATE_NEW_PROCESS_GROUP if windows else 0
@@ -619,11 +597,24 @@ def start_jdb(args, pid):
 
 
 def main():
+    if sys.argv[1:2] == ["--internal-wakeup-pid-with-jdb"]:
+        return start_jdb(*sys.argv[2:])
+
     args = handle_args()
     device = args.device
 
     if device is None:
         error("Could not find a unique connected device/emulator.")
+
+    # Warn on old Pixel C firmware (b/29381985). Newer devices may have Yama
+    # enabled but still work with ndk-gdb (b/19277529).
+    yama_check = device.shell_nocheck(["cat", "/proc/sys/kernel/yama/ptrace_scope", "2>/dev/null"])
+    if (yama_check[0] == 0 and yama_check[1].rstrip() not in ["", "0"] and
+            (device.get_prop("ro.build.product"), device.get_prop("ro.product.name")) == ("dragon", "ryu")):
+        print("WARNING: The device uses Yama ptrace_scope to restrict debugging. ndk-gdb will")
+        print("    likely be unable to attach to a process. With root access, the restriction")
+        print("    can be lifted by writing 0 to /proc/sys/kernel/yama/ptrace_scope. Consider")
+        print("    upgrading your Pixel C to MXC89L or newer, where Yama is disabled.")
 
     adb_version = subprocess.check_output(device.adb_cmd + ["version"])
     log("ADB command used: '{}'".format(" ".join(device.adb_cmd)))
@@ -647,12 +638,6 @@ def main():
 
     out_dir = os.path.join(project, (dump_var(args, "TARGET_OUT", abi)))
     out_dir = os.path.realpath(out_dir)
-
-    pretty_printer = detect_stl_pretty_printer(args)
-    if pretty_printer != "none":
-        (args.pypr_dir, args.pypr_fn) = find_pretty_printer(pretty_printer)
-    else:
-        (args.pypr_dir, args.pypr_fn) = (None, None)
 
     app_data_dir = get_app_data_dir(args, pkg_name)
     arch = abi_to_arch(abi)
@@ -710,14 +695,10 @@ def main():
     gdb_path = os.path.join(ndk_bin_path(), "gdb")
 
     # Start jdb to unblock the application if necessary.
-    if args.launch and not args.nowait:
-        # Do this in a separate process before starting gdb, since jdb won't
-        # connect until gdb connects and continues.
-        jdb_process = multiprocessing.Process(target=start_jdb, args=(args, pid))
-        jdb_process.start()
+    jdb_pid = pid if (args.launch and not args.nowait) else None
 
     # Start gdb.
-    gdb_commands = generate_gdb_script(args, out_dir, zygote_path, app_64bit)
+    gdb_commands = generate_gdb_script(args, out_dir, zygote_path, app_64bit, jdb_pid)
     gdb_flags = []
     if args.tui:
         gdb_flags.append("--tui")

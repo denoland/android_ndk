@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_UTIL_BITUTILS_H_
-#define LIBSPIRV_UTIL_BITUTILS_H_
+#ifndef SOURCE_UTIL_BITUTILS_H_
+#define SOURCE_UTIL_BITUTILS_H_
 
 #include <cstdint>
 #include <cstring>
 
-namespace spvutils {
+namespace spvtools {
+namespace utils {
 
 // Performs a bitwise copy of source to the destination type Dest.
 template <typename Dest, typename Src>
@@ -76,6 +77,20 @@ static_assert(SetBits<uint64_t, 31, 1>::get == uint64_t(0x0000000080000000LL),
 static_assert(SetBits<uint64_t, 16, 16>::get == uint64_t(0x00000000FFFF0000LL),
               "SetBits failed");
 
-}  // namespace spvutils
+// Returns number of '1' bits in a word.
+template <typename T>
+size_t CountSetBits(T word) {
+  static_assert(std::is_integral<T>::value,
+                "CountSetBits requires integer type");
+  size_t count = 0;
+  while (word) {
+    word &= word - 1;
+    ++count;
+  }
+  return count;
+}
 
-#endif  // LIBSPIRV_UTIL_BITUTILS_H_
+}  // namespace utils
+}  // namespace spvtools
+
+#endif  // SOURCE_UTIL_BITUTILS_H_

@@ -12,19 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "extensions.h"
+#include "source/extensions.h"
 
 #include <cassert>
 #include <sstream>
 #include <string>
 
-#include "enum_string_mapping.h"
+#include "source/enum_string_mapping.h"
 
-namespace libspirv {
+namespace spvtools {
 
 std::string GetExtensionString(const spv_parsed_instruction_t* inst) {
-  if (inst->opcode != SpvOpExtension)
-    return "ERROR_not_op_extension";
+  if (inst->opcode != SpvOpExtension) return "ERROR_not_op_extension";
 
   assert(inst->num_operands == 1);
 
@@ -37,10 +36,9 @@ std::string GetExtensionString(const spv_parsed_instruction_t* inst) {
 
 std::string ExtensionSetToString(const ExtensionSet& extensions) {
   std::stringstream ss;
-  extensions.ForEach([&ss](Extension ext) {
-      ss << ExtensionToString(ext) << " ";
-  });
+  extensions.ForEach(
+      [&ss](Extension ext) { ss << ExtensionToString(ext) << " "; });
   return ss.str();
 }
 
-}  // namespace libspirv
+}  // namespace spvtools

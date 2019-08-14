@@ -1,5 +1,4 @@
-Changelog
-=========
+# Changelog
 
 Report issues to [GitHub].
 
@@ -8,87 +7,44 @@ For Android Studio issues, follow the docs on the [Android Studio site].
 [GitHub]: https://github.com/android-ndk/ndk/issues
 [Android Studio site]: http://tools.android.com/filing-bugs
 
-Announcements
--------------
+## Announcements
 
- * The deprecated headers have been removed. [Unified Headers] are now simply
-   The Headers.
+ * [LLD](https://lld.llvm.org/) is now available for testing. AOSP is in the
+   process of switching to using LLD by default and the NDK will follow
+   (timeline unknown). Test LLD in your app by passing `-fuse-ld=lld` when
+   linking.
 
-   For migration tips, see [Unified Headers Migration Notes].
+ * The Play Store will require 64-bit support when uploading an APK beginning in
+   August 2019. Start porting now to avoid surprises when the time comes. For
+   more information, see [this blog post](https://android-developers.googleblog.com/2017/12/improving-app-security-and-performance.html).
 
- * GCC is no longer supported. It will not be removed from the NDK just yet, but
-   is no longer receiving backports. It cannot be removed until after libc++ has
-   become stable enough to be the default, as some parts of gnustl are still
-   incompatible with Clang. It will be removed when the other STLs are removed
-   in r18.
+## Changes
 
- * `libc++` is out of beta and is now the preferred STL in the NDK. Starting in
-   r17, `libc++` is the default STL for CMake and standalone toolchains. If you
-   manually selected a different STL, we strongly encourage you to move to
-   `libc++`. For more details, see [this blog post].
+ * Updated Clang to r346389c.
+ * Updated libc++ to r350972.
+ * Add Android Q Beta 1 APIs:
+     * MIDI (`<amidi/AMidi.h>`).
+     * Binder.
+     * Extensions to several APIs from previous releases.
+ * [Issue 908]: `LOCAL_LDFLAGS` now take precedence over `APP_LDFLAGS`.
 
- * Support for ARMv5 (armeabi), MIPS, and MIPS64 are deprecated. They will no
-   longer build by default with ndk-build, but are still buildable if they are
-   explicitly named, and will be included by "all", "all32", and "all64".
-   Support for each of these has been removed in r17.
+[Issue 908]: https://github.com/android-ndk/ndk/issues/908
 
-   Both CMake and ndk-build will issue a warning if you target any of these
-   ABIs.
-
-[Unified Headers]: docs/UnifiedHeaders.md
-[Unified Headers Migration Notes]: docs/UnifiedHeadersMigration.md
-[this blog post]: https://android-developers.googleblog.com/2017/09/introducing-android-native-development.html
-
-NDK
----
-
- * ndk-build and CMake now link libatomic by default. Manually adding `-latomic`
-   to your ldflags should no longer be necessary.
- * Clang static analyzer support for ndk-build has been fixed to work with Clang
-   as a compiler. See https://github.com/android-ndk/ndk/issues/362.
- * Clang now defaults to -Oz instead of -Os. This should reduce generated code
-   size increases compared to GCC.
- * GCC no longer uses -Bsymbolic by default. This allows symbol preemption as
-   specified by the C++ standard and as required by ASAN. For libraries with
-   large numbers of public symbols, this may increase the size of your binaries.
- * Updated binutils to version 2.27. This includes the fix for miscompiles for
-   aarch64: https://sourceware.org/bugzilla/show_bug.cgi?id=21491.
- * Improved compatibility between our CMake toolchain file and newer CMake
-   versions. The NDK's CMake toolchain file now completely supercedes CMake's
-   built-in NDK support.
- * ndk-stack now works for arm64 on Darwin.
-
-libc++
-------
-
- * libandroid\_support now contains only APIs needed for supporting libc++ on
-   old devices. See https://github.com/android-ndk/ndk/issues/300.
-
-APIs
-----
-
- * Added native APIs for Android O MR1.
-     * [Neural Networks API]
-     * [JNI Shared Memory API]
-
-[Neural Networks API]: https://developer.android.com/ndk/guides/neuralnetworks/index.html
-[JNI Shared Memory API]: https://developer.android.com/ndk/reference/sharedmem__jni_8h.html
-
-Known Issues
-------------
+## Known Issues
 
  * This is not intended to be a comprehensive list of all outstanding bugs.
  * [Issue 360]: `thread_local` variables with non-trivial destructors will cause
    segfaults if the containing library is `dlclose`ed on devices running M or
    newer, or devices before M when using a static STL. The simple workaround is
    to not call `dlclose`.
- * [Issue 374]: gabi++ (and therefore stlport) binaries can segfault when built
-   for armeabi.
- * [Issue 399]: MIPS64 must use the integrated assembler. Clang defaults to
-   using binutils rather than the integrated assembler for this target.
-   ndk-build and cmake handle this for you, but make sure to use
-   `-fintegrated-as` for MIPS64 for custom build systems.
+ * [Issue 70838247]: Gold emits broken debug information for AArch64. AArch64
+   still uses BFD by default.
+ * This version of the NDK is incompatible with the Android Gradle plugin
+   version 3.0 or older. If you see an error like
+   `No toolchains found in the NDK toolchains folder for ABI with prefix: mips64el-linux-android`,
+   update your project file to [use plugin version 3.1 or newer]. You will also
+   need to upgrade to Android Studio 3.1 or newer.
 
 [Issue 360]: https://github.com/android-ndk/ndk/issues/360
-[Issue 374]: https://github.com/android-ndk/ndk/issues/374
-[Issue 399]: https://github.com/android-ndk/ndk/issues/399
+[Issue 70838247]: https://issuetracker.google.com/70838247
+[use plugin version 3.1 or newer]: https://developer.android.com/studio/releases/gradle-plugin#updating-plugin

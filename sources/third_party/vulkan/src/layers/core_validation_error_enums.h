@@ -1,7 +1,7 @@
-/* Copyright (c) 2015-2016 The Khronos Group Inc.
- * Copyright (c) 2015-2016 Valve Corporation
- * Copyright (c) 2015-2016 LunarG, Inc.
- * Copyright (C) 2015-2016 Google Inc.
+/* Copyright (c) 2015-2018 The Khronos Group Inc.
+ * Copyright (c) 2015-2018 Valve Corporation
+ * Copyright (c) 2015-2018 LunarG, Inc.
+ * Copyright (C) 2015-2018 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,259 +19,250 @@
  * Author: Tobin Ehlis <tobine@google.com>
  * Author: Chris Forbes <chrisf@ijw.co.nz>
  * Author: Mark Lobodzinski <mark@lunarg.com>
+ * Author: Dave Houlton <daveh@lunarg.com>
  */
 #ifndef CORE_VALIDATION_ERROR_ENUMS_H_
 #define CORE_VALIDATION_ERROR_ENUMS_H_
 
-// Mem Tracker ERROR codes
-enum MEM_TRACK_ERROR {
-    MEMTRACK_NONE,                         // Used for INFO & other non-error messages
-    MEMTRACK_INVALID_CB,                   // Cmd Buffer invalid
-    MEMTRACK_INVALID_MEM_OBJ,              // Invalid Memory Object
-    MEMTRACK_INVALID_ALIASING,             // Invalid Memory Aliasing
-    MEMTRACK_INTERNAL_ERROR,               // Bug in Mem Track Layer internal data structures
-    MEMTRACK_FREED_MEM_REF,                // MEM Obj freed while it still has obj and/or CB refs
-    MEMTRACK_INVALID_OBJECT,               // Attempting to reference generic VK Object that is invalid
-    MEMTRACK_MEMORY_LEAK,                  // Failure to call vkFreeMemory on Mem Obj prior to DestroyDevice
-    MEMTRACK_INVALID_STATE,                // Memory not in the correct state
-    MEMTRACK_RESET_CB_WHILE_IN_FLIGHT,     // vkResetCommandBuffer() called on a CB that hasn't completed
-    MEMTRACK_INVALID_FENCE_STATE,          // Invalid Fence State signaled or used
-    MEMTRACK_REBIND_OBJECT,                // Non-sparse object bindings are immutable
-    MEMTRACK_INVALID_USAGE_FLAG,           // Usage flags specified at image/buffer create conflict w/ use of object
-    MEMTRACK_INVALID_MAP,                  // Size flag specified at alloc is too small for mapping range
-    MEMTRACK_INVALID_MEM_TYPE,             // Memory Type mismatch
-    MEMTRACK_INVALID_MEM_REGION,           // Memory region for object bound to an allocation is invalid
-    MEMTRACK_OBJECT_NOT_BOUND,             // Image or Buffer used without having memory bound to it
-};
+// Suppress unused warning on Linux
+#if defined(__GNUC__)
+#define DECORATE_UNUSED __attribute__((unused))
+#else
+#define DECORATE_UNUSED
+#endif
 
-// Draw State ERROR codes
-enum DRAW_STATE_ERROR {
-    // TODO: Remove the comments here or expand them. There isn't any additional information in the
-    // comments than in the name in almost all cases.
-    DRAWSTATE_NONE,                          // Used for INFO & other non-error messages
-    DRAWSTATE_INTERNAL_ERROR,                // Error with DrawState internal data structures
-    DRAWSTATE_NO_PIPELINE_BOUND,             // Unable to identify a bound pipeline
-    DRAWSTATE_INVALID_SET,                   // Invalid DS
-    DRAWSTATE_INVALID_RENDER_AREA,           // Invalid renderArea
-    DRAWSTATE_INVALID_LAYOUT,                // Invalid DS layout
-    DRAWSTATE_INVALID_IMAGE_LAYOUT,          // Invalid Image layout
-    DRAWSTATE_INVALID_PIPELINE,              // Invalid Pipeline handle referenced
-    DRAWSTATE_INVALID_PIPELINE_CREATE_STATE, // Attempt to create a pipeline
-                                             // with invalid state
-    DRAWSTATE_INVALID_COMMAND_BUFFER,        // Invalid CommandBuffer referenced
-    DRAWSTATE_INVALID_BARRIER,               // Invalid Barrier
-    DRAWSTATE_INVALID_BUFFER,                // Invalid Buffer
-    DRAWSTATE_INVALID_IMAGE,                 // Invalid Image
-    DRAWSTATE_INVALID_BUFFER_VIEW,           // Invalid BufferView
-    DRAWSTATE_INVALID_IMAGE_VIEW,            // Invalid ImageView
-    DRAWSTATE_INVALID_QUERY,                 // Invalid Query
-    DRAWSTATE_INVALID_QUERY_POOL,            // Invalid QueryPool
-    DRAWSTATE_INVALID_DESCRIPTOR_POOL,       // Invalid DescriptorPool
-    DRAWSTATE_INVALID_COMMAND_POOL,          // Invalid CommandPool
-    DRAWSTATE_INVALID_FENCE,                 // Invalid Fence
-    DRAWSTATE_INVALID_EVENT,                 // Invalid Event
-    DRAWSTATE_INVALID_SAMPLER,               // Invalid Sampler
-    DRAWSTATE_INVALID_FRAMEBUFFER,           // Invalid Framebuffer
-    DRAWSTATE_INVALID_DEVICE_MEMORY,         // Invalid DeviceMemory
-    DRAWSTATE_VTX_INDEX_OUT_OF_BOUNDS,       // binding in vkCmdBindVertexData() too
-                                             // large for PSO's
-                                             // pVertexBindingDescriptions array
-    DRAWSTATE_VTX_INDEX_ALIGNMENT_ERROR,     // binding offset in
-                                             // vkCmdBindIndexBuffer() out of
-                                             // alignment based on indexType
-    // DRAWSTATE_MISSING_DOT_PROGRAM,              // No "dot" program in order
-    // to generate png image
-    DRAWSTATE_OUT_OF_MEMORY,                          // malloc failed
-    DRAWSTATE_INVALID_DESCRIPTOR_SET,                 // Descriptor Set handle is unknown
-    DRAWSTATE_DESCRIPTOR_TYPE_MISMATCH,               // Type in layout vs. update are not the
-                                                      // same
-    DRAWSTATE_DESCRIPTOR_STAGEFLAGS_MISMATCH,         // StageFlags in layout are not
-                                                      // the same throughout a single
-                                                      // VkWriteDescriptorSet update
-    DRAWSTATE_DESCRIPTOR_UPDATE_OUT_OF_BOUNDS,        // Descriptors set for update out
-                                                      // of bounds for corresponding
-                                                      // layout section
-    DRAWSTATE_DESCRIPTOR_POOL_EMPTY,                  // Attempt to allocate descriptor from a
-                                                      // pool with no more descriptors of that
-                                                      // type available
-    DRAWSTATE_CANT_FREE_FROM_NON_FREE_POOL,           // Invalid to call
-                                                      // vkFreeDescriptorSets on Sets
-                                                      // allocated from a NON_FREE Pool
-    DRAWSTATE_INVALID_WRITE_UPDATE,                   // Attempting a write update to a descriptor
-                                                      // set with invalid update state
-    DRAWSTATE_INVALID_COPY_UPDATE,                    // Attempting copy update to a descriptor set
-                                                      // with invalid state
-    DRAWSTATE_INVALID_UPDATE_STRUCT,                  // Struct in DS Update tree is of invalid
-                                                      // type
-    DRAWSTATE_NUM_SAMPLES_MISMATCH,                   // Number of samples in bound PSO does not
-                                                      // match number in FB of current RenderPass
-    DRAWSTATE_NO_END_COMMAND_BUFFER,                  // Must call vkEndCommandBuffer() before
-                                                      // QueueSubmit on that commandBuffer
-    DRAWSTATE_NO_BEGIN_COMMAND_BUFFER,                // Binding cmds or calling End on CB that
-                                                      // never had vkBeginCommandBuffer()
-                                                      // called on it
-    DRAWSTATE_COMMAND_BUFFER_SINGLE_SUBMIT_VIOLATION, // Cmd Buffer created with
-    // VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
-    // flag is submitted
-    // multiple times
-    DRAWSTATE_INVALID_SECONDARY_COMMAND_BUFFER, // vkCmdExecuteCommands() called
-                                                // with a primary commandBuffer
-                                                // in pCommandBuffers array
-    DRAWSTATE_VIEWPORT_NOT_BOUND,               // Draw submitted with no viewport state bound
-    DRAWSTATE_SCISSOR_NOT_BOUND,                // Draw submitted with no scissor state bound
-    DRAWSTATE_LINE_WIDTH_NOT_BOUND,             // Draw submitted with no line width state
-                                                // bound
-    DRAWSTATE_DEPTH_BIAS_NOT_BOUND,             // Draw submitted with no depth bias state
-                                                // bound
-    DRAWSTATE_BLEND_NOT_BOUND,                  // Draw submitted with no blend state bound when
-                                                // color write enabled
-    DRAWSTATE_DEPTH_BOUNDS_NOT_BOUND,           // Draw submitted with no depth bounds
-                                                // state bound when depth enabled
-    DRAWSTATE_STENCIL_NOT_BOUND,                // Draw submitted with no stencil state bound
-                                                // when stencil enabled
-    DRAWSTATE_INDEX_BUFFER_NOT_BOUND,           // Draw submitted with no depth-stencil
-                                                // state bound when depth write enabled
-    DRAWSTATE_PIPELINE_LAYOUTS_INCOMPATIBLE,    // Draw submitted PSO Pipeline
-                                                // layout that's not compatible
-                                                // with layout from
-                                                // BindDescriptorSets
-    DRAWSTATE_RENDERPASS_INCOMPATIBLE,          // Incompatible renderpasses between
-                                                // secondary cmdBuffer and primary
-                                                // cmdBuffer or framebuffer
-    DRAWSTATE_FRAMEBUFFER_INCOMPATIBLE,         // Incompatible framebuffer between
-                                                // secondary cmdBuffer and active
-                                                // renderPass
-    DRAWSTATE_INVALID_FRAMEBUFFER_CREATE_INFO,  // Invalid VkFramebufferCreateInfo state
-    DRAWSTATE_INVALID_RENDERPASS,               // Use of a NULL or otherwise invalid
-                                                // RenderPass object
-    DRAWSTATE_INVALID_RENDERPASS_CMD,           // Invalid cmd submitted while a
-                                                // RenderPass is active
-    DRAWSTATE_NO_ACTIVE_RENDERPASS,             // Rendering cmd submitted without an active
-                                                // RenderPass
-    DRAWSTATE_INVALID_IMAGE_USAGE,              // Image attachment location conflicts with
-                                                // image's USAGE flags
-    DRAWSTATE_INVALID_ATTACHMENT_INDEX,         // Attachment reference contains an index
-                                                // that is out-of-bounds
-    DRAWSTATE_DESCRIPTOR_SET_NOT_UPDATED,       // DescriptorSet bound but it was
-                                                // never updated. This is a warning
-                                                // code.
-    DRAWSTATE_DESCRIPTOR_SET_NOT_BOUND,         // DescriptorSet used by pipeline at
-                                                // draw time is not bound, or has been
-                                                // disturbed (which would have flagged
-                                                // previous warning)
-    DRAWSTATE_INVALID_DYNAMIC_OFFSET_COUNT,     // DescriptorSets bound with
-                                                // different number of dynamic
-                                                // descriptors that were included in
-                                                // dynamicOffsetCount
-    DRAWSTATE_CLEAR_CMD_BEFORE_DRAW,            // Clear cmd issued before any Draw in
-                                                // CommandBuffer, should use RenderPass Ops
-                                                // instead
-    DRAWSTATE_BEGIN_CB_INVALID_STATE,           // CB state at Begin call is bad. Can be
-                                                // Primary/Secondary CB created with
-                                                // mismatched FB/RP information or CB in
-                                                // RECORDING state
-    DRAWSTATE_INVALID_CB_SIMULTANEOUS_USE,      // CmdBuffer is being used in
-                                                // violation of
-    // VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT
-    // rules (i.e. simultaneous use w/o
-    // that bit set)
-    DRAWSTATE_INVALID_COMMAND_BUFFER_RESET, // Attempting to call Reset (or
-                                            // Begin on recorded cmdBuffer) that
-                                            // was allocated from Pool w/o
-    // VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT
-    // bit set
-    DRAWSTATE_VIEWPORT_SCISSOR_MISMATCH,             // Count for viewports and scissors
-                                                     // mismatch and/or state doesn't match
-                                                     // count
-    DRAWSTATE_INVALID_IMAGE_ASPECT,                  // Image aspect is invalid for the current
-                                                     // operation
-    DRAWSTATE_MISSING_ATTACHMENT_REFERENCE,          // Attachment reference must be
-                                                     // present in active subpass
-    DRAWSTATE_SAMPLER_DESCRIPTOR_ERROR,              // A Descriptor of *_SAMPLER type is
-                                                     // being updated with an invalid or bad
-                                                     // Sampler
-    DRAWSTATE_INCONSISTENT_IMMUTABLE_SAMPLER_UPDATE, // Descriptors of
-                                                     // *COMBINED_IMAGE_SAMPLER
-                                                     // type are being updated
-                                                     // where some, but not all,
-                                                     // of the updates use
-                                                     // immutable samplers
-    DRAWSTATE_IMAGEVIEW_DESCRIPTOR_ERROR,            // A Descriptor of *_IMAGE or
-                                                     // *_ATTACHMENT type is being updated
-                                                     // with an invalid or bad ImageView
-    DRAWSTATE_BUFFERVIEW_DESCRIPTOR_ERROR,           // A Descriptor of *_TEXEL_BUFFER
-                                                     // type is being updated with an
-                                                     // invalid or bad BufferView
-    DRAWSTATE_BUFFERINFO_DESCRIPTOR_ERROR,           // A Descriptor of
-    // *_[UNIFORM|STORAGE]_BUFFER_[DYNAMIC]
-    // type is being updated with an
-    // invalid or bad BufferView
-    DRAWSTATE_DYNAMIC_OFFSET_OVERFLOW,       // At draw time the dynamic offset
-                                             // combined with buffer offset and range
-                                             // oversteps size of buffer
-    DRAWSTATE_DOUBLE_DESTROY,                // Destroying an object twice
-    DRAWSTATE_OBJECT_INUSE,                  // Destroying or modifying an object in use by a
-                                             // command buffer
-    DRAWSTATE_QUEUE_FORWARD_PROGRESS,        // Queue cannot guarantee forward progress
-    DRAWSTATE_INVALID_BUFFER_MEMORY_OFFSET,  // Dynamic Buffer Offset
-                                             // violates memory requirements limit
-    DRAWSTATE_INVALID_TEXEL_BUFFER_OFFSET,   // Dynamic Texel Buffer Offsets
-                                             // violate device limit
-    DRAWSTATE_INVALID_UNIFORM_BUFFER_OFFSET, // Dynamic Uniform Buffer Offsets
-                                             // violate device limit
-    DRAWSTATE_INVALID_STORAGE_BUFFER_OFFSET, // Dynamic Storage Buffer Offsets
-                                             // violate device limit
-    DRAWSTATE_INDEPENDENT_BLEND,             // If independent blending is not enabled, all
-                                             // elements of pAttachmentsMustBeIdentical
-    DRAWSTATE_DISABLED_LOGIC_OP,             // If logic operations is not enabled, logicOpEnable
-                                             // must be VK_FALSE
-    DRAWSTATE_INVALID_QUEUE_INDEX,           // Specified queue index exceeds number
-                                             // of queried queue families
-    DRAWSTATE_INVALID_QUEUE_FAMILY,          // Command buffer submitted on queue is from
-                                             // a different queue family
-    DRAWSTATE_IMAGE_TRANSFER_GRANULARITY,    // Violation of queue family's image transfer
-                                             // granularity
-    DRAWSTATE_PUSH_CONSTANTS_ERROR,          // Push constants exceed maxPushConstantSize
-    DRAWSTATE_INVALID_SUBPASS_INDEX,         // Stepping beyond last subpass, or not reaching it
-    DRAWSTATE_SWAPCHAIN_NO_SYNC_FOR_ACQUIRE, // AcquireNextImageKHR with no sync object
-    DRAWSTATE_SWAPCHAIN_INVALID_IMAGE,       // QueuePresentKHR with image index out of range
-    DRAWSTATE_SWAPCHAIN_IMAGE_NOT_ACQUIRED,  // QueuePresentKHR with image not acquired by app
-    DRAWSTATE_SWAPCHAIN_ALREADY_EXISTS,      // Surface has an existing swapchain that is not being replaced
-    DRAWSTATE_SWAPCHAIN_WRONG_SURFACE,       // Swapchain being replaced is not attached to the same surface
-};
+// clang-format off
 
-// Shader Checker ERROR codes
-enum SHADER_CHECKER_ERROR {
-    SHADER_CHECKER_NONE,
-    SHADER_CHECKER_INTERFACE_TYPE_MISMATCH,    // Type mismatch between shader stages or shader and pipeline
-    SHADER_CHECKER_OUTPUT_NOT_CONSUMED,        // Entry appears in output interface, but missing in input
-    SHADER_CHECKER_INPUT_NOT_PRODUCED,         // Entry appears in input interface, but missing in output
-    SHADER_CHECKER_NON_SPIRV_SHADER,           // Shader image is not SPIR-V
-    SHADER_CHECKER_INCONSISTENT_SPIRV,         // General inconsistency within a SPIR-V module
-    SHADER_CHECKER_UNKNOWN_STAGE,              // Stage is not supported by analysis
-    SHADER_CHECKER_INCONSISTENT_VI,            // VI state contains conflicting binding or attrib descriptions
-    SHADER_CHECKER_MISSING_DESCRIPTOR,         // Shader attempts to use a descriptor binding not declared in the layout
-    SHADER_CHECKER_BAD_SPECIALIZATION,         // Specialization map entry points outside specialization data block
-    SHADER_CHECKER_MISSING_ENTRYPOINT,         // Shader module does not contain the requested entrypoint
-    SHADER_CHECKER_PUSH_CONSTANT_OUT_OF_RANGE, // Push constant variable is not in a push constant range
-    SHADER_CHECKER_PUSH_CONSTANT_NOT_ACCESSIBLE_FROM_STAGE, // Push constant range exists, but not accessible from stage
-    SHADER_CHECKER_DESCRIPTOR_TYPE_MISMATCH,                // Descriptor type does not match shader resource type
-    SHADER_CHECKER_DESCRIPTOR_NOT_ACCESSIBLE_FROM_STAGE,    // Descriptor used by shader, but not accessible from stage
-    SHADER_CHECKER_FEATURE_NOT_ENABLED,                     // Shader uses capability requiring a feature not enabled on device
-    SHADER_CHECKER_BAD_CAPABILITY,                          // Shader uses capability not supported by Vulkan (OpenCL features)
-    SHADER_CHECKER_MISSING_INPUT_ATTACHMENT,   // Shader uses an input attachment but not declared in subpass
-    SHADER_CHECKER_INPUT_ATTACHMENT_TYPE_MISMATCH,          // Shader input attachment type does not match subpass format
-};
+static const char DECORATE_UNUSED *kVUID_Core_MemTrack_FenceState = "UNASSIGNED-CoreValidation-MemTrack-FenceState";
+static const char DECORATE_UNUSED *kVUID_Core_MemTrack_FreedMemRef = "UNASSIGNED-CoreValidation-MemTrack-FreedMemRef";
+static const char DECORATE_UNUSED *kVUID_Core_MemTrack_InvalidAliasing = "UNASSIGNED-CoreValidation-MemTrack-InvalidAliasing";
+static const char DECORATE_UNUSED *kVUID_Core_MemTrack_InvalidMap = "UNASSIGNED-CoreValidation-MemTrack-InvalidMap";
+static const char DECORATE_UNUSED *kVUID_Core_MemTrack_InvalidState = "UNASSIGNED-CoreValidation-MemTrack-InvalidState";
+static const char DECORATE_UNUSED *kVUID_Core_MemTrack_InvalidUsageFlag = "UNASSIGNED-CoreValidation-MemTrack-InvalidUsageFlag";
+static const char DECORATE_UNUSED *kVUID_Core_MemTrack_RebindObject = "UNASSIGNED-CoreValidation-MemTrack-RebindObject";
+// Previously defined but unused - uncomment as needed
+//static const char DECORATE_UNUSED *kVUID_Core_MemTrack_InternalError = "UNASSIGNED-CoreValidation-MemTrack-InternalError";
+//static const char DECORATE_UNUSED *kVUID_Core_MemTrack_InvalidCB = "UNASSIGNED-CoreValidation-MemTrack-InvalidCB";
+//static const char DECORATE_UNUSED *kVUID_Core_MemTrack_InvalidMemObj = "UNASSIGNED-CoreValidation-MemTrack-InvalidMemObj";
+//static const char DECORATE_UNUSED *kVUID_Core_MemTrack_InvalidMemRegion = "UNASSIGNED-CoreValidation-MemTrack-InvalidMemRegion";
+//static const char DECORATE_UNUSED *kVUID_Core_MemTrack_InvalidMemType = "UNASSIGNED-CoreValidation-MemTrack-InvalidMemType";
+//static const char DECORATE_UNUSED *kVUID_Core_MemTrack_InvalidObject = "UNASSIGNED-CoreValidation-MemTrack-InvalidObject";
+//static const char DECORATE_UNUSED *kVUID_Core_MemTrack_MemoryLeak = "UNASSIGNED-CoreValidation-MemTrack-MemoryLeak";
+//static const char DECORATE_UNUSED *kVUID_Core_MemTrack_ObjNotBound = "UNASSIGNED-CoreValidation-MemTrack-ObjNotBound";
+//static const char DECORATE_UNUSED *kVUID_Core_MemTrack_ResetCBWhileInFlight = "UNASSIGNED-CoreValidation-MemTrack-ResetCBWhileInFlight";
 
-// Device Limits ERROR codes
-enum DEV_LIMITS_ERROR {
-    DEVLIMITS_NONE,                          // Used for INFO & other non-error messages
-    DEVLIMITS_INVALID_INSTANCE,              // Invalid instance used
-    DEVLIMITS_INVALID_PHYSICAL_DEVICE,       // Invalid physical device used
-    DEVLIMITS_MISSING_QUERY_COUNT,           // Did not make initial call to an API to query the count
-    DEVLIMITS_MUST_QUERY_COUNT,              // Failed to make initial call to an API to query the count
-    DEVLIMITS_INVALID_FEATURE_REQUESTED,     // App requested a feature not supported by physical device
-    DEVLIMITS_COUNT_MISMATCH,                // App requesting a count value different than actual value
-    DEVLIMITS_INVALID_QUEUE_CREATE_REQUEST,  // Invalid queue requested based on queue family properties
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_ClearCmdBeforeDraw = "UNASSIGNED-CoreValidation-DrawState-ClearCmdBeforeDraw";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_CommandBufferSingleSubmitViolation = "UNASSIGNED-CoreValidation-DrawState-CommandBufferSingleSubmitViolation";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_DescriptorSetNotBound = "UNASSIGNED-CoreValidation-DrawState-DescriptorSetNotBound";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_DescriptorSetNotUpdated = "UNASSIGNED-CoreValidation-DrawState-DescriptorSetNotUpdated";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_DoubleDestroy = "UNASSIGNED-CoreValidation-DrawState-DoubleDestroy";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_ExtensionNotEnabled = "UNASSIGNED-CoreValidation-DrawState-ExtensionNotEnabled";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InternalError = "UNASSIGNED-CoreValidation-DrawState-InternalError";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidBarrier = "UNASSIGNED-CoreValidation-DrawState-InvalidBarrier";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidBuffer = "UNASSIGNED-CoreValidation-DrawState-InvalidBuffer";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidCommandBuffer = "UNASSIGNED-CoreValidation-DrawState-InvalidCommandBuffer";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidCommandBufferSimultaneousUse = "UNASSIGNED-CoreValidation-DrawState-InvalidCommandBufferSimultaneousUse";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidDescriptorSet = "UNASSIGNED-CoreValidation-DrawState-InvalidDescriptorSet";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidDynamicOffsetCount = "UNASSIGNED-CoreValidation-DrawState-InvalidDynamicOffsetCount";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidEvent = "UNASSIGNED-CoreValidation-DrawState-InvalidEvent";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidExtents = "UNASSIGNED-CoreValidation-DrawState-InvalidExtents";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidFeature = "UNASSIGNED-CoreValidation-DrawState-InvalidFeature";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidFence = "UNASSIGNED-CoreValidation-DrawState-InvalidFence";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidImage = "UNASSIGNED-CoreValidation-DrawState-InvalidImage";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidImageAspect = "UNASSIGNED-CoreValidation-DrawState-InvalidImageAspect";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidImageLayout = "UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidLayout = "UNASSIGNED-CoreValidation-DrawState-InvalidLayout";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidPipeline = "UNASSIGNED-CoreValidation-DrawState-InvalidPipeline";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidPipelineCreateState = "UNASSIGNED-CoreValidation-DrawState-InvalidPipelineCreateState";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidQuery = "UNASSIGNED-CoreValidation-DrawState-InvalidQuery";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidQueueFamily = "UNASSIGNED-CoreValidation-DrawState-InvalidQueueFamily";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidRenderArea = "UNASSIGNED-CoreValidation-DrawState-InvalidRenderArea";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidRenderpass = "UNASSIGNED-CoreValidation-DrawState-InvalidRenderpass";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidSecondaryCommandBuffer = "UNASSIGNED-CoreValidation-DrawState-InvalidSecondaryCommandBuffer";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidSet = "UNASSIGNED-CoreValidation-DrawState-InvalidSet";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_MismatchedImageFormat = "UNASSIGNED-CoreValidation-DrawState-MismatchedImageFormat";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_MismatchedImageType = "UNASSIGNED-CoreValidation-DrawState-MismatchedImageType";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_MissingAttachmentReference = "UNASSIGNED-CoreValidation-DrawState-MissingAttachmentReference";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_NoActiveRenderpass = "UNASSIGNED-CoreValidation-DrawState-NoActiveRenderpass";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_NoEndCommandBuffer = "UNASSIGNED-CoreValidation-DrawState-NoEndCommandBuffer";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_NumSamplesMismatch = "UNASSIGNED-CoreValidation-DrawState-NumSamplesMismatch";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_OutOfMemory = "UNASSIGNED-CoreValidation-DrawState-OutOfMemory";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_PipelineLayoutsIncompatible = "UNASSIGNED-CoreValidation-DrawState-PipelineLayoutsIncompatible";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_QueueForwardProgress = "UNASSIGNED-CoreValidation-DrawState-QueueForwardProgress";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_SwapchainAlreadyExists = "UNASSIGNED-CoreValidation-DrawState-SwapchainAlreadyExists";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_SwapchainCreateBeforeQuery = "UNASSIGNED-CoreValidation-DrawState-SwapchainCreateBeforeQuery";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_SwapchainImageNotAcquired = "UNASSIGNED-CoreValidation-DrawState-SwapchainImageNotAcquired";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_SwapchainImagesNotFound = "UNASSIGNED-CoreValidation-DrawState-SwapchainImagesNotFound";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_SwapchainInvalidImage = "UNASSIGNED-CoreValidation-DrawState-SwapchainInvalidImage";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_SwapchainNoSyncForAcquire = "UNASSIGNED-CoreValidation-DrawState-SwapchainNoSyncForAcquire";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_SwapchainReplaced = "UNASSIGNED-CoreValidation-DrawState-SwapchainReplaced";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_SwapchainTooManyImages = "UNASSIGNED-CoreValidation-DrawState-SwapchainTooManyImages";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_SwapchainUnsupportedQueue = "UNASSIGNED-CoreValidation-DrawState-SwapchainUnsupportedQueue";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_SwapchainWrongSurface = "UNASSIGNED-CoreValidation-DrawState-SwapchainWrongSurface";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_ViewportScissorMismatch = "UNASSIGNED-CoreValidation-DrawState-ViewportScissorMismatch";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_VtxIndexOutOfBounds = "UNASSIGNED-CoreValidation-DrawState-VtxIndexOutOfBounds";
+static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidVtxAttributeAlignment = "UNASSIGNED-CoreValidation-DrawState-InvalidVtxAttributeAlignment";
+// Previously defined but unused - uncomment as needed
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_BeginCommandBufferInvalidState = "UNASSIGNED-CoreValidation-DrawState-BeginCommandBufferInvalidState";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_BlendNotBound = "UNASSIGNED-CoreValidation-DrawState-BlendNotBound";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_BufferinfoDescriptorError = "UNASSIGNED-CoreValidation-DrawState-BufferinfoDescriptorError";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_BufferviewDescriptorError = "UNASSIGNED-CoreValidation-DrawState-BufferviewDescriptorError";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_CantFreeFromNonFreePool = "UNASSIGNED-CoreValidation-DrawState-CantFreeFromNonFreePool";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_DepthBiasNotBound = "UNASSIGNED-CoreValidation-DrawState-DepthBiasNotBound";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_DepthBoundsNotBound = "UNASSIGNED-CoreValidation-DrawState-DepthBoundsNotBound";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_DescriptorPoolEmpty = "UNASSIGNED-CoreValidation-DrawState-DescriptorPoolEmpty";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_DescriptorStageflagsMismatch = "UNASSIGNED-CoreValidation-DrawState-DescriptorStageflagsMismatch";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_DescriptorTypeMismatch = "UNASSIGNED-CoreValidation-DrawState-DescriptorTypeMismatch";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_DescriptorUpdateOutOfBounds = "UNASSIGNED-CoreValidation-DrawState-DescriptorUpdateOutOfBounds";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_DisabledLogicOp = "UNASSIGNED-CoreValidation-DrawState-DisabledLogicOp";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_DynamicOffsetOverflow = "UNASSIGNED-CoreValidation-DrawState-DynamicOffsetOverflow";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_FramebufferIncompatible = "UNASSIGNED-CoreValidation-DrawState-FramebufferIncompatible";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_ImageTransferGranularity = "UNASSIGNED-CoreValidation-DrawState-ImageTransferGranularity";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_ImageviewDescriptorError = "UNASSIGNED-CoreValidation-DrawState-ImageviewDescriptorError";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InconsistentImmutableSamplerUpdate = "UNASSIGNED-CoreValidation-DrawState-InconsistentImmutableSamplerUpdate";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_IndependentBlend = "UNASSIGNED-CoreValidation-DrawState-IndependentBlend";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_IndexBufferNotBound = "UNASSIGNED-CoreValidation-DrawState-IndexBufferNotBound";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidAttachmentIndex = "UNASSIGNED-CoreValidation-DrawState-InvalidAttachmentIndex";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidBufferMemoryOffset = "UNASSIGNED-CoreValidation-DrawState-InvalidBufferMemoryOffset";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidBufferView = "UNASSIGNED-CoreValidation-DrawState-InvalidBufferView";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidCommandBufferReset = "UNASSIGNED-CoreValidation-DrawState-InvalidCommandBufferReset";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidCommandPool = "UNASSIGNED-CoreValidation-DrawState-InvalidCommandPool";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidCopyUpdate = "UNASSIGNED-CoreValidation-DrawState-InvalidCopyUpdate";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidDescriptorPool = "UNASSIGNED-CoreValidation-DrawState-InvalidDescriptorPool";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidDeviceMemory = "UNASSIGNED-CoreValidation-DrawState-InvalidDeviceMemory";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidFramebuffer = "UNASSIGNED-CoreValidation-DrawState-InvalidFramebuffer";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidFramebufferCreateInfo = "UNASSIGNED-CoreValidation-DrawState-InvalidFramebufferCreateInfo";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidImageFilter = "UNASSIGNED-CoreValidation-DrawState-InvalidImageFilter";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidImageSubrange = "UNASSIGNED-CoreValidation-DrawState-InvalidImageSubrange";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidImageUsage = "UNASSIGNED-CoreValidation-DrawState-InvalidImageUsage";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidImageView = "UNASSIGNED-CoreValidation-DrawState-InvalidImageView";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidQueryPool = "UNASSIGNED-CoreValidation-DrawState-InvalidQueryPool";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidQueueIndex = "UNASSIGNED-CoreValidation-DrawState-InvalidQueueIndex";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidRenderpassCmd = "UNASSIGNED-CoreValidation-DrawState-InvalidRenderpassCmd";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidSampler = "UNASSIGNED-CoreValidation-DrawState-InvalidSampler";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidStorageBufferOffset = "UNASSIGNED-CoreValidation-DrawState-InvalidStorageBufferOffset";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidSubpassIndex = "UNASSIGNED-CoreValidation-DrawState-InvalidSubpassIndex";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidTexelBufferOffset = "UNASSIGNED-CoreValidation-DrawState-InvalidTexelBufferOffset";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidUniformBufferOffset = "UNASSIGNED-CoreValidation-DrawState-InvalidUniformBufferOffset";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidUpdateStruct = "UNASSIGNED-CoreValidation-DrawState-InvalidUpdateStruct";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_InvalidWriteUpdate = "UNASSIGNED-CoreValidation-DrawState-InvalidWriteUpdate";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_LineWidthNotBound = "UNASSIGNED-CoreValidation-DrawState-LineWidthNotBound";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_MismatchedImageAspect = "UNASSIGNED-CoreValidation-DrawState-MismatchedImageAspect";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_NoBeginCommandBuffer = "UNASSIGNED-CoreValidation-DrawState-NoBeginCommandBuffer";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_ObjectInUse = "UNASSIGNED-CoreValidation-DrawState-ObjectInUse";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_PushConstantsError = "UNASSIGNED-CoreValidation-DrawState-PushConstantsError";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_RenderpassIncompatible = "UNASSIGNED-CoreValidation-DrawState-RenderpassIncompatible";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_RenderpassTooManyClearValues = "UNASSIGNED-CoreValidation-DrawState-RenderpassTooManyClearValues";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_SamplerDescriptorError = "UNASSIGNED-CoreValidation-DrawState-SamplerDescriptorError";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_ScissorNotBound = "UNASSIGNED-CoreValidation-DrawState-ScissorNotBound";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_StencilNotBound = "UNASSIGNED-CoreValidation-DrawState-StencilNotBound";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_SwapchainBadCompositeAlpha = "UNASSIGNED-CoreValidation-DrawState-SwapchainBadCompositeAlpha";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_SwapchainBadExtents = "UNASSIGNED-CoreValidation-DrawState-SwapchainBadExtents";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_SwapchainBadFormat = "UNASSIGNED-CoreValidation-DrawState-SwapchainBadFormat";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_SwapchainBadImageCount = "UNASSIGNED-CoreValidation-DrawState-SwapchainBadImageCount";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_SwapchainBadLayerCount = "UNASSIGNED-CoreValidation-DrawState-SwapchainBadLayerCount";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_SwapchainBadPreTransform = "UNASSIGNED-CoreValidation-DrawState-SwapchainBadPreTransform";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_SwapchainBadPresentMode = "UNASSIGNED-CoreValidation-DrawState-SwapchainBadPresentMode";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_SwapchainBadUsageFlags = "UNASSIGNED-CoreValidation-DrawState-SwapchainBadUsageFlags";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_ViewportNotBound = "UNASSIGNED-CoreValidation-DrawState-ViewportNotBound";
+//static const char DECORATE_UNUSED *kVUID_Core_DrawState_VtxIndexAlignmentError = "UNASSIGNED-CoreValidation-DrawState-VtxIndexAlignmentError";
+
+static const char DECORATE_UNUSED *kVUID_Core_Shader_DescriptorNotAccessibleFromStage = "UNASSIGNED-CoreValidation-Shader-DescriptorNotAccessibleFromStage";
+static const char DECORATE_UNUSED *kVUID_Core_Shader_DescriptorTypeMismatch = "UNASSIGNED-CoreValidation-Shader-DescriptorTypeMismatch";
+static const char DECORATE_UNUSED *kVUID_Core_Shader_FeatureNotEnabled = "UNASSIGNED-CoreValidation-Shader-FeatureNotEnabled";
+static const char DECORATE_UNUSED *kVUID_Core_Shader_InconsistentSpirv = "UNASSIGNED-CoreValidation-Shader-InconsistentSpirv";
+static const char DECORATE_UNUSED *kVUID_Core_Shader_InconsistentVi = "UNASSIGNED-CoreValidation-Shader-InconsistentVi";
+static const char DECORATE_UNUSED *kVUID_Core_Shader_InputAttachmentTypeMismatch = "UNASSIGNED-CoreValidation-Shader-InputAttachmentTypeMismatch";
+static const char DECORATE_UNUSED *kVUID_Core_Shader_InputNotProduced = "UNASSIGNED-CoreValidation-Shader-InputNotProduced";
+static const char DECORATE_UNUSED *kVUID_Core_Shader_InterfaceTypeMismatch = "UNASSIGNED-CoreValidation-Shader-InterfaceTypeMismatch";
+static const char DECORATE_UNUSED *kVUID_Core_Shader_MissingDescriptor = "UNASSIGNED-CoreValidation-Shader-MissingDescriptor";
+static const char DECORATE_UNUSED *kVUID_Core_Shader_MissingInputAttachment = "UNASSIGNED-CoreValidation-Shader-MissingInputAttachment";
+static const char DECORATE_UNUSED *kVUID_Core_Shader_OutputNotConsumed = "UNASSIGNED-CoreValidation-Shader-OutputNotConsumed";
+static const char DECORATE_UNUSED *kVUID_Core_Shader_PushConstantNotAccessibleFromStage = "UNASSIGNED-CoreValidation-Shader-PushConstantNotAccessibleFromStage";
+static const char DECORATE_UNUSED *kVUID_Core_Shader_PushConstantOutOfRange = "UNASSIGNED-CoreValidation-Shader-PushConstantOutOfRange";
+static const char DECORATE_UNUSED *kVUID_Core_Shader_MissingPointSizeBuiltIn = "UNASSIGNED-CoreValidation-Shader-PointSizeMissing";
+static const char DECORATE_UNUSED *kVUID_Core_Shader_PointSizeBuiltInOverSpecified = "UNASSIGNED-CoreValidation-Shader-PointSizeOverSpecified";
+// Previously defined but unused - uncomment as needed
+//static const char DECORATE_UNUSED *kVUID_Core_Shader_BadCapability = "UNASSIGNED-CoreValidation-Shader-BadCapability";
+//static const char DECORATE_UNUSED *kVUID_Core_Shader_BadSpecialization = "UNASSIGNED-CoreValidation-Shader-BadSpecialization";
+//static const char DECORATE_UNUSED *kVUID_Core_Shader_MissingEntrypoint = "UNASSIGNED-CoreValidation-Shader-MissingEntrypoint";
+//static const char DECORATE_UNUSED *kVUID_Core_Shader_NonSpirvShader = "UNASSIGNED-CoreValidation-Shader-NonSpirvShader";
+//static const char DECORATE_UNUSED *kVUID_Core_Shader_UnknownStage = "UNASSIGNED-CoreValidation-Shader-UnknownStage";
+
+static const char DECORATE_UNUSED *kVUID_Core_DevLimit_CountMismatch = "UNASSIGNED-CoreValidation-DevLimitCountMismatch";
+static const char DECORATE_UNUSED *kVUID_Core_DevLimit_InvalidFeatureRequested = "UNASSIGNED-CoreValidation-DevLimit-InvalidFeatureRequested";
+static const char DECORATE_UNUSED *kVUID_Core_DevLimit_InvalidInstance = "UNASSIGNED-CoreValidation-DevLimit-InvalidInstance";
+static const char DECORATE_UNUSED *kVUID_Core_DevLimit_MissingQueryCount = "UNASSIGNED-CoreValidation-DevLimit-MissingQueryCount";
+static const char DECORATE_UNUSED *kVUID_Core_DevLimit_MustQueryCount = "UNASSIGNED-CoreValidation-DevLimit-MustQueryCount";
+// Previously defined but unused - uncomment as needed
+//static const char DECORATE_UNUSED *kVUID_Core_DevLimit_InvalidPhysicalDevice = "UNASSIGNED-CoreValidation-DevLimit-InvalidPhysicalDevice";
+
+static const char DECORATE_UNUSED *kVUID_Core_Swapchain_GetSupportedDisplaysWithoutQuery = "UNASSIGNED-CoreValidation-Swapchain-GetSupportedDisplaysWithoutQuery";
+static const char DECORATE_UNUSED *kVUID_Core_Swapchain_InvalidCount = "UNASSIGNED-CoreValidation-SwapchainInvalidCount";
+static const char DECORATE_UNUSED *kVUID_Core_Swapchain_PriorCount = "UNASSIGNED-CoreValidation-SwapchainPriorCount";
+// Previously defined but unused - uncomment as needed
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_BadBool = "UNASSIGNED-CoreValidation-SwapchainBadBool";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_CreateSwapBadCompositeAlpha = "UNASSIGNED-CoreValidation-Swapchain-CreateSwapBadCompositeAlpha";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_CreateSwapBadImgArrayLayers = "UNASSIGNED-CoreValidation-Swapchain-CreateSwapBadImgArrayLayers";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_CreateSwapBadImgColorSpace = "UNASSIGNED-CoreValidation-Swapchain-CreateSwapBadImgColorSpace";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_CreateSwapBadImgFmtClrSp = "UNASSIGNED-CoreValidation-Swapchain-CreateSwapBadImgFmtClrSp";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_CreateSwapBadImgFormat = "UNASSIGNED-CoreValidation-Swapchain-CreateSwapBadImgFormat";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_CreateSwapBadImgUsageFlags = "UNASSIGNED-CoreValidation-Swapchain-CreateSwapBadImgUsageFlags";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_CreateSwapBadPreTransform = "UNASSIGNED-CoreValidation-Swapchain-CreateSwapBadPreTransform";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_CreateSwapBadPresentMode = "UNASSIGNED-CoreValidation-Swapchain-CreateSwapBadPresentMode";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_CreateSwapBadSharingMode = "UNASSIGNED-CoreValidation-Swapchain-CreateSwapBadSharingMode";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_CreateSwapBadSharingValues = "UNASSIGNED-CoreValidation-Swapchain-CreateSwapBadSharingValues";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_CreateSwapExtentsNoMatchWin = "UNASSIGNED-CoreValidation-Swapchain-CreateSwapExtentsNoMatchWin";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_CreateSwapOutOfBoundsExtents = "UNASSIGNED-CoreValidation-Swapchain-CreateSwapOutOfBoundsExtents";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_CreateSwapWithoutQuery = "UNASSIGNED-CoreValidation-Swapchain-CreateSwapWithoutQuery";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_CreateUnsupportedSurface = "UNASSIGNED-CoreValidation-SwapchainCreateUnsupportedSurface";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_DelObjectBeforeChildren = "UNASSIGNED-CoreValidation-Swapchain-DelObjectBeforeChildren";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_ExtNotEnabledButUsed = "UNASSIGNED-CoreValidation-Swapchain-ExtNotEnabledButUsed";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_InvalidHandle = "UNASSIGNED-CoreValidation-SwapchainInvalidHandle";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_NullPointer = "UNASSIGNED-CoreValidation-SwapchainNullPointer";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_PlaneIndexTooLarge = "UNASSIGNED-CoreValidation-Swapchain-PlaneIndexTooLarge";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_WrongNext = "UNASSIGNED-CoreValidation-SwapchainWrongNext";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_WrongStype = "UNASSIGNED-CoreValidation-SwapchainWrongStype";
+//static const char DECORATE_UNUSED *kVUID_Core_Swapchain_ZeroValue = "UNASSIGNED-CoreValidation-SwapchainZeroValue";
+
+static const char DECORATE_UNUSED *kVUID_Core_Image_InvalidFormatLimitsViolation = "UNASSIGNED-CoreValidation-Image-InvalidFormatLimitsViolation";
+static const char DECORATE_UNUSED *kVUID_Core_Image_ZeroAreaSubregion = "UNASSIGNED-CoreValidation-Image-ZeroAreaSubregion";
+
+// clang-format on
+
+#undef DECORATE_UNUSED
+
+#if 0  // Preserve these comments for possible inclusion in the spec reference string database
+enum SWAPCHAIN_ERROR {
+    SWAPCHAIN_INVALID_HANDLE,                     // Handle used that isn't currently valid
+    SWAPCHAIN_NULL_POINTER,                       // Pointer set to NULL, instead of being a valid pointer
+    SWAPCHAIN_EXT_NOT_ENABLED_BUT_USED,           // Did not enable WSI extension, but called WSI function
+    SWAPCHAIN_DEL_OBJECT_BEFORE_CHILDREN,         // Called vkDestroyDevice() before vkDestroySwapchainKHR()
+    SWAPCHAIN_CREATE_UNSUPPORTED_SURFACE,         // Called vkCreateSwapchainKHR() with a pCreateInfo->surface that wasn't supported
+    SWAPCHAIN_CREATE_SWAP_WITHOUT_QUERY,          // Called vkCreateSwapchainKHR() without calling a query
+    SWAPCHAIN_CREATE_SWAP_OUT_OF_BOUNDS_EXTENTS,  // Called vkCreateSwapchainKHR() with out-of-bounds imageExtent
+    SWAPCHAIN_CREATE_SWAP_EXTENTS_NO_MATCH_WIN,   // Called vkCreateSwapchainKHR w/imageExtent that doesn't match window's extent
+    SWAPCHAIN_CREATE_SWAP_BAD_PRE_TRANSFORM,      // Called vkCreateSwapchainKHR() with a non-supported preTransform
+    SWAPCHAIN_CREATE_SWAP_BAD_COMPOSITE_ALPHA,    // Called vkCreateSwapchainKHR() with a non-supported compositeAlpha
+    SWAPCHAIN_CREATE_SWAP_BAD_IMG_ARRAY_LAYERS,   // Called vkCreateSwapchainKHR() with a non-supported imageArrayLayers
+    SWAPCHAIN_CREATE_SWAP_BAD_IMG_USAGE_FLAGS,    // Called vkCreateSwapchainKHR() with a non-supported imageUsageFlags
+    SWAPCHAIN_CREATE_SWAP_BAD_IMG_COLOR_SPACE,    // Called vkCreateSwapchainKHR() with a non-supported imageColorSpace
+    SWAPCHAIN_CREATE_SWAP_BAD_IMG_FORMAT,         // Called vkCreateSwapchainKHR() with a non-supported imageFormat
+    SWAPCHAIN_CREATE_SWAP_BAD_IMG_FMT_CLR_SP,     // Called vkCreateSwapchainKHR() with a non-supported imageColorSpace
+    SWAPCHAIN_CREATE_SWAP_BAD_PRESENT_MODE,       // Called vkCreateSwapchainKHR() with a non-supported presentMode
+    SWAPCHAIN_CREATE_SWAP_BAD_SHARING_MODE,       // Called vkCreateSwapchainKHR() with a non-supported imageSharingMode
+    SWAPCHAIN_CREATE_SWAP_BAD_SHARING_VALUES,     // Called vkCreateSwapchainKHR() with bad values when imageSharingMode is
+                                                  // VK_SHARING_MODE_CONCURRENT
+    SWAPCHAIN_BAD_BOOL,       // VkBool32 that doesn't have value of VK_TRUE or VK_FALSE (e.g. is a non-zero form of true)
+    SWAPCHAIN_PRIOR_COUNT,    // Query must be called first to get value of pCount, then called second time
+    SWAPCHAIN_INVALID_COUNT,  // Second time a query called, the pCount value didn't match first time
+    SWAPCHAIN_WRONG_STYPE,    // The sType for a struct has the wrong value
+    SWAPCHAIN_WRONG_NEXT,     // The pNext for a struct is not NULL
+    SWAPCHAIN_ZERO_VALUE,     // A value should be non-zero
+    SWAPCHAIN_GET_SUPPORTED_DISPLAYS_WITHOUT_QUERY,  // vkGetDisplayPlaneSupportedDisplaysKHR should be called after querying
+                                                     // device display plane properties
+    SWAPCHAIN_PLANE_INDEX_TOO_LARGE,  // a planeIndex value is larger than what vkGetDisplayPlaneSupportedDisplaysKHR returns
 };
-#endif // CORE_VALIDATION_ERROR_ENUMS_H_
+#endif
+
+#endif  // CORE_VALIDATION_ERROR_ENUMS_H_

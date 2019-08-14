@@ -22,13 +22,12 @@
 #ifndef VKTESTFRAMEWORK_H
 #define VKTESTFRAMEWORK_H
 
-//#include "gtest-1.7.0/include/gtest/gtest.h"
 #include "SPIRV/GLSL.std.450.h"
+#include "spirv-tools/libspirv.h"
 #include "glslang/Public/ShaderLang.h"
 #include "icd-spv.h"
 #include "test_common.h"
 #include "test_environment.h"
-#include "vktestbinding.h"
 
 #include <fstream>
 #include <iostream>
@@ -59,7 +58,7 @@ using namespace std;
 class VkImageObj;
 
 class VkTestFramework : public ::testing::Test {
-  public:
+   public:
     VkTestFramework();
     ~VkTestFramework();
 
@@ -69,15 +68,16 @@ class VkTestFramework : public ::testing::Test {
     static void Finish();
 
     bool GLSLtoSPV(const VkShaderStageFlagBits shader_type, const char *pshader, std::vector<unsigned int> &spv);
-    static bool m_use_glsl;
+    bool ASMtoSPV(const spv_target_env target_env, const uint32_t options, const char *pasm, std::vector<unsigned int> &spv);
     static bool m_canonicalize_spv;
     static bool m_strip_spv;
     static bool m_do_everything_spv;
+    static bool m_devsim_layer;
 
     char **ReadFileData(const char *fileName);
     void FreeFileData(char **data);
 
-  private:
+   private:
     int m_compile_options;
     int m_num_shader_strings;
     TBuiltInResource Resources;
@@ -93,10 +93,10 @@ class VkTestFramework : public ::testing::Test {
 };
 
 class TestEnvironment : public ::testing::Environment {
-  public:
+   public:
     void SetUp();
 
     void TearDown();
 };
 
-#endif // VKTESTFRAMEWORK_H
+#endif  // VKTESTFRAMEWORK_H

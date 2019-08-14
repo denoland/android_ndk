@@ -12,32 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SPIRV_TOOLS_OPT_BUILD_MODULE_H_
-#define SPIRV_TOOLS_OPT_BUILD_MODULE_H_
+#ifndef SOURCE_OPT_BUILD_MODULE_H_
+#define SOURCE_OPT_BUILD_MODULE_H_
 
 #include <memory>
 #include <string>
 
-#include "module.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/module.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 
-// Builds and returns an ir::Module from the given SPIR-V |binary|. |size|
-// specifies number of words in |binary|. The |binary| will be decoded
-// according to the given target |env|. Returns nullptr if erors occur and
-// sends the errors to |consumer|.
-std::unique_ptr<ir::Module> BuildModule(
-    spv_target_env env, MessageConsumer consumer, const uint32_t* binary,
-    size_t size);
+// Builds an Module returns the owning IRContext from the given SPIR-V
+// |binary|. |size| specifies number of words in |binary|. The |binary| will be
+// decoded according to the given target |env|. Returns nullptr if errors occur
+// and sends the errors to |consumer|.
+std::unique_ptr<opt::IRContext> BuildModule(spv_target_env env,
+                                            MessageConsumer consumer,
+                                            const uint32_t* binary,
+                                            size_t size);
 
-// Builds and returns an ir::Module from the given SPIR-V assembly |text|.
-// The |text| will be encoded according to the given target |env|. Returns
-// nullptr if erors occur and sends the errors to |consumer|.
-std::unique_ptr<ir::Module> BuildModule(
+// Builds an Module and returns the owning IRContext from the given
+// SPIR-V assembly |text|.  The |text| will be encoded according to the given
+// target |env|. Returns nullptr if errors occur and sends the errors to
+// |consumer|.
+std::unique_ptr<opt::IRContext> BuildModule(
     spv_target_env env, MessageConsumer consumer, const std::string& text,
     uint32_t assemble_options = SpirvTools::kDefaultAssembleOption);
 
 }  // namespace spvtools
 
-#endif  // SPIRV_TOOLS_OPT_BUILD_MODULE_H_
+#endif  // SOURCE_OPT_BUILD_MODULE_H_

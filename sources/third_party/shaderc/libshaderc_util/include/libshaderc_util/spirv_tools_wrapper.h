@@ -39,9 +39,15 @@ bool SpirvToolsDisassemble(Compiler::TargetEnv env,
 
 // The ids of a list of supported optimization passes.
 enum class PassId {
+  // SPIRV-Tools standard recipes
+  kLegalizationPasses,
+  kPerformancePasses,
+  kSizePasses,
+
+  // SPIRV-Tools specific passes
   kNullPass,
   kStripDebugInfo,
-  kUnifyConstant,
+  kCompactIds,
 };
 
 // Optimizes the given binary. Passes are registered in the exact order as shown

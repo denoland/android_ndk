@@ -19,113 +19,82 @@
 set -e
 
 ANDROIDBUILDDIR=$PWD
-BUILDDIR=$ANDROIDBUILDDIR/..
+BUILDDIR=$ANDROIDBUILDDIR
 BASEDIR=$BUILDDIR/third_party
-SHADERCTHIRDPARTY=$BASEDIR/shaderc/third_party
 
-GLSLANG_REVISION=$(cat $ANDROIDBUILDDIR/glslang_revision_android)
-SPIRV_TOOLS_REVISION=$(cat $ANDROIDBUILDDIR/spirv-tools_revision_android)
-SPIRV_HEADERS_REVISION=$(cat $ANDROIDBUILDDIR/spirv-headers_revision_android)
-SHADERC_REVISION=$(cat $ANDROIDBUILDDIR/shaderc_revision_android)
+if [[ $(uname) == "Linux" ]]; then
+    cores="$(nproc || echo 4)"
+elif [[ $(uname) == "Darwin" ]]; then
+    cores=$(sysctl -n hw.ncpu)
+fi
 
-echo "GLSLANG_REVISION=$GLSLANG_REVISION"
-echo "SPIRV_TOOLS_REVISION=$SPIRV_TOOLS_REVISION"
-echo "SHADERC_REVISION=$SHADERC_REVISION"
+#
+# Parse parameters
+#
 
-function create_glslang () {
-   rm -rf $SHADERCTHIRDPARTY/glslang
-   echo "Creating local glslang repository ($SHADERCTHIRDPARTY/glslang)."
-   mkdir -p $SHADERCTHIRDPARTY/glslang
-   cd $SHADERCTHIRDPARTY/glslang
-   git clone persistent-https://android.git.corp.google.com/platform/external/shaderc/glslang .
-   git checkout $GLSLANG_REVISION
+function printUsage {
+   echo "Supported parameters are:"
+   echo "    --abi <abi> (optional)"
+   echo "    --no-build (optional)"
+   echo
+   echo "i.e. ${0##*/} --abi arm64-v8a \\"
+   exit 1
 }
 
-function update_glslang () {
-   echo "Updating $SHADERCTHIRDPARTY/glslang"
-   cd $SHADERCTHIRDPARTY/glslang
-   git fetch --all
-   git checkout $GLSLANG_REVISION
-}
+while [[ $# -gt 0 ]]
+do
+    case $1 in
+        --abi)
+            abi="$2"
+            shift 2
+            ;;
+        --no-build)
+            nobuild=1
+            shift 1
+            ;;
+        *)
+            # unknown option
+            echo Unknown option: $1
+            echo
+            printUsage
+            exit 1
+            ;;
+    esac
+done
 
-function create_spirv-tools () {
-   rm -rf $SHADERCTHIRDPARTY/spirv-tools
-   echo "Creating local spirv-tools repository ($SHADERCTHIRDPARTY/spirv-tools)."
-   mkdir -p $SHADERCTHIRDPARTY/spirv-tools
-   cd $SHADERCTHIRDPARTY/spirv-tools
-   git clone persistent-https://android.git.corp.google.com/platform/external/shaderc/spirv-tools .
-   git checkout $SPIRV_TOOLS_REVISION
-}
+echo abi=$abi
+if [[ -z $abi ]]
+then
+    echo No abi provided, so building for all supported abis.
+fi
 
-function update_spirv-tools () {
-   echo "Updating $SHADERCTHIRDPARTY/spirv-tools"
-   cd $SHADERCTHIRDPARTY/spirv-tools
-   git fetch --all
-   git checkout $SPIRV_TOOLS_REVISION
-}
 
-function create_spirv-headers () {
-   rm -rf $SHADERCTHIRDPARTY/spirv-tools/external/spirv-headers
-   echo "Creating local spirv-headers repository ($SHADERCTHIRDPARTY/spirv-tools/external/spirv-headers)."
-   mkdir -p $SHADERCTHIRDPARTY/spirv-tools/external/spirv-headers
-   cd $SHADERCTHIRDPARTY/spirv-tools/external/spirv-headers
-   git clone persistent-https://android.git.corp.google.com/platform/external/shaderc/spirv-headers .
-   git checkout $SPIRV_HEADERS_REVISION
-}
 
-function update_spirv-headers () {
-   echo "Updating $SHADERCTHIRDPARTY/spirv-tools/external/spirv-headers"
-   cd $SHADERCTHIRDPARTY/spirv-tools/external/spirv-headers
-   git fetch --all
-   git checkout $SPIRV_HEADERS_REVISION
-}
 
-function create_shaderc () {
-   rm -rf $BASEDIR/shaderc
-   echo "Creating local shaderc repository ($BASEDIR/shaderc)."
-   mkdir -p $BASEDIR
-   cd $BASEDIR
-   git clone persistent-https://android.git.corp.google.com/platform/external/shaderc/shaderc
-   cd shaderc
-   git checkout $SHADERC_REVISION
-}
-
-function update_shaderc () {
-   echo "Updating $BASEDIR/shaderc"
-   cd $BASEDIR/shaderc
-   git fetch --all
-   git checkout $SHADERC_REVISION
-}
+echo no-build=$nobuild
+if [[ $nobuild ]]
+then
+    echo Skipping build.
+fi
 
 function build_shaderc () {
    echo "Building $BASEDIR/shaderc"
    cd $BASEDIR/shaderc/android_test
-   ndk-build -j 4
+   if [[ $abi ]]; then
+      ndk-build NDK_APPLICATION_MK=../../../jni/shaderc/Application.mk THIRD_PARTY_PATH=../third_party APP_ABI=$abi -j $cores;
+   else
+      ndk-build NDK_APPLICATION_MK=../../../jni/shaderc/Application.mk THIRD_PARTY_PATH=../third_party -j $cores;
+   fi
 }
 
-# Must be first since it provides folder that hosts
-# glslang and spirv-headers
-if [ ! -d "$BASEDIR/shaderc" -o ! -d "$BASEDIR/shaderc/.git" ]; then
-     create_shaderc
-fi
+# Pull down or update external dependencies
+echo "Update external dependencies based on the $ANDROIDBUILDDIR/known_good.json file"
+python3 ../scripts/update_deps.py --no-build --dir $BASEDIR --known_good_dir $BUILDDIR
 
-update_shaderc
-if [ ! -d "$BASEDIR/glslang" -o ! -d "$BASEDIR/glslang/.git" -o -d "$BASEDIR/glslang/.svn" ]; then
-   create_glslang
-fi
- update_glslang
-
-if [ ! -d "$BASEDIR/spirv-tools" -o ! -d "$BASEDIR/spirv-tools/.git" ]; then
-   create_spirv-tools
-fi
-update_spirv-tools
-
-if [ ! -d "$BASEDIR/spirv-tools/external/spirv-headers" -o ! -d "$BASEDIR/spirv-tools/external/spirv-headers/.git" ]; then
-   create_spirv-headers
-fi
-update_spirv-headers
-
+if [[ -z $nobuild ]]
+then
 build_shaderc
+fi
 
 echo ""
 echo "${0##*/} finished."

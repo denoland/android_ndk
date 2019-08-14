@@ -43,7 +43,6 @@
 
 namespace glslang {
 
-    class TAttributeMap;
     class TFunctionDeclarator;
 
     // Should just be the grammar aspect of HLSL.
@@ -53,7 +52,7 @@ namespace glslang {
     public:
         HlslGrammar(HlslScanContext& scanner, HlslParseContext& parseContext)
             : HlslTokenStream(scanner), parseContext(parseContext), intermediate(parseContext.intermediate),
-              typeIdentifiers(false) { }
+              typeIdentifiers(false), unitNode(nullptr) { }
         virtual ~HlslGrammar() { }
 
         bool parse();
@@ -71,8 +70,8 @@ namespace glslang {
         bool acceptControlDeclaration(TIntermNode*& node);
         bool acceptSamplerDeclarationDX9(TType&);
         bool acceptSamplerState();
-        bool acceptFullySpecifiedType(TType&);
-        bool acceptFullySpecifiedType(TType&, TIntermNode*& nodeList);
+        bool acceptFullySpecifiedType(TType&, const TAttributes&);
+        bool acceptFullySpecifiedType(TType&, TIntermNode*& nodeList, const TAttributes&, bool forbidDeclarators = false);
         bool acceptQualifier(TQualifier&);
         bool acceptLayoutQualifierList(TQualifier&);
         bool acceptType(TType&);
@@ -87,11 +86,13 @@ namespace glslang {
         bool acceptAnnotations(TQualifier&);
         bool acceptSamplerType(TType&);
         bool acceptTextureType(TType&);
+        bool acceptSubpassInputType(TType&);
         bool acceptStructBufferType(TType&);
+        bool acceptTextureBufferType(TType&);
         bool acceptConstantBufferType(TType&);
         bool acceptStruct(TType&, TIntermNode*& nodeList);
         bool acceptStructDeclarationList(TTypeList*&, TIntermNode*& nodeList, TVector<TFunctionDeclarator>&);
-        bool acceptMemberFunctionDefinition(TIntermNode*& nodeList, const TType&, const TString& memberName,
+        bool acceptMemberFunctionDefinition(TIntermNode*& nodeList, const TType&, TString& memberName,
                                             TFunctionDeclarator&);
         bool acceptFunctionParameters(TFunction&);
         bool acceptParameterDeclaration(TFunction&);
@@ -115,10 +116,10 @@ namespace glslang {
         bool acceptScopedCompoundStatement(TIntermNode*&);
         bool acceptStatement(TIntermNode*&);
         bool acceptNestedStatement(TIntermNode*&);
-        void acceptAttributes(TAttributeMap&);
-        bool acceptSelectionStatement(TIntermNode*&, const TAttributeMap&);
-        bool acceptSwitchStatement(TIntermNode*&, const TAttributeMap&);
-        bool acceptIterationStatement(TIntermNode*&, const TAttributeMap&);
+        void acceptAttributes(TAttributes&);
+        bool acceptSelectionStatement(TIntermNode*&, const TAttributes&);
+        bool acceptSwitchStatement(TIntermNode*&, const TAttributes&);
+        bool acceptIterationStatement(TIntermNode*&, const TAttributes&);
         bool acceptJumpStatement(TIntermNode*&);
         bool acceptCaseLabel(TIntermNode*&);
         bool acceptDefaultLabel(TIntermNode*&);
@@ -132,6 +133,7 @@ namespace glslang {
         HlslParseContext& parseContext;  // state of parsing and helper functions for building the intermediate
         TIntermediate& intermediate;     // the final product, the intermediate representation, includes the AST
         bool typeIdentifiers;            // shader uses some types as identifiers
+        TIntermNode* unitNode;
     };
 
 } // end namespace glslang

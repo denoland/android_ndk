@@ -31,6 +31,9 @@
 #include "resources.h"
 #include "string_piece.h"
 
+// Fix a typo in glslang/Public/ShaderLang.h
+#define EShTargetClientVersion EshTargetClientVersion
+
 namespace shaderc_util {
 
 // To break recursive including. This header is already included in
@@ -103,9 +106,18 @@ class Compiler {
 
   // Target environment.
   enum class TargetEnv {
-    Vulkan,
-    OpenGL,
-    OpenGLCompat,
+    Vulkan,  // Default to Vulkan 1.0
+    OpenGL,  // Default to OpenGL 4.5
+    OpenGLCompat, // Deprecated.
+  };
+
+  // Target environment versions.  These numbers match those used by Glslang.
+  enum class TargetEnvVersion : uint32_t {
+    // For Vulkan, use numbering scheme from vulkan.h
+    Vulkan_1_0 = ((1 << 22)),              // Default to Vulkan 1.0
+    Vulkan_1_1 = ((1 << 22) | (1 << 12)),  // Default to Vulkan 1.0
+    // For OpenGL, use the numbering from #version in shaders.
+    OpenGL_4_5 = 450,
   };
 
   enum class OutputType {
@@ -116,8 +128,9 @@ class Compiler {
 
   // Supported optimization levels.
   enum class OptimizationLevel {
-    Zero,  // No optimization.
-    Size,  // Optimization towards reducing code size.
+    Zero,         // No optimization.
+    Size,         // Optimization towards reducing code size.
+    Performance,  // Optimization towards better performance.
   };
 
   // Resource limits.  These map to the "max*" fields in glslang::TBuiltInResource.
@@ -156,14 +169,36 @@ class Compiler {
     Geometry,
     Fragment,
     Compute,
+#ifdef NV_EXTENSIONS
+    RayGenNV,
+    IntersectNV,
+    AnyHitNV,
+    ClosestHitNV,
+    MissNV,
+    CallableNV,
+    TaskNV,
+    MeshNV,
+#endif
+    StageEnd,
   };
-  enum { kNumStages = int(Stage::Compute) + 1 };
+  enum { kNumStages = int(Stage::StageEnd) };
 
   // Returns a std::array of all the Stage values.
   const std::array<Stage, kNumStages>& stages() const {
     static std::array<Stage, kNumStages> values{
         {Stage::Vertex, Stage::TessEval, Stage::TessControl, Stage::Geometry,
-         Stage::Fragment, Stage::Compute}};
+         Stage::Fragment, Stage::Compute,
+#ifdef NV_EXTENSIONS
+          Stage::RayGenNV,
+          Stage::IntersectNV,
+          Stage::AnyHitNV,
+          Stage::ClosestHitNV,
+          Stage::MissNV,
+          Stage::CallableNV,
+          Stage::TaskNV,
+          Stage::MeshNV,
+#endif
+        }};
     return values;
   }
 
@@ -180,12 +215,16 @@ class Compiler {
         generate_debug_info_(false),
         enabled_opt_passes_(),
         target_env_(TargetEnv::Vulkan),
+        target_env_version_(0),  // Resolve default later.
         source_language_(SourceLanguage::GLSL),
         limits_(kDefaultTBuiltInResource),
         auto_bind_uniforms_(false),
         auto_binding_base_(),
+        auto_map_locations_(false),
         hlsl_iomap_(false),
         hlsl_offsets_(false),
+        hlsl_legalization_enabled_(true),
+        hlsl_functionality1_enabled_(false),
         hlsl_explicit_bindings_() {}
 
   // Requests that the compiler place debug information into the object code,
@@ -195,6 +234,12 @@ class Compiler {
   // Sets the optimization level to the given level. Only the last one takes
   // effect if multiple calls of this method exist.
   void SetOptimizationLevel(OptimizationLevel level);
+
+  // Enables or disables HLSL legalization passes.
+  void EnableHlslLegalization(bool hlsl_legalization_enabled);
+
+  // Enables or disables extension SPV_GOOGLE_hlsl_functionality1
+  void EnableHlslFunctionality1(bool enable);
 
   // When a warning is encountered it treat it as an error.
   void SetWarningsAsErrors();
@@ -209,8 +254,11 @@ class Compiler {
   void AddMacroDefinition(const char* macro, size_t macro_length,
                           const char* definition, size_t definition_length);
 
-  // Sets the target environment.
-  void SetTargetEnv(TargetEnv env);
+  // Sets the target environment, including version.  The version value should
+  // be 0 or one of the values from TargetEnvVersion.  The 0 version value maps
+  // to Vulkan 1.0 if the target environment is Vulkan, and it maps to OpenGL
+  // 4.5 if the target environment is OpenGL.
+  void SetTargetEnv(TargetEnv env, uint32_t version = 0);
 
   // Sets the souce language.
   void SetSourceLanguage(SourceLanguage lang);
@@ -245,6 +293,10 @@ class Compiler {
                                   uint32_t base) {
     auto_binding_base_[static_cast<int>(stage)][static_cast<int>(kind)] = base;
   }
+
+  // Sets whether the compiler automatically assigns locations to
+  // uniform variables that don't have explicit locations.
+  void SetAutoMapLocations(bool auto_map) { auto_map_locations_ = auto_map; }
 
   // Use HLSL IO mapping rules for bindings.  Default is false.
   void SetHlslIoMapping(bool hlsl_iomap) { hlsl_iomap_ = hlsl_iomap; }
@@ -420,6 +472,12 @@ class Compiler {
   // implementation of glslang.
   TargetEnv target_env_;
 
+  // The version number of the target environment.  The numbering scheme is
+  // particular to each target environment.  If this is 0, then use a default
+  // for that particular target environment. See libshaders/shaderc/shaderc.h
+  // for those defaults.
+  uint32_t target_env_version_;
+
   // The source language.  Defaults to GLSL.
   SourceLanguage source_language_;
 
@@ -435,12 +493,23 @@ class Compiler {
   // The default is zero.
   uint32_t auto_binding_base_[kNumStages][kNumUniformKinds];
 
+  // True if the compiler should automatically map uniforms that don't
+  // have explicit locations.
+  bool auto_map_locations_;
+
   // True if the compiler should use HLSL IO mapping rules when compiling HLSL.
   bool hlsl_iomap_;
 
   // True if the compiler should determine block member offsets using HLSL
   // packing rules instead of standard GLSL rules.
   bool hlsl_offsets_;
+
+  // True if the compiler should perform legalization optimization passes if
+  // source language is HLSL.
+  bool hlsl_legalization_enabled_;
+
+  // True if the compiler should support extension SPV_GOOGLE_hlsl_functionality1.
+  bool hlsl_functionality1_enabled_;
 
   // A sequence of triples, each triple representing a specific HLSL register
   // name, and the set and binding numbers it should be mapped to, but in

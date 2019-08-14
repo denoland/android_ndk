@@ -17,6 +17,7 @@
 
 #include <unordered_map>
 #include <string>
+#include <set>
 #include <cassert>
 #include <cfloat>
 #include <cmath>
@@ -28,7 +29,7 @@
 template <class C>
 void rehash_postcondition(const C& c, size_t n)
 {
-	assert(c.bucket_count() >= c.size() / c.max_load_factor() && c.bucket_count() >= n);
+    assert(c.bucket_count() >= c.size() / c.max_load_factor() && c.bucket_count() >= n);
 }
 
 template <class C>
@@ -39,20 +40,33 @@ void test(const C& c)
     Eq eq = c.equal_range(1);
     assert(std::distance(eq.first, eq.second) == 2);
     typename C::const_iterator i = eq.first;
-    assert(i->first == 1);
-    assert(i->second == "one");
-    ++i;
-    assert(i->first == 1);
-    assert(i->second == "four");
+    {
+        std::set<std::string> s;
+        s.insert("one");
+        s.insert("four");
+        for ( int n = 0; n < 2; ++n )
+        {
+            assert(i->first == 1);
+            assert(s.find(i->second) != s.end());
+            s.erase(s.find(i->second));
+            ++i;
+        }
+    }
     eq = c.equal_range(2);
     assert(std::distance(eq.first, eq.second) == 2);
     i = eq.first;
-    assert(i->first == 2);
-    assert(i->second == "two");
-    ++i;
-    assert(i->first == 2);
-    assert(i->second == "four");
-
+    {
+        std::set<std::string> s;
+        s.insert("two");
+        s.insert("four");
+        for ( int n = 0; n < 2; ++n )
+        {
+            assert(i->first == 2);
+            assert(s.find(i->second) != s.end());
+            s.erase(s.find(i->second));
+            ++i;
+        }
+    }
     eq = c.equal_range(3);
     assert(std::distance(eq.first, eq.second) == 1);
     i = eq.first;

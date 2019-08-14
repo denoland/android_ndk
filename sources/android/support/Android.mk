@@ -1,12 +1,7 @@
 LOCAL_PATH := $(call my-dir)
 
-android_support_export_c_includes := $(LOCAL_PATH)/include
-
-ifneq ($(filter $(NDK_KNOWN_DEVICE_ABI64S),$(TARGET_ARCH_ABI)),)
-    is_lp64 := true
-else
-    is_lp64 :=
-endif
+# libandroid_support is only needed on LP32.
+ifeq ($(filter $(NDK_KNOWN_DEVICE_ABI64S),$(TARGET_ARCH_ABI)),)
 
 ifneq ($(LIBCXX_FORCE_REBUILD),true) # Using prebuilt
 
@@ -15,34 +10,17 @@ LIBCXX_LIBS := ../../cxx-stl/llvm-libc++/libs/$(TARGET_ARCH_ABI)
 include $(CLEAR_VARS)
 LOCAL_MODULE := android_support
 LOCAL_SRC_FILES := $(LIBCXX_LIBS)/lib$(LOCAL_MODULE)$(TARGET_LIB_EXTENSION)
-LOCAL_EXPORT_C_INCLUDES := $(android_support_export_c_includes)
 include $(PREBUILT_STATIC_LIBRARY)
 
 else # Building
 
-android_support_c_includes := $(android_support_export_c_includes)
 android_support_cflags := \
     -Drestrict=__restrict__ \
     -ffunction-sections \
     -fdata-sections \
     -fvisibility=hidden \
 
-ifeq ($(is_lp64),true)
-# 64-bit ABIs
-
-# We don't need this file on LP32 because libc++ has its own fallbacks for these
-# functions. We can't use those fallbacks for LP64 because the file contains all
-# the strto*_l functions. LP64 had some of those in L, so the inlines in libc++
-# collide with the out-of-line declarations in bionic.
-android_support_sources := \
-    src/locale_support.cpp \
-
-else
-# 32-bit ABIs
-
-BIONIC_PATH := ../../../../bionic
-
-android_support_c_includes += \
+android_support_c_includes := \
     $(BIONIC_PATH)/libc \
     $(BIONIC_PATH)/libc/upstream-openbsd/android/include \
     $(BIONIC_PATH)/libm \
@@ -52,7 +30,9 @@ android_support_c_includes += \
 android_support_cflags += \
     -include freebsd-compat.h \
     -include openbsd-compat.h \
+    -include $(LOCAL_PATH)/src/support_preinclude.h \
     -D__BIONIC_BUILD_FOR_ANDROID_SUPPORT \
+    -Werror \
 
 android_support_sources := \
     $(BIONIC_PATH)/libc/bionic/c32rtomb.cpp \
@@ -86,7 +66,6 @@ android_support_sources := \
     $(BIONIC_PATH)/libm/upstream-freebsd/lib/msun/src/e_cosh.c \
     $(BIONIC_PATH)/libm/upstream-freebsd/lib/msun/src/e_exp.c \
     $(BIONIC_PATH)/libm/upstream-freebsd/lib/msun/src/e_hypot.c \
-    $(BIONIC_PATH)/libm/upstream-freebsd/lib/msun/src/e_lgamma.c \
     $(BIONIC_PATH)/libm/upstream-freebsd/lib/msun/src/e_log.c \
     $(BIONIC_PATH)/libm/upstream-freebsd/lib/msun/src/e_log10.c \
     $(BIONIC_PATH)/libm/upstream-freebsd/lib/msun/src/e_log2.c \
@@ -117,7 +96,7 @@ android_support_sources := \
     $(BIONIC_PATH)/libm/upstream-freebsd/lib/msun/src/s_sin.c \
     $(BIONIC_PATH)/libm/upstream-freebsd/lib/msun/src/s_tan.c \
     $(BIONIC_PATH)/libm/upstream-freebsd/lib/msun/src/s_tanh.c \
-    src/iswblank.cpp \
+    src/locale_support.cpp \
     src/posix_memalign.cpp \
     src/swprintf.cpp \
     src/wcstox.cpp \
@@ -134,9 +113,6 @@ android_support_sources += \
 #android_support_sources += $(BIONIC_PATH)/libm/x86/lrint.S
 endif
 
-endif  # 64-/32-bit ABIs
-
-# This is only available as a static library for now.
 include $(CLEAR_VARS)
 LOCAL_MODULE := android_support
 LOCAL_SRC_FILES := $(android_support_sources)
@@ -146,10 +122,9 @@ LOCAL_CFLAGS := $(android_support_cflags)
 LOCAL_CPPFLAGS := \
     -fvisibility-inlines-hidden \
     -std=c++11 \
-    -Werror \
-
-LOCAL_EXPORT_C_INCLUDES := $(android_support_export_c_includes)
 
 include $(BUILD_STATIC_LIBRARY)
 
 endif # Prebuilt/building
+
+endif # LP32

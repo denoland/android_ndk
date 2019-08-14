@@ -137,18 +137,12 @@ def main():
   shaderc_path = installdir + '/shaderc/android_test'
   print('shaderc_path = %s' % shaderc_path)
 
-  if os.path.isdir('/buildbot/android-ndk'):
-    ndk_dir = '/buildbot/android-ndk'
-  elif os.path.isdir(os.environ['NDK_PATH']):
-    ndk_dir = os.environ['NDK_PATH'];
-  else:
-    print('Error: No NDK environment found')
-    return
+  ndk_dir = os.path.join(THIS_DIR, '../../../prebuilts/toolchain')
 
   ndk_build = os.path.join(ndk_dir, 'ndk-build')
   platforms_root = os.path.join(ndk_dir, 'platforms')
   toolchains_root = os.path.join(ndk_dir, 'toolchains')
-  build_dir = THIS_DIR
+  build_dir = installdir
 
   print('installdir: %s' % installdir)
   print('ndk_dir: %s' % ndk_dir)
@@ -156,7 +150,7 @@ def main():
   print('platforms_root: %s' % platforms_root)
 
   compiler = 'clang'
-  stl = 'gnustl_static'
+  stl = 'c++_static'
   obj_out = os.path.join(THIS_DIR, stl, 'obj')
   lib_out = os.path.join(THIS_DIR, 'jniLibs')
 
@@ -165,6 +159,10 @@ def main():
 
   print('Constructing shaderc build tree...')
   shaderc_root_dir = os.path.join(THIS_DIR, '../../shaderc')
+
+  print('Pulling in vulkan headers and layers...')
+  vulkan_root_dir = os.path.join(THIS_DIR, '../../vulkan-validation-layers')
+  vulkan_headers_root_dir = os.path.join(THIS_DIR, '../../vulkan-headers')
 
   copies = [
       {
@@ -188,8 +186,10 @@ def main():
           'dest_dir': 'third_party/shaderc/third_party/spirv-tools',
           'files': [
               'utils/generate_grammar_tables.py',
+              'utils/generate_language_headers.py',
               'utils/generate_registry_tables.py',
               'utils/update_build_version.py',
+              'Android.mk',
               'CHANGES',
           ],
           'dirs': ['include', 'source'],
@@ -201,7 +201,8 @@ def main():
           'dirs': ['include',],
           'files': [
               'include/spirv/1.0/spirv.py',
-              'include/spirv/1.1/spirv.py'
+              'include/spirv/1.1/spirv.py',
+              'include/spirv/1.2/spirv.py',
           ],
       },
       {
@@ -219,11 +220,29 @@ def main():
               'glslang/Public',
           ],
       },
+      {
+          'source_dir': vulkan_root_dir,
+          'dest_dir': 'vulkan/src',
+          'files': [
+          ],
+          'dirs': [
+              'layers', 'scripts', 'build-android'
+          ],
+      },
+
+      {
+          'source_dir': vulkan_headers_root_dir,
+          'dest_dir': 'vulkan/src',
+          'files': [
+          ],
+          'dirs': [
+              'include', 'registry'
+          ],
+      },
   ]
 
   default_ignore_patterns = shutil.ignore_patterns(
       "*CMakeLists.txt",
-      "*.py",
       "*test.h",
       "*test.cc")
 
@@ -249,14 +268,15 @@ def main():
   print('Constructing Vulkan validation layer source...')
 
   build_cmd = [
-    'bash', THIS_DIR + '/android-generate.sh'
+    'bash', build_dir + '/vulkan/src/build-android/android-generate.sh',
+            build_dir + '/vulkan/src/registry'
   ]
   print('Generating generated layers...')
   subprocess.check_call(build_cmd)
   print('Generation finished')
 
   build_cmd = [
-    'bash', ndk_build, '-C', build_dir,
+    'bash', ndk_build, '-C', build_dir + '/vulkan/src/build-android',
     jobs_arg(),
     'APP_ABI=' + ' '.join(abis),
     # Use the prebuilt platforms and toolchains.

@@ -14,9 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "pass.h"
+#include "source/opt/pass.h"
 
-#include "iterator.h"
+#include "source/opt/iterator.h"
 
 namespace spvtools {
 namespace opt {
@@ -24,42 +24,106 @@ namespace opt {
 namespace {
 
 const uint32_t kEntryPointFunctionIdInIdx = 1;
+const uint32_t kTypePointerTypeIdInIdx = 1;
 
-}  // namespace anonymous
+}  // namespace
 
-void Pass::AddCalls(ir::Function* func,
-    std::queue<uint32_t>* todo) {
+Pass::Pass() : consumer_(nullptr), context_(nullptr), already_run_(false) {}
+
+void Pass::AddCalls(Function* func, std::queue<uint32_t>* todo) {
   for (auto bi = func->begin(); bi != func->end(); ++bi)
     for (auto ii = bi->begin(); ii != bi->end(); ++ii)
       if (ii->opcode() == SpvOpFunctionCall)
         todo->push(ii->GetSingleWordInOperand(0));
 }
 
-bool Pass::ProcessEntryPointCallTree(
-    ProcessFunction& pfn, ir::Module* module) {
+bool Pass::ProcessEntryPointCallTree(ProcessFunction& pfn, Module* module) {
   // Map from function's result id to function
-  std::unordered_map<uint32_t, ir::Function*> id2function;
-  for (auto& fn : *module)
-    id2function[fn.result_id()] = &fn;
+  std::unordered_map<uint32_t, Function*> id2function;
+  for (auto& fn : *module) id2function[fn.result_id()] = &fn;
+
+  // Collect all of the entry points as the roots.
+  std::queue<uint32_t> roots;
+  for (auto& e : module->entry_points())
+    roots.push(e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx));
+  return ProcessCallTreeFromRoots(pfn, id2function, &roots);
+}
+
+bool Pass::ProcessReachableCallTree(ProcessFunction& pfn,
+                                    IRContext* irContext) {
+  // Map from function's result id to function
+  std::unordered_map<uint32_t, Function*> id2function;
+  for (auto& fn : *irContext->module()) id2function[fn.result_id()] = &fn;
+
+  std::queue<uint32_t> roots;
+
+  // Add all entry points since they can be reached from outside the module.
+  for (auto& e : irContext->module()->entry_points())
+    roots.push(e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx));
+
+  // Add all exported functions since they can be reached from outside the
+  // module.
+  for (auto& a : irContext->annotations()) {
+    // TODO: Handle group decorations as well.  Currently not generate by any
+    // front-end, but could be coming.
+    if (a.opcode() == SpvOp::SpvOpDecorate) {
+      if (a.GetSingleWordOperand(1) ==
+          SpvDecoration::SpvDecorationLinkageAttributes) {
+        uint32_t lastOperand = a.NumOperands() - 1;
+        if (a.GetSingleWordOperand(lastOperand) ==
+            SpvLinkageType::SpvLinkageTypeExport) {
+          uint32_t id = a.GetSingleWordOperand(0);
+          if (id2function.count(id) != 0) roots.push(id);
+        }
+      }
+    }
+  }
+
+  return ProcessCallTreeFromRoots(pfn, id2function, &roots);
+}
+
+bool Pass::ProcessCallTreeFromRoots(
+    ProcessFunction& pfn,
+    const std::unordered_map<uint32_t, Function*>& id2function,
+    std::queue<uint32_t>* roots) {
   // Process call tree
   bool modified = false;
-  std::queue<uint32_t> todo;
   std::unordered_set<uint32_t> done;
-  for (auto& e : module->entry_points())
-    todo.push(e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx));
-  while (!todo.empty()) {
-    const uint32_t fi = todo.front();
-    if (done.find(fi) == done.end()) {
-      ir::Function* fn = id2function[fi];
+
+  while (!roots->empty()) {
+    const uint32_t fi = roots->front();
+    roots->pop();
+    if (done.insert(fi).second) {
+      Function* fn = id2function.at(fi);
       modified = pfn(fn) || modified;
-      done.insert(fi);
-      AddCalls(fn, &todo);
+      AddCalls(fn, roots);
     }
-    todo.pop();
   }
   return modified;
 }
 
+Pass::Status Pass::Run(IRContext* ctx) {
+  if (already_run_) {
+    return Status::Failure;
+  }
+  already_run_ = true;
+
+  context_ = ctx;
+  Pass::Status status = Process();
+  context_ = nullptr;
+
+  if (status == Status::SuccessWithChange) {
+    ctx->InvalidateAnalysesExceptFor(GetPreservedAnalyses());
+  }
+  assert(ctx->IsConsistent());
+  return status;
+}
+
+uint32_t Pass::GetPointeeTypeId(const Instruction* ptrInst) const {
+  const uint32_t ptrTypeId = ptrInst->type_id();
+  const Instruction* ptrTypeInst = get_def_use_mgr()->GetDef(ptrTypeId);
+  return ptrTypeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx);
+}
+
 }  // namespace opt
 }  // namespace spvtools
-

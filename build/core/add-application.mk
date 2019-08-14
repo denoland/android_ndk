@@ -62,19 +62,6 @@ endif
 
 include $(BUILD_SYSTEM)/setup-app-platform.mk
 
-# If APP_PIE isn't defined, set it to true for android-$(NDK_FIRST_PIE_PLATFORM_LEVEL) and above
-#
-APP_PIE := $(strip $(APP_PIE))
-$(call ndk_log,  APP_PIE is $(APP_PIE))
-ifndef APP_PIE
-    ifneq (,$(call gte,$(APP_PLATFORM_LEVEL),$(NDK_FIRST_PIE_PLATFORM_LEVEL)))
-        APP_PIE := true
-        $(call ndk_log,  Enabling -fPIE)
-    else
-        APP_PIE := false
-    endif
-endif
-
 # Check that the value of APP_ABI corresponds to known ABIs
 # 'all' is a special case that means 'all supported ABIs'
 #
@@ -187,7 +174,60 @@ APP_STL := $(strip $(APP_STL))
 ifndef APP_STL
     APP_STL := system
 else
+    ifneq ($(filter $(APP_STL),gnustl_static gnustl_shared stlport_static stlport_shared),)
+        $(call __ndk_error,APP_STL $(APP_STL) is no longer supported. Please \
+            switch to either c++_static or c++_shared. See \
+            https://developer.android.com/ndk/guides/cpp-support.html for more \
+            information.)
+    endif
     $(call ndk-stl-check,$(APP_STL))
+endif
+
+# wrap.sh files can be specified in the user's Application.mk in either an
+# ABI-generic (APP_WRAP_SH) or ABI-specific (APP_WRAP_SH_x86, etc) fashion.
+# These two approaches cannot be combined; if any ABI-specific wrap.sh files are
+# specified then it is an error to also specify an ABI-generic one.
+#
+# After this block, only the ABI-specific values should be checked; if there is
+# an ABI-generic script specified the ABI-specific variables will be populated
+# with the generic script.
+NDK_NO_USER_WRAP_SH := true
+ifneq ($(APP_WRAP_SH),)
+    NDK_NO_USER_WRAP_SH := false
+endif
+
+NDK_HAVE_ABI_SPECIFIC_WRAP_SH := false
+$(foreach _abi,$(NDK_ALL_ABIS),\
+    $(if $(APP_WRAP_SH_$(_abi)),\
+        $(eval NDK_HAVE_ABI_SPECIFIC_WRAP_SH := true)))
+
+ifeq ($(NDK_HAVE_ABI_SPECIFIC_WRAP_SH),true)
+    # It is an error to have both ABI-specific and ABI-generic wrap.sh files
+    # specified.
+    ifneq ($(APP_WRAP_SH),)
+        $(call __ndk_error,Found both ABI-specific and ABI-generic APP_WRAP_SH \
+            directives. Must use either all ABI-specific or only ABI-generic.)
+    endif
+    NDK_NO_USER_WRAP_SH := false
+else
+    # If we have no ABI-specific wrap.sh files but we *do* have an ABI-generic
+    # one, install the generic one for all ABIs.
+    $(foreach _abi,$(NDK_ALL_ABIS),\
+        $(eval APP_WRAP_SH_$(_abi) := $(APP_WRAP_SH)))
+endif
+
+# Stripping can be configured both at the app (APP_STRIP_MODE) and module level
+# (LOCAL_STRIP_MODE). The module setting always overrides the application
+# setting.
+#
+# This value is passed as-is as the flag to the strip command except when it is
+# set to the special value "none". If set to "none", the binary will not be
+# stripped at all.
+ifeq ($(APP_STRIP_MODE),)
+    # The strip command is only used for shared libraries and executables. It is
+    # thus safe to use --strip-unneeded, which is only dangerous when applied to
+    # static libraries or object files.
+    APP_STRIP_MODE := --strip-unneeded
 endif
 
 $(if $(call get,$(_map),defined),\

@@ -1,6 +1,6 @@
-/* Copyright (c) 2015-2016 The Khronos Group Inc.
- * Copyright (c) 2015-2016 Valve Corporation
- * Copyright (c) 2015-2016 LunarG, Inc.
+/* Copyright (c) 2015-2017 The Khronos Group Inc.
+ * Copyright (c) 2015-2017 Valve Corporation
+ * Copyright (c) 2015-2017 LunarG, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,72 +16,108 @@
  *
  * Author: Mark Lobodzinski <mark@lunarg.com>
  * Author: Courtney Goeltzenleuchter <courtney@LunarG.com>
+ * Author: Dave Houlton <daveh@lunarg.com>
  */
 
 #pragma once
 #include <stdbool.h>
+#include <string>
 #include <vector>
+#include <set>
+#include "vk_format_utils.h"
 #include "vk_layer_logging.h"
 
 #ifndef WIN32
-#include <strings.h> /* for ffs() */
+#include <strings.h>  // For ffs()
 #else
-#include <intrin.h> /* for __lzcnt() */
+#include <intrin.h>  // For __lzcnt()
 #endif
 
 #ifdef __cplusplus
+// Traits objects to allow string_join to operate on collections of const char *
+template <typename String>
+struct StringJoinSizeTrait {
+    static size_t size(const String &str) { return str.size(); }
+};
+
+template <>
+struct StringJoinSizeTrait<const char *> {
+    static size_t size(const char *str) {
+        if (!str) return 0;
+        return strlen(str);
+    }
+};
+// Similar to perl/python join
+//    * String must support size, reserve, append, and be default constructable
+//    * StringCollection must support size, const forward iteration, and store
+//      strings compatible with String::append
+//    * Accessor trait can be set if default accessors (compatible with string
+//      and const char *) don't support size(StringCollection::value_type &)
+//
+// Return type based on sep type
+template <typename String = std::string, typename StringCollection = std::vector<String>,
+          typename Accessor = StringJoinSizeTrait<typename StringCollection::value_type>>
+static inline String string_join(const String &sep, const StringCollection &strings) {
+    String joined;
+    const size_t count = strings.size();
+    if (!count) return joined;
+
+    // Prereserved storage, s.t. we will execute in linear time (avoids reallocation copies)
+    size_t reserve = (count - 1) * sep.size();
+    for (const auto &str : strings) {
+        reserve += Accessor::size(str);  // abstracted to allow const char * type in StringCollection
+    }
+    joined.reserve(reserve + 1);
+
+    // Seps only occur *between* strings entries, so first is special
+    auto current = strings.cbegin();
+    joined.append(*current);
+    ++current;
+    for (; current != strings.cend(); ++current) {
+        joined.append(sep);
+        joined.append(*current);
+    }
+    return joined;
+}
+
+// Requires StringCollection::value_type has a const char * constructor and is compatible the string_join::String above
+template <typename StringCollection = std::vector<std::string>, typename SepString = std::string>
+static inline SepString string_join(const char *sep, const StringCollection &strings) {
+    return string_join<SepString, StringCollection>(SepString(sep), strings);
+}
+
+// Perl/Python style join operation for general types using stream semantics
+// Note: won't be as fast as string_join above, but simpler to use (and code)
+// Note: Modifiable reference doesn't match the google style but does match std style for stream handling and algorithms
+template <typename Stream, typename String, typename ForwardIt>
+Stream &stream_join(Stream &stream, const String &sep, ForwardIt first, ForwardIt last) {
+    if (first != last) {
+        stream << *first;
+        ++first;
+        while (first != last) {
+            stream << sep << *first;
+            ++first;
+        }
+    }
+    return stream;
+}
+
+// stream_join For whole collections with forward iterators
+template <typename Stream, typename String, typename Collection>
+Stream &stream_join(Stream &stream, const String &sep, const Collection &values) {
+    return stream_join(stream, sep, values.cbegin(), values.cend());
+}
+
+typedef void *dispatch_key;
+static inline dispatch_key get_dispatch_key(const void *object) { return (dispatch_key) * (VkLayerDispatchTable **)object; }
+
+VK_LAYER_EXPORT VkLayerInstanceCreateInfo *get_chain_info(const VkInstanceCreateInfo *pCreateInfo, VkLayerFunction func);
+VK_LAYER_EXPORT VkLayerDeviceCreateInfo *get_chain_info(const VkDeviceCreateInfo *pCreateInfo, VkLayerFunction func);
+
 extern "C" {
 #endif
 
 #define VK_LAYER_API_VERSION VK_MAKE_VERSION(1, 0, VK_HEADER_VERSION)
-typedef enum VkFormatCompatibilityClass {
-    VK_FORMAT_COMPATIBILITY_CLASS_NONE_BIT = 0,
-    VK_FORMAT_COMPATIBILITY_CLASS_8_BIT = 1,
-    VK_FORMAT_COMPATIBILITY_CLASS_16_BIT = 2,
-    VK_FORMAT_COMPATIBILITY_CLASS_24_BIT = 3,
-    VK_FORMAT_COMPATIBILITY_CLASS_32_BIT = 4,
-    VK_FORMAT_COMPATIBILITY_CLASS_48_BIT = 5,
-    VK_FORMAT_COMPATIBILITY_CLASS_64_BIT = 6,
-    VK_FORMAT_COMPATIBILITY_CLASS_96_BIT = 7,
-    VK_FORMAT_COMPATIBILITY_CLASS_128_BIT = 8,
-    VK_FORMAT_COMPATIBILITY_CLASS_192_BIT = 9,
-    VK_FORMAT_COMPATIBILITY_CLASS_256_BIT = 10,
-    VK_FORMAT_COMPATIBILITY_CLASS_BC1_RGB_BIT = 11,
-    VK_FORMAT_COMPATIBILITY_CLASS_BC1_RGBA_BIT = 12,
-    VK_FORMAT_COMPATIBILITY_CLASS_BC2_BIT = 13,
-    VK_FORMAT_COMPATIBILITY_CLASS_BC3_BIT = 14,
-    VK_FORMAT_COMPATIBILITY_CLASS_BC4_BIT = 15,
-    VK_FORMAT_COMPATIBILITY_CLASS_BC5_BIT = 16,
-    VK_FORMAT_COMPATIBILITY_CLASS_BC6H_BIT = 17,
-    VK_FORMAT_COMPATIBILITY_CLASS_BC7_BIT = 18,
-    VK_FORMAT_COMPATIBILITY_CLASS_ETC2_RGB_BIT = 19,
-    VK_FORMAT_COMPATIBILITY_CLASS_ETC2_RGBA_BIT = 20,
-    VK_FORMAT_COMPATIBILITY_CLASS_ETC2_EAC_RGBA_BIT = 21,
-    VK_FORMAT_COMPATIBILITY_CLASS_EAC_R_BIT = 22,
-    VK_FORMAT_COMPATIBILITY_CLASS_EAC_RG_BIT = 23,
-    VK_FORMAT_COMPATIBILITY_CLASS_ASTC_4X4_BIT = 24,
-    VK_FORMAT_COMPATIBILITY_CLASS_ASTC_5X4_BIT = 25,
-    VK_FORMAT_COMPATIBILITY_CLASS_ASTC_5X5_BIT = 26,
-    VK_FORMAT_COMPATIBILITY_CLASS_ASTC_6X5_BIT = 27,
-    VK_FORMAT_COMPATIBILITY_CLASS_ASTC_6X6_BIT = 28,
-    VK_FORMAT_COMPATIBILITY_CLASS_ASTC_8X5_BIT = 29,
-    VK_FORMAT_COMPATIBILITY_CLASS_ASTC_8X6_BIT = 20,
-    VK_FORMAT_COMPATIBILITY_CLASS_ASTC_8X8_BIT = 31,
-    VK_FORMAT_COMPATIBILITY_CLASS_ASTC_10X5_BIT = 32,
-    VK_FORMAT_COMPATIBILITY_CLASS_ASTC_10X6_BIT = 33,
-    VK_FORMAT_COMPATIBILITY_CLASS_ASTC_10X8_BIT = 34,
-    VK_FORMAT_COMPATIBILITY_CLASS_ASTC_10X10_BIT = 35,
-    VK_FORMAT_COMPATIBILITY_CLASS_ASTC_12X10_BIT = 36,
-    VK_FORMAT_COMPATIBILITY_CLASS_ASTC_12X12_BIT = 37,
-    VK_FORMAT_COMPATIBILITY_CLASS_D16_BIT = 38,
-    VK_FORMAT_COMPATIBILITY_CLASS_D24_BIT = 39,
-    VK_FORMAT_COMPATIBILITY_CLASS_D32_BIT = 30,
-    VK_FORMAT_COMPATIBILITY_CLASS_S8_BIT = 41,
-    VK_FORMAT_COMPATIBILITY_CLASS_D16S8_BIT = 42,
-    VK_FORMAT_COMPATIBILITY_CLASS_D24S8_BIT = 43,
-    VK_FORMAT_COMPATIBILITY_CLASS_D32S8_BIT = 44,
-    VK_FORMAT_COMPATIBILITY_CLASS_MAX_ENUM = 45
-} VkFormatCompatibilityClass;
 
 typedef enum VkStringErrorFlagBits {
     VK_STRING_ERROR_NONE = 0x00000000,
@@ -90,34 +126,16 @@ typedef enum VkStringErrorFlagBits {
 } VkStringErrorFlagBits;
 typedef VkFlags VkStringErrorFlags;
 
-VK_LAYER_EXPORT void layer_debug_actions(debug_report_data *report_data, std::vector<VkDebugReportCallbackEXT> &logging_callback,
-                                         const VkAllocationCallbacks *pAllocator, const char *layer_identifier);
+VK_LAYER_EXPORT void layer_debug_report_actions(debug_report_data *report_data,
+                                                std::vector<VkDebugReportCallbackEXT> &logging_callback,
+                                                const VkAllocationCallbacks *pAllocator, const char *layer_identifier);
 
-static inline bool vk_format_is_undef(VkFormat format) { return (format == VK_FORMAT_UNDEFINED); }
+VK_LAYER_EXPORT void layer_debug_messenger_actions(debug_report_data *report_data,
+                                                   std::vector<VkDebugUtilsMessengerEXT> &logging_messenger,
+                                                   const VkAllocationCallbacks *pAllocator, const char *layer_identifier);
 
-bool vk_format_is_depth_or_stencil(VkFormat format);
-bool vk_format_is_depth_and_stencil(VkFormat format);
-bool vk_format_is_depth_only(VkFormat format);
-bool vk_format_is_stencil_only(VkFormat format);
-
-static inline bool vk_format_is_color(VkFormat format) {
-    return !(vk_format_is_undef(format) || vk_format_is_depth_or_stencil(format));
-}
-
-VK_LAYER_EXPORT bool vk_format_is_norm(VkFormat format);
-VK_LAYER_EXPORT bool vk_format_is_int(VkFormat format);
-VK_LAYER_EXPORT bool vk_format_is_sint(VkFormat format);
-VK_LAYER_EXPORT bool vk_format_is_uint(VkFormat format);
-VK_LAYER_EXPORT bool vk_format_is_float(VkFormat format);
-VK_LAYER_EXPORT bool vk_format_is_srgb(VkFormat format);
-VK_LAYER_EXPORT bool vk_format_is_compressed(VkFormat format);
-VK_LAYER_EXPORT VkExtent2D vk_format_compressed_block_size(VkFormat format);
-VK_LAYER_EXPORT size_t vk_format_get_size(VkFormat format);
-VK_LAYER_EXPORT unsigned int vk_format_get_channel_count(VkFormat format);
-VK_LAYER_EXPORT VkFormatCompatibilityClass vk_format_get_compatibility_class(VkFormat format);
-VK_LAYER_EXPORT VkDeviceSize vk_safe_modulo(VkDeviceSize dividend, VkDeviceSize divisor);
 VK_LAYER_EXPORT VkStringErrorFlags vk_string_validate(const int max_length, const char *char_array);
-VK_LAYER_EXPORT bool white_list(const char *item, const char *whitelist);
+VK_LAYER_EXPORT bool white_list(const char *item, const std::set<std::string> &whitelist);
 
 static inline int u_ffs(int val) {
 #ifdef WIN32

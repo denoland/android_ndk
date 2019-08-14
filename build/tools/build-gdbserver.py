@@ -27,8 +27,6 @@ import build_support  # pylint: disable=import-error
 GDBSERVER_TARGETS = (
     'arm-eabi-linux',
     'aarch64-eabi-linux',
-    'mipsel-linux-android',
-    'mips64el-linux-android',
     'i686-linux-android',
     'x86_64-linux-android',
 )

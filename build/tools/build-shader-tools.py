@@ -64,16 +64,19 @@ def main(args):
 
     additional_args = []
     if args.host.startswith("windows"):
-        # Use MinGW to cross compile.
-        # Use the stock MinGW-w64 from Ubuntu.
-        # The prebuilts MinGW GCC 4.8.3 appears to be broken.
+        gtest_cmd = ''
+        mingw_root = os.path.join(build_support.android_path(),
+                                  'prebuilts', 'gcc', build_host_tag, 'host',
+                                  'x86_64-w64-mingw32-4.8')
+        mingw_compilers = os.path.join(mingw_root, 'bin', 'x86_64-w64-mingw32')
         mingw_toolchain = os.path.join(source_root, 'shaderc',
                                        'cmake', 'linux-mingw-toolchain.cmake')
-        # Turn off pthreads support in gtest. Otherwise I get an error in
-        # gtest-port.h for use of type AutoHandle in gtest-port.h without a
-        # definition.
+        gtest_root = os.path.join(build_support.android_path(), 'external',
+                                  'googletest')
         additional_args = ['-DCMAKE_TOOLCHAIN_FILE=' + mingw_toolchain,
-                           '-Dgtest_disable_pthreads=ON']
+                           '-DMINGW_SYSROOT=' + mingw_root,
+                           '-DMINGW_COMPILER_PREFIX=' + mingw_compilers,
+                           '-DSHADERC_GOOGLE_TEST_DIR=' + gtest_root]
         file_extension = '.exe'
         if args.host == "windows64":
             additional_args.extend(
@@ -88,25 +91,6 @@ def main(args):
             os.makedirs(d)
         except:
             pass
-
-    # Create the NOTICE file.
-    license_files = [
-        os.path.join(shaderc_shaderc_dir, 'LICENSE'),
-        os.path.join(shaderc_shaderc_dir,
-                     'third_party',
-                     'LICENSE.spirv-tools'),
-        os.path.join(shaderc_shaderc_dir,
-                     'third_party',
-                     'LICENSE.glslang'),
-    ]
-    # The SPIRV-Headers might not have landed just yet.  Use its
-    # license file if it exists.
-    spirv_headers_license = os.path.join(spirv_headers_dir, 'LICENSE')
-    if os.path.exists(spirv_headers_license):
-        license_files.append(spirv_headers_license)
-
-    build_support.merge_license_files(os.path.join(package_src, 'NOTICE'),
-                                      license_files)
 
     cmake_command = [cmake, '-GNinja', '-DCMAKE_MAKE_PROGRAM=' + ninja,
                      '-DCMAKE_BUILD_TYPE=Release',

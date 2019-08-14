@@ -19,33 +19,51 @@ import sys
 SVG_NODE_HEIGHT = 17
 FONT_SIZE = 12
 
+UNZOOM_NODE_ORIGIN_X = 10
+UNZOOM_NODE_WIDTH = 80
+INFO_NODE_ORIGIN_X = 120
+INFO_NODE_WIDTH = 800
+PERCENT_NODE_ORIGIN_X = 930
+PERCENT_NODE_WIDTH = 250
+SEARCH_NODE_ORIGIN_X = 1190
+SEARCH_NODE_WIDTH = 80
+RECT_TEXT_PADDING = 10
+
 
 def hash_to_float(string):
     return hash(string) / float(sys.maxsize)
 
 
-def getLegacyColor(method):
+def get_legacy_color(method):
     r = 175 + int(50 * hash_to_float(reversed(method)))
     g = 60 + int(180 * hash_to_float(method))
     b = 60 + int(55 * hash_to_float(reversed(method)))
     return (r, g, b)
 
 
-def getDSOColor(method):
+def get_dso_color(method):
     r = 170 + int(80 * hash_to_float(reversed(method)))
     g = 180 + int(70 * hash_to_float((method)))
     b = 170 + int(80 * hash_to_float(reversed(method)))
     return (r, g, b)
 
 
-def getHeatColor(callsite, total_weight):
+def get_heat_color(callsite, total_weight):
     r = 245 + 10 * (1 - callsite.weight() / total_weight)
     g = 110 + 105 * (1 - callsite.weight() / total_weight)
     b = 100
     return (r, g, b)
 
+def get_proper_scaled_time_string(value):
+    if value >= 1e9:
+        return '%.3f s' % (value / 1e9)
+    if value >= 1e6:
+        return '%.3f ms' % (value / 1e6)
+    if value >= 1e3:
+        return '%.3f us' % (value / 1e3)
+    return '%.0f ns' % value
 
-def createSVGNode(callsite, depth, f, total_weight, height, color_scheme, nav):
+def create_svg_node(process, callsite, depth, f, total_weight, height, color_scheme, nav):
     x = float(callsite.offset) / total_weight * 100
     y = height - (depth + 1) * SVG_NODE_HEIGHT
     width = callsite.weight() / total_weight * 100
@@ -55,17 +73,22 @@ def createSVGNode(callsite, depth, f, total_weight, height, color_scheme, nav):
         return
 
     if color_scheme == "dso":
-        r, g, b = getDSOColor(callsite.dso)
+        r, g, b = get_dso_color(callsite.dso)
     elif color_scheme == "legacy":
-        r, g, b = getLegacyColor(method)
+        r, g, b = get_legacy_color(method)
     else:
-        r, g, b = getHeatColor(callsite, total_weight)
+        r, g, b = get_heat_color(callsite, total_weight)
 
     r_border, g_border, b_border = [max(0, color - 50) for color in [r, g, b]]
 
+    if process.props['trace_offcpu']:
+        weight_str = get_proper_scaled_time_string(callsite.weight())
+    else:
+        weight_str = "{:,}".format(int(callsite.weight())) + ' events'
+
     f.write(
         """<g id=%d class="n" onclick="zoom(this);" onmouseenter="select(this);" nav="%s">
-        <title>%s | %s (%.0f events: %3.2f%%)</title>
+        <title>%s | %s (%s: %3.2f%%)</title>
         <rect x="%f%%" y="%f" ox="%f" oy="%f" width="%f%%" owidth="%f" height="15.0"
         ofill="rgb(%d,%d,%d)" fill="rgb(%d,%d,%d)" style="stroke:rgb(%d,%d,%d)"/>
         <text x="%f%%" y="%f" font-size="%d" font-family="Monospace"></text>
@@ -74,7 +97,7 @@ def createSVGNode(callsite, depth, f, total_weight, height, color_scheme, nav):
          ','.join(str(x) for x in nav),
          method,
          callsite.dso,
-         callsite.weight(),
+         weight_str,
          callsite.weight() / total_weight * 100,
          x,
          y,
@@ -96,7 +119,7 @@ def createSVGNode(callsite, depth, f, total_weight, height, color_scheme, nav):
          FONT_SIZE))
 
 
-def renderSVGNodes(flamegraph, depth, f, total_weight, height, color_scheme):
+def render_svg_nodes(process, flamegraph, depth, f, total_weight, height, color_scheme):
     for i, child in enumerate(flamegraph.children):
         # Prebuild navigation target for wasd
 
@@ -115,46 +138,51 @@ def renderSVGNodes(flamegraph, depth, f, total_weight, height, color_scheme):
         # up, left, down, right
         nav = [up_index, left_index, flamegraph.id, right_index]
 
-        createSVGNode(child, depth, f, total_weight, height, color_scheme, nav)
+        create_svg_node(process, child, depth, f, total_weight, height, color_scheme, nav)
         # Recurse down
-        renderSVGNodes(child, depth + 1, f, total_weight, height, color_scheme)
+        render_svg_nodes(process, child, depth + 1, f, total_weight, height, color_scheme)
 
 
-def renderSearchNode(f):
+def render_search_node(f):
     f.write(
         """<rect id="search_rect"  style="stroke:rgb(0,0,0);" onclick="search(this);" class="t"
-        rx="10" ry="10" x="1029" y="10" width="80" height="30" fill="rgb(255,255,255)""/>
-        <text id="search_text"  class="t" x="1044" y="30"    onclick="search(this);">Search</text>
-        """)
+        rx="10" ry="10" x="%d" y="10" width="%d" height="30" fill="rgb(255,255,255)""/>
+        <text id="search_text"  class="t" x="%d" y="30"    onclick="search(this);">Search</text>
+        """ % (SEARCH_NODE_ORIGIN_X, SEARCH_NODE_WIDTH, SEARCH_NODE_ORIGIN_X + RECT_TEXT_PADDING))
 
 
-def renderUnzoomNode(f):
+def render_unzoom_node(f):
     f.write(
         """<rect id="zoom_rect" style="display:none;stroke:rgb(0,0,0);" class="t"
-        onclick="unzoom(this);" rx="10" ry="10" x="10" y="10" width="80" height="30"
+        onclick="unzoom(this);" rx="10" ry="10" x="%d" y="10" width="%d" height="30"
         fill="rgb(255,255,255)"/>
-         <text id="zoom_text" style="display:none;" class="t" x="19" y="30"
-         onclick="unzoom(this);">Zoom out</text>""")
+         <text id="zoom_text" style="display:none;" class="t" x="%d" y="30"
+         onclick="unzoom(this);">Zoom out</text>
+        """ % (UNZOOM_NODE_ORIGIN_X, UNZOOM_NODE_WIDTH, UNZOOM_NODE_ORIGIN_X + RECT_TEXT_PADDING))
 
 
-def renderInfoNode(f):
+def render_info_node(f):
     f.write(
         """<clipPath id="info_clip_path"> <rect id="info_rect" style="stroke:rgb(0,0,0);"
-        rx="10" ry="10" x="120" y="10" width="789" height="30" fill="rgb(255,255,255)"/>
+        rx="10" ry="10" x="%d" y="10" width="%d" height="30" fill="rgb(255,255,255)"/>
         </clipPath>
         <rect id="info_rect" style="stroke:rgb(0,0,0);"
-        rx="10" ry="10" x="120" y="10" width="799" height="30" fill="rgb(255,255,255)"/>
-         <text clip-path="url(#info_clip_path)" id="info_text" x="128" y="30"></text>""")
+        rx="10" ry="10" x="%d" y="10" width="%d" height="30" fill="rgb(255,255,255)"/>
+         <text clip-path="url(#info_clip_path)" id="info_text" x="%d" y="30"></text>
+         """ % (INFO_NODE_ORIGIN_X, INFO_NODE_WIDTH, INFO_NODE_ORIGIN_X, INFO_NODE_WIDTH,
+                INFO_NODE_ORIGIN_X + RECT_TEXT_PADDING))
 
 
-def renderPercentNode(f):
+def render_percent_node(f):
     f.write(
         """<rect id="percent_rect" style="stroke:rgb(0,0,0);"
-        rx="10" ry="10" x="934" y="10" width="82" height="30" fill="rgb(255,255,255)"/>
-         <text  id="percent_text" text-anchor="end" x="999" y="30">100.00%%</text>""")
+        rx="10" ry="10" x="%d" y="10" width="%d" height="30" fill="rgb(255,255,255)"/>
+         <text  id="percent_text" text-anchor="end" x="%d" y="30">100.00%%</text>
+        """ % (PERCENT_NODE_ORIGIN_X, PERCENT_NODE_WIDTH,
+               PERCENT_NODE_ORIGIN_X + PERCENT_NODE_WIDTH - RECT_TEXT_PADDING))
 
 
-def renderSVG(flamegraph, f, color_scheme):
+def render_svg(process, flamegraph, f, color_scheme):
     height = (flamegraph.get_max_depth() + 2) * SVG_NODE_HEIGHT
     f.write("""<div class="flamegraph_block" style="width:100%%; height:%dpx;">
             """ % height)
@@ -168,9 +196,9 @@ def renderSVG(flamegraph, f, color_scheme):
     </linearGradient> </defs>""")
     f.write("""<rect x="0.0" y="0" width="100%" height="100%" fill="url(#background_gradiant)" />
             """)
-    renderSVGNodes(flamegraph, 0, f, flamegraph.weight(), height, color_scheme)
-    renderSearchNode(f)
-    renderUnzoomNode(f)
-    renderInfoNode(f)
-    renderPercentNode(f)
+    render_svg_nodes(process, flamegraph, 0, f, flamegraph.weight(), height, color_scheme)
+    render_search_node(f)
+    render_unzoom_node(f)
+    render_info_node(f)
+    render_percent_node(f)
     f.write("</svg></div><br/>\n\n")

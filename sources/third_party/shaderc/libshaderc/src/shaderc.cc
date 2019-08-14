@@ -56,6 +56,26 @@ EShLanguage GetForcedStage(shaderc_shader_kind kind) {
       return EShLangTessControl;
     case shaderc_glsl_tess_evaluation_shader:
       return EShLangTessEvaluation;
+
+#ifdef NV_EXTENSIONS
+    case shaderc_glsl_raygen_shader:
+      return EShLangRayGenNV;
+    case shaderc_glsl_anyhit_shader:
+      return EShLangAnyHitNV;
+    case shaderc_glsl_closesthit_shader:
+      return EShLangClosestHitNV;
+    case shaderc_glsl_miss_shader:
+      return EShLangMissNV;
+    case shaderc_glsl_intersection_shader:
+      return EShLangIntersectNV;
+    case shaderc_glsl_callable_shader:
+      return EShLangCallableNV;
+    case shaderc_glsl_task_shader:
+      return EShLangTaskNV;
+    case shaderc_glsl_mesh_shader:
+      return EShLangMeshNV;
+#endif
+
     case shaderc_glsl_infer_from_source:
     case shaderc_glsl_default_vertex_shader:
     case shaderc_glsl_default_fragment_shader:
@@ -63,6 +83,16 @@ EShLanguage GetForcedStage(shaderc_shader_kind kind) {
     case shaderc_glsl_default_geometry_shader:
     case shaderc_glsl_default_tess_control_shader:
     case shaderc_glsl_default_tess_evaluation_shader:
+#ifdef NV_EXTENSIONS
+    case shaderc_glsl_default_raygen_shader:
+    case shaderc_glsl_default_anyhit_shader:
+    case shaderc_glsl_default_closesthit_shader:
+    case shaderc_glsl_default_miss_shader:
+    case shaderc_glsl_default_intersection_shader:
+    case shaderc_glsl_default_callable_shader:
+    case shaderc_glsl_default_task_shader:
+    case shaderc_glsl_default_mesh_shader:
+#endif
     case shaderc_spirv_assembly:
       return EShLangCount;
   }
@@ -120,6 +150,16 @@ class StageDeducer {
       case shaderc_glsl_tess_control_shader:
       case shaderc_glsl_tess_evaluation_shader:
       case shaderc_glsl_infer_from_source:
+#ifdef NV_EXTENSIONS
+      case shaderc_glsl_raygen_shader:
+      case shaderc_glsl_anyhit_shader:
+      case shaderc_glsl_closesthit_shader:
+      case shaderc_glsl_miss_shader:
+      case shaderc_glsl_intersection_shader:
+      case shaderc_glsl_callable_shader:
+      case shaderc_glsl_task_shader:
+      case shaderc_glsl_mesh_shader:
+#endif
         return EShLangCount;
       case shaderc_glsl_default_vertex_shader:
         return EShLangVertex;
@@ -133,6 +173,23 @@ class StageDeducer {
         return EShLangTessControl;
       case shaderc_glsl_default_tess_evaluation_shader:
         return EShLangTessEvaluation;
+#ifdef NV_EXTENSIONS
+      case shaderc_glsl_default_raygen_shader:
+        return EShLangRayGenNV;
+      case shaderc_glsl_default_anyhit_shader:
+        return EShLangAnyHitNV;
+      case shaderc_glsl_default_closesthit_shader:
+        return EShLangClosestHitNV;
+      case shaderc_glsl_default_miss_shader:
+        return EShLangMissNV;
+      case shaderc_glsl_default_intersection_shader:
+        return EShLangIntersectNV;
+      case shaderc_glsl_default_callable_shader:
+        return EShLangCallableNV;
+      case shaderc_glsl_default_task_shader:
+        return EShLangTaskNV;
+      case shaderc_glsl_default_mesh_shader:
+#endif
       case shaderc_spirv_assembly:
         return EShLangCount;
     }
@@ -240,8 +297,9 @@ shaderc_util::Compiler::TargetEnv GetCompilerTargetEnv(shaderc_target_env env) {
 // Returns the Compiler::Limit enum for the given shaderc_limit enum.
 shaderc_util::Compiler::Limit CompilerLimit(shaderc_limit limit) {
   switch (limit) {
-#define RESOURCE(NAME,FIELD,CNAME) \
-     case shaderc_limit_##CNAME: return shaderc_util::Compiler::Limit::NAME;
+#define RESOURCE(NAME, FIELD, CNAME) \
+  case shaderc_limit_##CNAME:        \
+    return shaderc_util::Compiler::Limit::NAME;
 #include "libshaderc_util/resources.inc"
 #undef RESOURCE
     default:
@@ -293,11 +351,11 @@ shaderc_util::Compiler::Stage GetStage(shaderc_shader_kind kind) {
   return static_cast<shaderc_util::Compiler::Stage>(0);
 }
 
-
 }  // anonymous namespace
 
 struct shaderc_compile_options {
   shaderc_target_env target_env = shaderc_target_env_default;
+  uint32_t target_env_version = 0;
   shaderc_util::Compiler compiler;
   shaderc_include_resolve_fn include_resolver = nullptr;
   shaderc_include_result_release_fn include_result_releaser = nullptr;
@@ -327,8 +385,7 @@ void shaderc_compile_options_add_macro_definition(
 }
 
 void shaderc_compile_options_set_source_language(
-    shaderc_compile_options_t options,
-    shaderc_source_language set_lang) {
+    shaderc_compile_options_t options, shaderc_source_language set_lang) {
   auto lang = shaderc_util::Compiler::SourceLanguage::GLSL;
   if (set_lang == shaderc_source_language_hlsl)
     lang = shaderc_util::Compiler::SourceLanguage::HLSL;
@@ -346,6 +403,9 @@ void shaderc_compile_options_set_optimization_level(
   switch (level) {
     case shaderc_optimization_level_size:
       opt_level = shaderc_util::Compiler::OptimizationLevel::Size;
+      break;
+    case shaderc_optimization_level_performance:
+      opt_level = shaderc_util::Compiler::OptimizationLevel::Performance;
       break;
     default:
       break;
@@ -391,10 +451,8 @@ void shaderc_compile_options_set_suppress_warnings(
 void shaderc_compile_options_set_target_env(shaderc_compile_options_t options,
                                             shaderc_target_env target,
                                             uint32_t version) {
-  // "version" reserved for future use, intended to distinguish between
-  // different versions of a target environment
   options->target_env = target;
-  options->compiler.SetTargetEnv(GetCompilerTargetEnv(target));
+  options->compiler.SetTargetEnv(GetCompilerTargetEnv(target), version);
 }
 
 void shaderc_compile_options_set_warnings_as_errors(
@@ -402,8 +460,8 @@ void shaderc_compile_options_set_warnings_as_errors(
   options->compiler.SetWarningsAsErrors();
 }
 
-void shaderc_compile_options_set_limit(
-    shaderc_compile_options_t options, shaderc_limit limit, int value) {
+void shaderc_compile_options_set_limit(shaderc_compile_options_t options,
+                                       shaderc_limit limit, int value) {
   options->compiler.SetLimit(CompilerLimit(limit), value);
 }
 
@@ -417,8 +475,8 @@ void shaderc_compile_options_set_hlsl_io_mapping(
   options->compiler.SetHlslIoMapping(hlsl_iomap);
 }
 
-void shaderc_compile_options_set_hlsl_offsets(
-    shaderc_compile_options_t options, bool hlsl_offsets) {
+void shaderc_compile_options_set_hlsl_offsets(shaderc_compile_options_t options,
+                                              bool hlsl_offsets) {
   options->compiler.SetHlslOffsets(hlsl_offsets);
 }
 
@@ -435,6 +493,11 @@ void shaderc_compile_options_set_binding_base_for_stage(
                                                GetUniformKind(kind), base);
 }
 
+void shaderc_compile_options_set_auto_map_locations(
+    shaderc_compile_options_t options, bool auto_map) {
+  options->compiler.SetAutoMapLocations(auto_map);
+}
+
 void shaderc_compile_options_set_hlsl_register_set_and_binding_for_stage(
     shaderc_compile_options_t options, shaderc_shader_kind shader_kind,
     const char* reg, const char* set, const char* binding) {
@@ -446,6 +509,11 @@ void shaderc_compile_options_set_hlsl_register_set_and_binding(
     shaderc_compile_options_t options, const char* reg, const char* set,
     const char* binding) {
   options->compiler.SetHlslRegisterSetAndBinding(reg, set, binding);
+}
+
+void shaderc_compile_options_set_hlsl_functionality1(
+    shaderc_compile_options_t options, bool enable) {
+  options->compiler.EnableHlslFunctionality1(enable);
 }
 
 shaderc_compiler_t shaderc_compiler_initialize() {

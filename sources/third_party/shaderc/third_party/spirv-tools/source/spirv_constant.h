@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_SPIRV_CONSTANT_H_
-#define LIBSPIRV_SPIRV_CONSTANT_H_
+#ifndef SOURCE_SPIRV_CONSTANT_H_
+#define SOURCE_SPIRV_CONSTANT_H_
 
+#include "source/latest_version_spirv_header.h"
 #include "spirv-tools/libspirv.h"
-#include "spirv/1.2/spirv.h"
 
 // Version number macros.
 
@@ -28,9 +28,6 @@
 #define SPV_SPIRV_VERSION_MAJOR_PART(WORD) ((uint32_t(WORD) >> 16) & 0xff)
 // Returns the minor version extracted from a version header word.
 #define SPV_SPIRV_VERSION_MINOR_PART(WORD) ((uint32_t(WORD) >> 8) & 0xff)
-
-// Returns the version number for the given SPIR-V target environment.
-uint32_t spvVersionForTargetEnv(spv_target_env env);
 
 // Header indices
 
@@ -100,4 +97,4 @@ typedef enum spv_generator_t {
 // Returns the misc part of the generator word.
 #define SPV_GENERATOR_MISC_PART(WORD) (uint32_t(WORD) & 0xFFFF)
 
-#endif  // LIBSPIRV_SPIRV_CONSTANT_H_
+#endif  // SOURCE_SPIRV_CONSTANT_H_

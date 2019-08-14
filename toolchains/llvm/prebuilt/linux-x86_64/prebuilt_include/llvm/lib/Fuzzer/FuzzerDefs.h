@@ -18,35 +18,95 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include <set>
+#include <memory>
 
 // Platform detection.
 #ifdef __linux__
 #define LIBFUZZER_APPLE 0
+#define LIBFUZZER_FUCHSIA 0
 #define LIBFUZZER_LINUX 1
+#define LIBFUZZER_NETBSD 0
+#define LIBFUZZER_FREEBSD 0
+#define LIBFUZZER_OPENBSD 0
 #define LIBFUZZER_WINDOWS 0
 #elif __APPLE__
 #define LIBFUZZER_APPLE 1
+#define LIBFUZZER_FUCHSIA 0
 #define LIBFUZZER_LINUX 0
+#define LIBFUZZER_NETBSD 0
+#define LIBFUZZER_FREEBSD 0
+#define LIBFUZZER_OPENBSD 0
+#define LIBFUZZER_WINDOWS 0
+#elif __NetBSD__
+#define LIBFUZZER_APPLE 0
+#define LIBFUZZER_FUCHSIA 0
+#define LIBFUZZER_LINUX 0
+#define LIBFUZZER_NETBSD 1
+#define LIBFUZZER_FREEBSD 0
+#define LIBFUZZER_OPENBSD 0
+#define LIBFUZZER_WINDOWS 0
+#elif __FreeBSD__
+#define LIBFUZZER_APPLE 0
+#define LIBFUZZER_FUCHSIA 0
+#define LIBFUZZER_LINUX 0
+#define LIBFUZZER_NETBSD 0
+#define LIBFUZZER_FREEBSD 1
+#define LIBFUZZER_OPENBSD 0
+#define LIBFUZZER_WINDOWS 0
+#elif __OpenBSD__
+#define LIBFUZZER_APPLE 0
+#define LIBFUZZER_FUCHSIA 0
+#define LIBFUZZER_LINUX 0
+#define LIBFUZZER_NETBSD 0
+#define LIBFUZZER_FREEBSD 0
+#define LIBFUZZER_OPENBSD 1
 #define LIBFUZZER_WINDOWS 0
 #elif _WIN32
 #define LIBFUZZER_APPLE 0
+#define LIBFUZZER_FUCHSIA 0
 #define LIBFUZZER_LINUX 0
+#define LIBFUZZER_NETBSD 0
+#define LIBFUZZER_FREEBSD 0
+#define LIBFUZZER_OPENBSD 0
 #define LIBFUZZER_WINDOWS 1
+#elif __Fuchsia__
+#define LIBFUZZER_APPLE 0
+#define LIBFUZZER_FUCHSIA 1
+#define LIBFUZZER_LINUX 0
+#define LIBFUZZER_NETBSD 0
+#define LIBFUZZER_FREEBSD 0
+#define LIBFUZZER_OPENBSD 0
+#define LIBFUZZER_WINDOWS 0
 #else
 #error "Support for your platform has not been implemented"
 #endif
 
-#define LIBFUZZER_POSIX LIBFUZZER_APPLE || LIBFUZZER_LINUX
+#ifndef __has_attribute
+#  define __has_attribute(x) 0
+#endif
+
+#define LIBFUZZER_POSIX                                                        \
+  (LIBFUZZER_APPLE || LIBFUZZER_LINUX || LIBFUZZER_NETBSD ||                   \
+   LIBFUZZER_FREEBSD || LIBFUZZER_OPENBSD)
 
 #ifdef __x86_64
-#define ATTRIBUTE_TARGET_POPCNT __attribute__((target("popcnt")))
+#  if __has_attribute(target)
+#    define ATTRIBUTE_TARGET_POPCNT __attribute__((target("popcnt")))
+#  else
+#    define ATTRIBUTE_TARGET_POPCNT
+#  endif
 #else
-#define ATTRIBUTE_TARGET_POPCNT
+#  define ATTRIBUTE_TARGET_POPCNT
 #endif
 
 
 #ifdef __clang__  // avoid gcc warning.
-#  define ATTRIBUTE_NO_SANITIZE_MEMORY __attribute__((no_sanitize("memory")))
+#  if __has_attribute(no_sanitize)
+#    define ATTRIBUTE_NO_SANITIZE_MEMORY __attribute__((no_sanitize("memory")))
+#  else
+#    define ATTRIBUTE_NO_SANITIZE_MEMORY
+#  endif
 #  define ALWAYS_INLINE __attribute__((always_inline))
 #else
 #  define ATTRIBUTE_NO_SANITIZE_MEMORY
@@ -69,8 +129,15 @@
 
 #if LIBFUZZER_WINDOWS
 #define ATTRIBUTE_INTERFACE __declspec(dllexport)
+// This is used for __sancov_lowest_stack which is needed for
+// -fsanitize-coverage=stack-depth. That feature is not yet available on
+// Windows, so make the symbol static to avoid linking errors.
+#define ATTRIBUTES_INTERFACE_TLS_INITIAL_EXEC \
+  __attribute__((tls_model("initial-exec"))) thread_local static
 #else
 #define ATTRIBUTE_INTERFACE __attribute__((visibility("default")))
+#define ATTRIBUTES_INTERFACE_TLS_INITIAL_EXEC \
+  ATTRIBUTE_INTERFACE __attribute__((tls_model("initial-exec"))) thread_local
 #endif
 
 namespace fuzzer {
@@ -90,17 +157,31 @@ struct ExternalFunctions;
 // Global interface to functions that may or may not be available.
 extern ExternalFunctions *EF;
 
-typedef std::vector<uint8_t> Unit;
-typedef std::vector<Unit> UnitVector;
+// We are using a custom allocator to give a different symbol name to STL
+// containers in order to avoid ODR violations.
+template<typename T>
+  class fuzzer_allocator: public std::allocator<T> {
+    public:
+      fuzzer_allocator() = default;
+
+      template<class U>
+      fuzzer_allocator(const fuzzer_allocator<U>&) {}
+
+      template<class Other>
+      struct rebind { typedef fuzzer_allocator<Other> other;  };
+  };
+
+template<typename T>
+using Vector = std::vector<T, fuzzer_allocator<T>>;
+
+template<typename T>
+using Set = std::set<T, std::less<T>, fuzzer_allocator<T>>;
+
+typedef Vector<uint8_t> Unit;
+typedef Vector<Unit> UnitVector;
 typedef int (*UserCallback)(const uint8_t *Data, size_t Size);
 
 int FuzzerDriver(int *argc, char ***argv, UserCallback Callback);
-
-struct ScopedDoingMyOwnMemOrStr {
-  ScopedDoingMyOwnMemOrStr() { DoingMyOwnMemOrStr++; }
-  ~ScopedDoingMyOwnMemOrStr() { DoingMyOwnMemOrStr--; }
-  static int DoingMyOwnMemOrStr;
-};
 
 inline uint8_t  Bswap(uint8_t x)  { return x; }
 inline uint16_t Bswap(uint16_t x) { return __builtin_bswap16(x); }
@@ -110,6 +191,8 @@ inline uint64_t Bswap(uint64_t x) { return __builtin_bswap64(x); }
 uint8_t *ExtraCountersBegin();
 uint8_t *ExtraCountersEnd();
 void ClearExtraCounters();
+
+extern bool RunningUserCallback;
 
 }  // namespace fuzzer
 

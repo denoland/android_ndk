@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_BLOCK_MERGE_PASS_H_
-#define LIBSPIRV_OPT_BLOCK_MERGE_PASS_H_
+#ifndef SOURCE_OPT_BLOCK_MERGE_PASS_H_
+#define SOURCE_OPT_BLOCK_MERGE_PASS_H_
 
 #include <algorithm>
 #include <map>
@@ -24,10 +24,11 @@
 #include <unordered_set>
 #include <utility>
 
-#include "basic_block.h"
-#include "def_use_manager.h"
-#include "module.h"
-#include "pass.h"
+#include "source/opt/basic_block.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/module.h"
+#include "source/opt/pass.h"
 
 namespace spvtools {
 namespace opt {
@@ -36,44 +37,35 @@ namespace opt {
 class BlockMergePass : public Pass {
  public:
   BlockMergePass();
-  const char* name() const override { return "sroa"; }
-  Status Process(ir::Module*) override;
+  const char* name() const override { return "merge-blocks"; }
+  Status Process() override;
+
+  IRContext::Analysis GetPreservedAnalyses() override {
+    return IRContext::kAnalysisDefUse |
+           IRContext::kAnalysisInstrToBlockMapping |
+           IRContext::kAnalysisDecorations | IRContext::kAnalysisCombinators |
+           IRContext::kAnalysisNameMap;
+  }
 
  private:
-  // Return true if |block_ptr| is loop header block
-  bool IsLoopHeader(ir::BasicBlock* block_ptr);
-
-  // Return true if |labId| has multiple refs. Do not count OpName.
-  bool HasMultipleRefs(uint32_t labId);
-
   // Kill any OpName instruction referencing |inst|, then kill |inst|.
-  void KillInstAndName(ir::Instruction* inst);
+  void KillInstAndName(Instruction* inst);
 
   // Search |func| for blocks which have a single Branch to a block
   // with no other predecessors. Merge these blocks into a single block.
-  bool MergeBlocks(ir::Function* func);
+  bool MergeBlocks(Function* func);
 
-  // Initialize extensions whitelist
-  void InitExtensions();
+  // Returns true if |block| (or |id|) contains a merge instruction.
+  bool IsHeader(BasicBlock* block);
+  bool IsHeader(uint32_t id);
 
-  // Return true if all extensions in this module are allowed by this pass.
-  bool AllExtensionsSupported() const;
-
-  void Initialize(ir::Module* module);
-  Pass::Status ProcessImpl();
-
-  // Module this pass is processing
-  ir::Module* module_;
-
-  // Def-Uses for the module we are processing
-  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
-
-  // Extensions supported by this pass.
-  std::unordered_set<std::string> extensions_whitelist_;
+  // Returns true if |block| (or |id|) is the merge target of a merge
+  // instruction.
+  bool IsMerge(BasicBlock* block);
+  bool IsMerge(uint32_t id);
 };
 
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_BLOCK_MERGE_PASS_H_
-
+#endif  // SOURCE_OPT_BLOCK_MERGE_PASS_H_

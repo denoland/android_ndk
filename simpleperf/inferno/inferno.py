@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #
 # Copyright (C) 2016 The Android Open Source Project
 #
@@ -35,25 +36,29 @@ import os
 import subprocess
 import sys
 
-scripts_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-sys.path.append(scripts_path)
+# pylint: disable=wrong-import-position
+SCRIPTS_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.append(SCRIPTS_PATH)
 from simpleperf_report_lib import ReportLib
 from utils import log_exit, log_info, AdbHelper, open_report_in_browser
 
-from data_types import *
-from svg_renderer import *
+from data_types import Process
+from svg_renderer import get_proper_scaled_time_string, render_svg
 
 
 def collect_data(args):
-    app_profiler_args = [sys.executable, os.path.join(scripts_path, "app_profiler.py"), "-nb"]
+    """ Run app_profiler.py to generate record file. """
+    app_profiler_args = [sys.executable, os.path.join(SCRIPTS_PATH, "app_profiler.py"), "-nb"]
     if args.app:
         app_profiler_args += ["-p", args.app]
     elif args.native_program:
         app_profiler_args += ["-np", args.native_program]
+    elif args.pid != -1:
+        app_profiler_args += ['--pid', str(args.pid)]
     else:
-        log_exit("Please set profiling target with -p or -np option.")
-    if args.skip_recompile:
-        app_profiler_args.append("-nc")
+        log_exit("Please set profiling target with -p, -np or --pid option.")
+    if args.compile_java_code:
+        app_profiler_args.append("--compile_java_code")
     if args.disable_adb_root:
         app_profiler_args.append("--disable_adb_root")
     record_arg_str = ""
@@ -79,8 +84,13 @@ def collect_data(args):
     return returncode == 0
 
 
-def parse_samples(process, args):
-    """ read record_file, and print each sample"""
+def parse_samples(process, args, sample_filter_fn):
+    """Read samples from record file.
+        process: Process object
+        args: arguments
+        sample_filter_fn: if not None, is used to modify and filter samples.
+                          It returns false for samples should be filtered out.
+    """
 
     record_file = args.record_file
     symfs_dir = args.symfs
@@ -95,13 +105,22 @@ def parse_samples(process, args):
         lib.SetRecordFile(record_file)
     if kallsyms_file:
         lib.SetKallsymsFile(kallsyms_file)
+    if args.show_art_frames:
+        lib.ShowArtFrames(True)
     process.cmd = lib.GetRecordCmd()
     product_props = lib.MetaInfo().get("product_props")
     if product_props:
-        tuple = product_props.split(':')
-        process.props['ro.product.manufacturer'] = tuple[0]
-        process.props['ro.product.model'] = tuple[1]
-        process.props['ro.product.name'] = tuple[2]
+        manufacturer, model, name = product_props.split(':')
+        process.props['ro.product.manufacturer'] = manufacturer
+        process.props['ro.product.model'] = model
+        process.props['ro.product.name'] = name
+    if lib.MetaInfo().get('trace_offcpu') == 'true':
+        process.props['trace_offcpu'] = True
+        if args.one_flamegraph:
+            log_exit("It doesn't make sense to report with --one-flamegraph for perf.data " +
+                     "recorded with --trace-offcpu.""")
+    else:
+        process.props['trace_offcpu'] = False
 
     while True:
         sample = lib.GetNextSample()
@@ -110,8 +129,9 @@ def parse_samples(process, args):
             break
         symbol = lib.GetSymbolOfCurrentSample()
         callchain = lib.GetCallChainOfCurrentSample()
-        process.get_thread(sample.tid, sample.pid).add_callchain(callchain, symbol, sample)
-        process.num_samples += 1
+        if sample_filter_fn and not sample_filter_fn(sample, symbol, callchain):
+            continue
+        process.add_sample(sample, symbol, callchain)
 
     if process.pid == 0:
         main_threads = [thread for thread in process.threads.values() if thread.tid == thread.pid]
@@ -120,7 +140,7 @@ def parse_samples(process, args):
             process.pid = main_threads[0].pid
 
     for thread in process.threads.values():
-        min_event_count = thread.event_count * args.min_callchain_percentage * 0.01
+        min_event_count = thread.num_events * args.min_callchain_percentage * 0.01
         thread.flamegraph.trim_callchain(min_event_count)
 
     log_info("Parsed %s callchains." % process.num_samples)
@@ -147,7 +167,7 @@ def output_report(process, args):
     if not args.embedded_flamegraph:
         f.write("<html><body>")
     f.write("<div id='flamegraph_id' style='font-family: Monospace; %s'>" % (
-            "display: none;" if args.embedded_flamegraph else ""))
+        "display: none;" if args.embedded_flamegraph else ""))
     f.write("""<style type="text/css"> .s { stroke:black; stroke-width:0.5; cursor:pointer;}
             </style>""")
     f.write('<style type="text/css"> .t:hover { cursor:pointer; } </style>')
@@ -155,22 +175,29 @@ def output_report(process, args):
     f.write(get_local_asset_content("inferno.b64"))
     f.write('"/>')
     process_entry = ("Process : %s (%d)<br/>" % (process.name, process.pid)) if process.pid else ""
+    thread_entry = '' if args.one_flamegraph else ('Threads: %d<br/>' % len(process.threads))
+    if process.props['trace_offcpu']:
+        event_entry = 'Total time: %s<br/>' % get_proper_scaled_time_string(process.num_events)
+    else:
+        event_entry = 'Event count: %s<br/>' % ("{:,}".format(process.num_events))
     # TODO: collect capture duration info from perf.data.
     duration_entry = ("Duration: %s seconds<br/>" % args.capture_duration
-                      ) if args.capture_duration else ""
+                     ) if args.capture_duration else ""
     f.write("""<div style='display:inline-block;'>
                   <font size='8'>
-                  Inferno Flamegraph Report</font><br/><br/>
+                  Inferno Flamegraph Report%s</font><br/><br/>
                   %s
                   Date&nbsp;&nbsp;&nbsp;&nbsp;: %s<br/>
-                  Threads : %d <br/>
-                  Samples : %d</br>
-                  %s""" % (
-        process_entry,
-        datetime.datetime.now().strftime("%Y-%m-%d (%A) %H:%M:%S"),
-        len(process.threads),
-        process.num_samples,
-        duration_entry))
+                  %s
+                  Samples : %d<br/>
+                  %s
+                  %s""" % ((': ' + args.title) if args.title else '',
+                           process_entry,
+                           datetime.datetime.now().strftime("%Y-%m-%d (%A) %H:%M:%S"),
+                           thread_entry,
+                           process.num_samples,
+                           event_entry,
+                           duration_entry))
     if 'ro.product.model' in process.props:
         f.write(
             "Machine : %s (%s) by %s<br/>" %
@@ -186,18 +213,13 @@ def output_report(process, args):
     if not args.embedded_flamegraph:
         f.write("<script>document.addEventListener('DOMContentLoaded', flamegraphInit);</script>")
 
-    # Output tid == pid Thread first.
-    main_thread = [x for x in process.threads.values() if x.tid == process.pid]
-    for thread in main_thread:
-        f.write("<br/><br/><b>Main Thread %d (%s) (%d samples):</b><br/>\n\n\n\n" % (
-                thread.tid, thread.name, thread.num_samples))
-        renderSVG(thread.flamegraph, f, args.color)
-
-    other_threads = [x for x in process.threads.values() if x.tid != process.pid]
-    for thread in other_threads:
-        f.write("<br/><br/><b>Thread %d (%s) (%d samples):</b><br/>\n\n\n\n" % (
-                thread.tid, thread.name, thread.num_samples))
-        renderSVG(thread.flamegraph, f, args.color)
+    # Sort threads by the event count in a thread.
+    for thread in sorted(process.threads.values(), key=lambda x: x.num_events, reverse=True):
+        thread_name = 'One flamegraph' if args.one_flamegraph else ('Thread %d (%s)' %
+                                                                    (thread.tid, thread.name))
+        f.write("<br/><br/><b>%s (%d samples):</b><br/>\n\n\n\n" %
+                (thread_name, thread.num_samples))
+        render_svg(process, thread.flamegraph, f, args.color)
 
     f.write("</div>")
     if not args.embedded_flamegraph:
@@ -208,7 +230,7 @@ def output_report(process, args):
 
 def generate_threads_offsets(process):
     for thread in process.threads.values():
-       thread.flamegraph.generate_offset(0)
+        thread.flamegraph.generate_offset(0)
 
 
 def collect_machine_info(process):
@@ -220,70 +242,99 @@ def collect_machine_info(process):
 
 
 def main():
+    # Allow deep callchain with length >1000.
+    sys.setrecursionlimit(1500)
+    parser = argparse.ArgumentParser(description="""Report samples in perf.data. Default option
+                                                    is: "-np surfaceflinger -f 6000 -t 10".""")
+    record_group = parser.add_argument_group('Record options')
+    record_group.add_argument('-du', '--dwarf_unwinding', action='store_true', help="""Perform
+                              unwinding using dwarf instead of fp.""")
+    record_group.add_argument('-e', '--events', default="", help="""Sample based on event
+                              occurences instead of frequency. Format expected is
+                              "event_counts event_name". e.g: "10000 cpu-cyles". A few examples
+                              of event_name: cpu-cycles, cache-references, cache-misses,
+                              branch-instructions, branch-misses""")
+    record_group.add_argument('-f', '--sample_frequency', type=int, default=6000, help="""Sample
+                              frequency""")
+    record_group.add_argument('--compile_java_code', action='store_true',
+                              help="""On Android N and Android O, we need to compile Java code
+                                      into native instructions to profile Java code. Android O
+                                      also needs wrap.sh in the apk to use the native
+                                      instructions.""")
+    record_group.add_argument('-np', '--native_program', default="surfaceflinger", help="""Profile
+                              a native program. The program should be running on the device.
+                              Like -np surfaceflinger.""")
+    record_group.add_argument('-p', '--app', help="""Profile an Android app, given the package
+                              name. Like -p com.example.android.myapp.""")
+    record_group.add_argument('--pid', type=int, default=-1, help="""Profile a native program
+                              with given pid, the pid should exist on the device.""")
+    record_group.add_argument('--record_file', default='perf.data', help='Default is perf.data.')
+    record_group.add_argument('-sc', '--skip_collection', action='store_true', help="""Skip data
+                              collection""")
+    record_group.add_argument('-t', '--capture_duration', type=int, default=10, help="""Capture
+                              duration in seconds.""")
 
-    parser = argparse.ArgumentParser(description='Report samples in perf.data.')
-    parser.add_argument('--symfs', help="""Set the path to find binaries with symbols and debug
-                        info.""")
-    parser.add_argument('--kallsyms', help='Set the path to find kernel symbols.')
-    parser.add_argument('--record_file', default='perf.data', help='Default is perf.data.')
-    parser.add_argument('-t', '--capture_duration', type=int, default=10,
-                        help="""Capture duration in seconds.""")
-    parser.add_argument('-p', '--app', help="""Profile an Android app, given the package name.
-                        Like -p com.example.android.myapp.""")
-    parser.add_argument('-np', '--native_program', default="surfaceflinger",
-                        help="""Profile a native program. The program should be running on the
-                        device. Like -np surfaceflinger.""")
-    parser.add_argument('-c', '--color', default='hot', choices=['hot', 'dso', 'legacy'],
-                        help="""Color theme: hot=percentage of samples, dso=callsite DSO name,
-                        legacy=brendan style""")
-    parser.add_argument('-sc', '--skip_collection', default=False, help='Skip data collection',
-                        action="store_true")
-    parser.add_argument('-nc', '--skip_recompile', action='store_true', help="""When profiling
-                        an Android app, by default we recompile java bytecode to native
-                        instructions to profile java code. It takes some time. You can skip it
-                        if the code has been compiled or you don't need to profile java code.""")
-    parser.add_argument('-f', '--sample_frequency', type=int, default=6000, help='Sample frequency')
-    parser.add_argument(
-        '-du',
-        '--dwarf_unwinding',
-        help='Perform unwinding using dwarf instead of fp.',
-        default=False,
-        action='store_true')
-    parser.add_argument('-e', '--events', help="""Sample based on event occurences instead of
-                        frequency. Format expected is "event_counts event_name".
-                        e.g: "10000 cpu-cyles". A few examples of event_name: cpu-cycles,
-                        cache-references, cache-misses, branch-instructions, branch-misses""",
-                        default="")
-    parser.add_argument('--disable_adb_root', action='store_true', help="""Force adb to run in non
-                        root mode.""")
-    parser.add_argument('-o', '--report_path', default='report.html', help="Set report path.")
-    parser.add_argument('--embedded_flamegraph', action='store_true', help="""
-                        Generate embedded flamegraph.""")
-    parser.add_argument('--min_callchain_percentage', default=0.01, type=float, help="""
-                        Set min percentage of callchains shown in the report.
-                        It is used to limit nodes shown in the flamegraph. For example,
-                        when set to 0.01, only callchains taking >= 0.01%% of the event count of
-                        the owner thread are collected in the report.""")
-    parser.add_argument('--no_browser', action='store_true', help="Don't open report in browser.")
+    report_group = parser.add_argument_group('Report options')
+    report_group.add_argument('-c', '--color', default='hot', choices=['hot', 'dso', 'legacy'],
+                              help="""Color theme: hot=percentage of samples, dso=callsite DSO
+                                      name, legacy=brendan style""")
+    report_group.add_argument('--embedded_flamegraph', action='store_true', help="""Generate
+                              embedded flamegraph.""")
+    report_group.add_argument('--kallsyms', help='Set the path to find kernel symbols.')
+    report_group.add_argument('--min_callchain_percentage', default=0.01, type=float, help="""
+                              Set min percentage of callchains shown in the report.
+                              It is used to limit nodes shown in the flamegraph. For example,
+                              when set to 0.01, only callchains taking >= 0.01%% of the event
+                              count of the owner thread are collected in the report.""")
+    report_group.add_argument('--no_browser', action='store_true', help="""Don't open report
+                              in browser.""")
+    report_group.add_argument('-o', '--report_path', default='report.html', help="""Set report
+                              path.""")
+    report_group.add_argument('--one-flamegraph', action='store_true', help="""Generate one
+                              flamegraph instead of one for each thread.""")
+    report_group.add_argument('--symfs', help="""Set the path to find binaries with symbols and
+                              debug info.""")
+    report_group.add_argument('--title', help='Show a title in the report.')
+    report_group.add_argument('--show_art_frames', action='store_true',
+                              help='Show frames of internal methods in the ART Java interpreter.')
+
+    debug_group = parser.add_argument_group('Debug options')
+    debug_group.add_argument('--disable_adb_root', action='store_true', help="""Force adb to run
+                             in non root mode.""")
     args = parser.parse_args()
     process = Process("", 0)
 
     if not args.skip_collection:
-        process.name = args.app or args.native_program
+        if args.pid != -1:
+            process.pid = args.pid
+            args.native_program = ''
+
+        process.name = args.app or args.native_program or ('Process %d' % args.pid)
         log_info("Starting data collection stage for process '%s'." % process.name)
         if not collect_data(args):
             log_exit("Unable to collect data.")
-        result, output = AdbHelper().run_and_return_output(['shell', 'pidof', process.name])
-        if result:
-            try:
-                process.pid = int(output)
-            except:
-                process.pid = 0
+        if process.pid == 0:
+            result, output = AdbHelper().run_and_return_output(['shell', 'pidof', process.name])
+            if result:
+                try:
+                    process.pid = int(output)
+                except ValueError:
+                    process.pid = 0
         collect_machine_info(process)
     else:
         args.capture_duration = 0
 
-    parse_samples(process, args)
+    sample_filter_fn = None
+    if args.one_flamegraph:
+        def filter_fn(sample, _symbol, _callchain):
+            sample.pid = sample.tid = process.pid
+            return True
+        sample_filter_fn = filter_fn
+        if not args.title:
+            args.title = ''
+        args.title += '(One Flamegraph)'
+
+    parse_samples(process, args, sample_filter_fn)
     generate_threads_offsets(process)
     report_path = output_report(process, args)
     if not args.no_browser:

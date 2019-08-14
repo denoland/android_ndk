@@ -27,7 +27,7 @@ public:
   void StartMutationSequence();
   /// Print the current sequence of mutations.
   void PrintMutationSequence();
-  /// Indicate that the current sequence of mutations was successfull.
+  /// Indicate that the current sequence of mutations was successful.
   void RecordSuccessfulMutationSequence();
   /// Mutates data by invoking user-provided mutator.
   size_t Mutate_Custom(uint8_t *Data, size_t Size, size_t MaxSize);
@@ -52,10 +52,6 @@ public:
   size_t Mutate_AddWordFromManualDictionary(uint8_t *Data, size_t Size,
                                             size_t MaxSize);
 
-  /// Mutates data by adding a word from the temporary automatic dictionary.
-  size_t Mutate_AddWordFromTemporaryAutoDictionary(uint8_t *Data, size_t Size,
-                                                   size_t MaxSize);
-
   /// Mutates data by adding a word from the TORC.
   size_t Mutate_AddWordFromTORC(uint8_t *Data, size_t Size, size_t MaxSize);
 
@@ -74,6 +70,13 @@ public:
   /// Applies one of the configured mutations.
   /// Returns the new size of data which could be up to MaxSize.
   size_t Mutate(uint8_t *Data, size_t Size, size_t MaxSize);
+
+  /// Applies one of the configured mutations to the bytes of Data
+  /// that have '1' in Mask.
+  /// Mask.size() should be >= Size.
+  size_t MutateWithMask(uint8_t *Data, size_t Size, size_t MaxSize,
+                        const Vector<uint8_t> &Mask);
+
   /// Applies one of the default mutations. Provided as a service
   /// to mutation authors.
   size_t DefaultMutate(uint8_t *Data, size_t Size, size_t MaxSize);
@@ -84,16 +87,13 @@ public:
 
   void AddWordToManualDictionary(const Word &W);
 
-  void AddWordToAutoDictionary(DictionaryEntry DE);
-  void ClearAutoDictionary();
   void PrintRecommendedDictionary();
 
   void SetCorpus(const InputCorpus *Corpus) { this->Corpus = Corpus; }
 
   Random &GetRand() { return Rand; }
 
-private:
-
+ private:
   struct Mutator {
     size_t (MutationDispatcher::*Fn)(uint8_t *Data, size_t Size, size_t Max);
     const char *Name;
@@ -102,7 +102,7 @@ private:
   size_t AddWordFromDictionary(Dictionary &D, uint8_t *Data, size_t Size,
                                size_t MaxSize);
   size_t MutateImpl(uint8_t *Data, size_t Size, size_t MaxSize,
-                    const std::vector<Mutator> &Mutators);
+                    Vector<Mutator> &Mutators);
 
   size_t InsertPartOf(const uint8_t *From, size_t FromSize, uint8_t *To,
                       size_t ToSize, size_t MaxToSize);
@@ -131,24 +131,25 @@ private:
   // recreated periodically.
   Dictionary TempAutoDictionary;
   // Persistent dictionary modified by the fuzzer, consists of
-  // entries that led to successfull discoveries in the past mutations.
+  // entries that led to successful discoveries in the past mutations.
   Dictionary PersistentAutoDictionary;
 
-  std::vector<Mutator> CurrentMutatorSequence;
-  std::vector<DictionaryEntry *> CurrentDictionaryEntrySequence;
+  Vector<DictionaryEntry *> CurrentDictionaryEntrySequence;
 
   static const size_t kCmpDictionaryEntriesDequeSize = 16;
   DictionaryEntry CmpDictionaryEntriesDeque[kCmpDictionaryEntriesDequeSize];
   size_t CmpDictionaryEntriesDequeIdx = 0;
 
   const InputCorpus *Corpus = nullptr;
-  std::vector<uint8_t> MutateInPlaceHere;
+  Vector<uint8_t> MutateInPlaceHere;
+  Vector<uint8_t> MutateWithMaskTemp;
   // CustomCrossOver needs its own buffer as a custom implementation may call
   // LLVMFuzzerMutate, which in turn may resize MutateInPlaceHere.
-  std::vector<uint8_t> CustomCrossOverInPlaceHere;
+  Vector<uint8_t> CustomCrossOverInPlaceHere;
 
-  std::vector<Mutator> Mutators;
-  std::vector<Mutator> DefaultMutators;
+  Vector<Mutator> Mutators;
+  Vector<Mutator> DefaultMutators;
+  Vector<Mutator> CurrentMutatorSequence;
 };
 
 }  // namespace fuzzer

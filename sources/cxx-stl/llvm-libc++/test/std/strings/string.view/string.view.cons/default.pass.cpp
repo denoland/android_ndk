@@ -21,6 +21,8 @@ template<typename T>
 void test () {
 #if TEST_STD_VER > 11
     {
+    ASSERT_NOEXCEPT(T());
+
     constexpr T sv1;
     static_assert ( sv1.size() == 0, "" );
     static_assert ( sv1.empty(), "");
@@ -35,14 +37,12 @@ void test () {
 }
 
 int main () {
-    typedef std::string_view    string_view;
-    typedef std::u16string_view u16string_view;
-    typedef std::u32string_view u32string_view;
-    typedef std::wstring_view   wstring_view;
-
-    test<string_view> ();
-    test<u16string_view> ();
-    test<u32string_view> ();
-    test<wstring_view> ();
+    test<std::string_view> ();
+    test<std::u16string_view> ();
+#if defined(__cpp_lib_char8_t) && __cpp_lib_char8_t >= 201811L
+    test<std::u8string_view> ();
+#endif
+    test<std::u32string_view> ();
+    test<std::wstring_view> ();
 
 }

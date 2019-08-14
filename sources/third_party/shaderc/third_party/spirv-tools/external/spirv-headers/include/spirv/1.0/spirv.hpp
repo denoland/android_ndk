@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2017 The Khronos Group Inc.
+// Copyright (c) 2014-2018 The Khronos Group Inc.
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and/or associated documentation files (the "Materials"),
@@ -383,6 +383,8 @@ enum Decoration {
     DecorationPassthroughNV = 5250,
     DecorationViewportRelativeNV = 5252,
     DecorationSecondaryViewportRelativeNV = 5256,
+    DecorationHlslCounterBufferGOOGLE = 5634,
+    DecorationHlslSemanticGOOGLE = 5635,
     DecorationMax = 0x7fffffff,
 };
 
@@ -642,6 +644,7 @@ enum Capability {
     CapabilityAtomicStorageOps = 4445,
     CapabilitySampleMaskPostDepthCoverage = 4447,
     CapabilityImageGatherBiasLodAMD = 5009,
+    CapabilityFragmentMaskAMD = 5010,
     CapabilityStencilExportEXT = 5013,
     CapabilityImageReadWriteLodAMD = 5015,
     CapabilitySampleMaskOverrideCoverageNV = 5249,
@@ -651,6 +654,9 @@ enum Capability {
     CapabilityShaderViewportMaskNV = 5255,
     CapabilityShaderStereoViewNV = 5259,
     CapabilityPerViewAttributesNV = 5260,
+    CapabilitySubgroupShuffleINTEL = 5568,
+    CapabilitySubgroupBufferBlockIOINTEL = 5569,
+    CapabilitySubgroupImageBlockIOINTEL = 5570,
     CapabilityMax = 0x7fffffff,
 };
 
@@ -949,6 +955,7 @@ enum Op {
     OpAtomicFlagTestAndSet = 318,
     OpAtomicFlagClear = 319,
     OpImageSparseRead = 320,
+    OpDecorateId = 332,
     OpSubgroupBallotKHR = 4421,
     OpSubgroupFirstInvocationKHR = 4422,
     OpSubgroupAllKHR = 4428,
@@ -963,6 +970,18 @@ enum Op {
     OpGroupFMaxNonUniformAMD = 5005,
     OpGroupUMaxNonUniformAMD = 5006,
     OpGroupSMaxNonUniformAMD = 5007,
+    OpFragmentMaskFetchAMD = 5011,
+    OpFragmentFetchAMD = 5012,
+    OpSubgroupShuffleINTEL = 5571,
+    OpSubgroupShuffleDownINTEL = 5572,
+    OpSubgroupShuffleUpINTEL = 5573,
+    OpSubgroupShuffleXorINTEL = 5574,
+    OpSubgroupBlockReadINTEL = 5575,
+    OpSubgroupBlockWriteINTEL = 5576,
+    OpSubgroupImageBlockReadINTEL = 5577,
+    OpSubgroupImageBlockWriteINTEL = 5578,
+    OpDecorateStringGOOGLE = 5632,
+    OpMemberDecorateStringGOOGLE = 5633,
     OpMax = 0x7fffffff,
 };
 

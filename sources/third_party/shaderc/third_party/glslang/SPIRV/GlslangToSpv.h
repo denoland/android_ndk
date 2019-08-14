@@ -34,10 +34,11 @@
 
 #pragma once
 
-#if _MSC_VER >= 1900
+#if defined(_MSC_VER) && _MSC_VER >= 1900
     #pragma warning(disable : 4464) // relative include path contains '..'
 #endif
 
+#include "SpvTools.h"
 #include "../glslang/Include/intermediate.h"
 
 #include <string>
@@ -47,12 +48,8 @@
 
 namespace glslang {
 
-struct SpvOptions {
-    SpvOptions() : generateDebugInfo(false) { }
-    bool generateDebugInfo;
-};
-
 void GetSpirvVersion(std::string&);
+int GetSpirvGeneratorVersion();
 void GlslangToSpv(const glslang::TIntermediate& intermediate, std::vector<unsigned int>& spirv,
                   SpvOptions* options = nullptr);
 void GlslangToSpv(const glslang::TIntermediate& intermediate, std::vector<unsigned int>& spirv,

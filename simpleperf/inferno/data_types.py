@@ -15,14 +15,14 @@
 #
 
 
-class CallSite:
+class CallSite(object):
 
     def __init__(self, method, dso):
         self.method = method
         self.dso = dso
 
 
-class Thread:
+class Thread(object):
 
     def __init__(self, tid, pid):
         self.tid = tid
@@ -31,12 +31,12 @@ class Thread:
         self.samples = []
         self.flamegraph = FlameGraphCallSite("root", "", 0)
         self.num_samples = 0
-        self.event_count = 0
+        self.num_events = 0
 
     def add_callchain(self, callchain, symbol, sample):
         self.name = sample.thread_comm
         self.num_samples += 1
-        self.event_count += sample.period
+        self.num_events += sample.period
         chain = []
         for j in range(callchain.nr):
             entry = callchain.entries[callchain.nr - j - 1]
@@ -48,7 +48,7 @@ class Thread:
         self.flamegraph.add_callchain(chain, sample.period)
 
 
-class Process:
+class Process(object):
 
     def __init__(self, name, pid):
         self.name = name
@@ -56,7 +56,12 @@ class Process:
         self.threads = {}
         self.cmd = ""
         self.props = {}
+        # num_samples is the count of samples recorded in the profiling file.
         self.num_samples = 0
+        # num_events is the count of events contained in all samples. Each sample contains a
+        # count of events happened since last sample. If we use cpu-cycles event, the count
+        # shows how many cpu-cycles have happened during recording.
+        self.num_events = 0
 
     def get_thread(self, tid, pid):
         thread = self.threads.get(tid)
@@ -64,8 +69,15 @@ class Process:
             thread = self.threads[tid] = Thread(tid, pid)
         return thread
 
+    def add_sample(self, sample, symbol, callchain):
+        thread = self.get_thread(sample.tid, sample.pid)
+        thread.add_callchain(callchain, symbol, sample)
+        self.num_samples += 1
+        # sample.period is the count of events happened since last sample.
+        self.num_events += sample.period
 
-class FlameGraphCallSite:
+
+class FlameGraphCallSite(object):
 
     callsite_counter = 0
     @classmethod
@@ -73,42 +85,42 @@ class FlameGraphCallSite:
         cls.callsite_counter += 1
         return cls.callsite_counter
 
-    def __init__(self, method, dso, id):
+    def __init__(self, method, dso, callsite_id):
         # map from (dso, method) to FlameGraphCallSite. Used to speed up add_callchain().
         self.child_dict = {}
         self.children = []
         self.method = method
         self.dso = dso
-        self.event_count = 0
+        self.num_events = 0
         self.offset = 0  # Offset allows position nodes in different branches.
-        self.id = id
+        self.id = callsite_id
 
     def weight(self):
-        return float(self.event_count)
+        return float(self.num_events)
 
-    def add_callchain(self, chain, event_count):
-        self.event_count += event_count
+    def add_callchain(self, chain, num_events):
+        self.num_events += num_events
         current = self
         for callsite in chain:
-            current = current._get_child(callsite)
-            current.event_count += event_count
+            current = current.get_child(callsite)
+            current.num_events += num_events
 
-    def _get_child(self, callsite):
+    def get_child(self, callsite):
         key = (callsite.dso, callsite.method)
         child = self.child_dict.get(key)
         if child is None:
             child = self.child_dict[key] = FlameGraphCallSite(callsite.method, callsite.dso,
-                                               self._get_next_callsite_id())
+                                                              self._get_next_callsite_id())
         return child
 
-    def trim_callchain(self, min_event_count):
-        """ Remove call sites with event_count < min_event_count in the subtree.
+    def trim_callchain(self, min_num_events):
+        """ Remove call sites with num_events < min_num_events in the subtree.
             Remaining children are collected in a list.
         """
         for key in self.child_dict:
             child = self.child_dict[key]
-            if child.event_count >= min_event_count:
-                child.trim_callchain(min_event_count)
+            if child.num_events >= min_num_events:
+                child.trim_callchain(min_num_events)
                 self.children.append(child)
         # Relese child_dict since it will not be used.
         self.child_dict = None
@@ -121,4 +133,4 @@ class FlameGraphCallSite:
         child_offset = start_offset
         for child in self.children:
             child_offset = child.generate_offset(child_offset)
-        return self.offset + self.event_count
+        return self.offset + self.num_events

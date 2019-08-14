@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2017 The Khronos Group Inc.
+# Copyright (c) 2014-2018 The Khronos Group Inc.
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and/or associated documentation files (the "Materials"),
@@ -356,6 +356,8 @@ spv = {
         'PassthroughNV' : 5250,
         'ViewportRelativeNV' : 5252,
         'SecondaryViewportRelativeNV' : 5256,
+        'HlslCounterBufferGOOGLE' : 5634,
+        'HlslSemanticGOOGLE' : 5635,
     },
 
     'BuiltIn' : {
@@ -604,6 +606,7 @@ spv = {
         'AtomicStorageOps' : 4445,
         'SampleMaskPostDepthCoverage' : 4447,
         'ImageGatherBiasLodAMD' : 5009,
+        'FragmentMaskAMD' : 5010,
         'StencilExportEXT' : 5013,
         'ImageReadWriteLodAMD' : 5015,
         'SampleMaskOverrideCoverageNV' : 5249,
@@ -613,6 +616,9 @@ spv = {
         'ShaderViewportMaskNV' : 5255,
         'ShaderStereoViewNV' : 5259,
         'PerViewAttributesNV' : 5260,
+        'SubgroupShuffleINTEL' : 5568,
+        'SubgroupBufferBlockIOINTEL' : 5569,
+        'SubgroupImageBlockIOINTEL' : 5570,
     },
 
     'Op' : {
@@ -910,6 +916,7 @@ spv = {
         'OpAtomicFlagTestAndSet' : 318,
         'OpAtomicFlagClear' : 319,
         'OpImageSparseRead' : 320,
+        'OpDecorateId' : 332,
         'OpSubgroupBallotKHR' : 4421,
         'OpSubgroupFirstInvocationKHR' : 4422,
         'OpSubgroupAllKHR' : 4428,
@@ -924,6 +931,18 @@ spv = {
         'OpGroupFMaxNonUniformAMD' : 5005,
         'OpGroupUMaxNonUniformAMD' : 5006,
         'OpGroupSMaxNonUniformAMD' : 5007,
+        'OpFragmentMaskFetchAMD' : 5011,
+        'OpFragmentFetchAMD' : 5012,
+        'OpSubgroupShuffleINTEL' : 5571,
+        'OpSubgroupShuffleDownINTEL' : 5572,
+        'OpSubgroupShuffleUpINTEL' : 5573,
+        'OpSubgroupShuffleXorINTEL' : 5574,
+        'OpSubgroupBlockReadINTEL' : 5575,
+        'OpSubgroupBlockWriteINTEL' : 5576,
+        'OpSubgroupImageBlockReadINTEL' : 5577,
+        'OpSubgroupImageBlockWriteINTEL' : 5578,
+        'OpDecorateStringGOOGLE' : 5632,
+        'OpMemberDecorateStringGOOGLE' : 5633,
     },
 
 }

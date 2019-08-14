@@ -85,10 +85,10 @@ register_var_option "--asflags=<options>" EXTRA_ASFLAGS "Add extra assembler fla
 EXTRA_ARFLAGS=
 register_var_option "--arflags=<options>" EXTRA_ARFLAGS "Add extra archiver flags"
 
-CCACHE=
-register_var_option "--ccache=<prefix>" CCACHE "Use ccache compiler driver"
+EXTRA_WINDRES_FLAGS=
+register_var_option "--windres-flags=<options>" EXTRA_WINDRES_FLAGS "Add extra windres flags"
 
-PROGRAMS="cc gcc c++ g++ cpp as ld ar ranlib strip strings nm objdump dlltool"
+PROGRAMS="cc gcc c++ g++ cpp as ld ar ranlib strip strings nm objdump dlltool windres"
 register_var_option "--programs=<list>" PROGRAMS "List of programs to generate wrapper for"
 
 extract_parameters "$@"
@@ -158,11 +158,8 @@ gen_wrapper_program ()
       ar) FLAGS=$FLAGS" $EXTRA_ARFLAGS";;
       as) FLAGS=$FLAGS" $EXTRA_ASFLAGS";;
       ld|ld.bfd|ld.gold) FLAGS=$FLAGS" $EXTRA_LDFLAGS";;
+      windres) FLAGS=$FLAGS" $EXTRA_WINDRES_FLAGS";;
     esac
-
-    if [ -n "$CCACHE" ]; then
-        DST_PREFIX=$CCACHE" "$DST_PREFIX
-    fi
 
     cat > "$DST_FILE" << EOF
 #!/bin/sh

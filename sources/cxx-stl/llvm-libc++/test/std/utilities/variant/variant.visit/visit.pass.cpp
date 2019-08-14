@@ -10,12 +10,13 @@
 
 // UNSUPPORTED: c++98, c++03, c++11, c++14
 
-// XFAIL: with_system_cxx_lib=macosx10.12
-// XFAIL: with_system_cxx_lib=macosx10.11
-// XFAIL: with_system_cxx_lib=macosx10.10
-// XFAIL: with_system_cxx_lib=macosx10.9
-// XFAIL: with_system_cxx_lib=macosx10.7
-// XFAIL: with_system_cxx_lib=macosx10.8
+// XFAIL: availability=macosx10.13
+// XFAIL: availability=macosx10.12
+// XFAIL: availability=macosx10.11
+// XFAIL: availability=macosx10.10
+// XFAIL: availability=macosx10.9
+// XFAIL: availability=macosx10.8
+// XFAIL: availability=macosx10.7
 
 // <variant>
 // template <class Visitor, class... Variants>
@@ -300,7 +301,7 @@ void test_exceptions() {
 #endif
 }
 
-// See http://llvm.org/PR31916
+// See https://bugs.llvm.org/show_bug.cgi?id=31916
 void test_caller_accepts_nonconst() {
   struct A {};
   struct Visitor {

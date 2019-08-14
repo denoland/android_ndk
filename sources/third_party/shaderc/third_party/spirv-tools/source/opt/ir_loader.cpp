@@ -12,17 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ir_loader.h"
+#include "source/opt/ir_loader.h"
 
-#include "log.h"
-#include "reflect.h"
+#include <utility>
+
+#include "source/opt/log.h"
+#include "source/opt/reflect.h"
+#include "source/util/make_unique.h"
 
 namespace spvtools {
-namespace ir {
+namespace opt {
 
-IrLoader::IrLoader(const MessageConsumer& consumer, Module* module)
+IrLoader::IrLoader(const MessageConsumer& consumer, Module* m)
     : consumer_(consumer),
-      module_(module),
+      module_(m),
       source_("<instruction>"),
       inst_index_(0) {}
 
@@ -30,12 +33,12 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
   ++inst_index_;
   const auto opcode = static_cast<SpvOp>(inst->opcode);
   if (IsDebugLineInst(opcode)) {
-    dbg_line_info_.push_back(Instruction(*inst));
+    dbg_line_info_.push_back(Instruction(module()->context(), *inst));
     return true;
   }
 
   std::unique_ptr<Instruction> spv_inst(
-      new Instruction(*inst, std::move(dbg_line_info_)));
+      new Instruction(module()->context(), *inst, std::move(dbg_line_info_)));
   dbg_line_info_.clear();
 
   const char* src = source_.c_str();
@@ -48,7 +51,7 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
       Error(consumer_, src, loc, "function inside function");
       return false;
     }
-    function_.reset(new Function(std::move(spv_inst)));
+    function_ = MakeUnique<Function>(std::move(spv_inst));
   } else if (opcode == SpvOpFunctionEnd) {
     if (function_ == nullptr) {
       Error(consumer_, src, loc,
@@ -71,7 +74,7 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
       Error(consumer_, src, loc, "OpLabel inside basic block");
       return false;
     }
-    block_.reset(new BasicBlock(std::move(spv_inst)));
+    block_ = MakeUnique<BasicBlock>(std::move(spv_inst));
   } else if (IsTerminatorInst(opcode)) {
     if (function_ == nullptr) {
       Error(consumer_, src, loc, "terminator instruction outside function");
@@ -99,8 +102,12 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
         module_->AddEntryPoint(std::move(spv_inst));
       } else if (opcode == SpvOpExecutionMode) {
         module_->AddExecutionMode(std::move(spv_inst));
-      } else if (IsDebugInst(opcode)) {
-        module_->AddDebugInst(std::move(spv_inst));
+      } else if (IsDebug1Inst(opcode)) {
+        module_->AddDebug1Inst(std::move(spv_inst));
+      } else if (IsDebug2Inst(opcode)) {
+        module_->AddDebug2Inst(std::move(spv_inst));
+      } else if (IsDebug3Inst(opcode)) {
+        module_->AddDebug3Inst(std::move(spv_inst));
       } else if (IsAnnotationInst(opcode)) {
         module_->AddAnnotationInst(std::move(spv_inst));
       } else if (IsTypeInst(opcode)) {
@@ -110,7 +117,7 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
         module_->AddGlobalValue(std::move(spv_inst));
       } else {
         SPIRV_UNIMPLEMENTED(consumer_,
-                            "unhandled inst type outside function defintion");
+                            "unhandled inst type outside function definition");
       }
     } else {
       if (block_ == nullptr) {  // Inside function but outside blocks
@@ -149,9 +156,8 @@ void IrLoader::EndModule() {
   }
   for (auto& function : *module_) {
     for (auto& bb : function) bb.SetParent(&function);
-    function.SetParent(module_);
   }
 }
 
-}  // namespace ir
+}  // namespace opt
 }  // namespace spvtools

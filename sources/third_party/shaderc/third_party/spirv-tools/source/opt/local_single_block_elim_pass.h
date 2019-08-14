@@ -14,21 +14,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_
-#define LIBSPIRV_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_
-
+#ifndef SOURCE_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_
+#define SOURCE_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_
 
 #include <algorithm>
 #include <map>
 #include <queue>
-#include <utility>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
-#include "basic_block.h"
-#include "def_use_manager.h"
-#include "module.h"
-#include "mem_pass.h"
+#include "source/opt/basic_block.h"
+#include "source/opt/def_use_manager.h"
+#include "source/opt/mem_pass.h"
+#include "source/opt/module.h"
 
 namespace spvtools {
 namespace opt {
@@ -37,12 +37,20 @@ namespace opt {
 class LocalSingleBlockLoadStoreElimPass : public MemPass {
  public:
   LocalSingleBlockLoadStoreElimPass();
+
   const char* name() const override { return "eliminate-local-single-block"; }
-  Status Process(ir::Module*) override;
+  Status Process() override;
+
+  IRContext::Analysis GetPreservedAnalyses() override {
+    return IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping;
+  }
 
  private:
   // Return true if all uses of |varId| are only through supported reference
-  // operations ie. loads and store. Also cache in supported_ref_ptrs_;
+  // operations ie. loads and store. Also cache in supported_ref_ptrs_.
+  // TODO(dnovillo): This function is replicated in other passes and it's
+  // slightly different in every pass. Is it possible to make one common
+  // implementation?
   bool HasOnlySupportedRefs(uint32_t varId);
 
   // On all entry point functions, within each basic block, eliminate
@@ -51,17 +59,7 @@ class LocalSingleBlockLoadStoreElimPass : public MemPass {
   // load id with previous id and delete load. Finally, check if
   // remaining stores are useless, and delete store and variable
   // where possible. Assumes logical addressing.
-  bool LocalSingleBlockLoadStoreElim(ir::Function* func);
-
-  // Save next available id into |module|.
-  inline void FinalizeNextId(ir::Module* module) {
-    module->SetIdBound(next_id_);
-  }
-
-  // Return next available id and calculate next.
-  inline uint32_t TakeNextId() {
-    return next_id_++;
-  }
+  bool LocalSingleBlockLoadStoreElim(Function* func);
 
   // Initialize extensions whitelist
   void InitExtensions();
@@ -69,7 +67,7 @@ class LocalSingleBlockLoadStoreElimPass : public MemPass {
   // Return true if all extensions in this module are supported by this pass.
   bool AllExtensionsSupported() const;
 
-  void Initialize(ir::Module* module);
+  void Initialize();
   Pass::Status ProcessImpl();
 
   // Map from function scope variable to a store of that variable in the
@@ -77,14 +75,14 @@ class LocalSingleBlockLoadStoreElimPass : public MemPass {
   // at the start of each block and incrementally updated as the block
   // is scanned. The stores are candidates for elimination. The map is
   // conservatively cleared when a function call is encountered.
-  std::unordered_map<uint32_t, ir::Instruction*> var2store_;
+  std::unordered_map<uint32_t, Instruction*> var2store_;
 
   // Map from function scope variable to a load of that variable in the
   // current block whose value is currently valid. This map is cleared
   // at the start of each block and incrementally updated as the block
   // is scanned. The stores are candidates for elimination. The map is
   // conservatively cleared when a function call is encountered.
-  std::unordered_map<uint32_t, ir::Instruction*> var2load_;
+  std::unordered_map<uint32_t, Instruction*> var2load_;
 
   // Set of variables whose most recent store in the current block cannot be
   // deleted, for example, if there is a load of the variable which is
@@ -99,13 +97,9 @@ class LocalSingleBlockLoadStoreElimPass : public MemPass {
   // Variables that are only referenced by supported operations for this
   // pass ie. loads and stores.
   std::unordered_set<uint32_t> supported_ref_ptrs_;
-
-  // Next unused ID
-  uint32_t next_id_;
 };
 
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_
-
+#endif  // SOURCE_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_

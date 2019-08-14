@@ -294,7 +294,7 @@ builder_sources ()
         fi
         builder_log "${_BUILD_PREFIX}$text: $src"
         builder_command mkdir -p $(dirname "$obj")
-        builder_command $NDK_CCACHE $cc -c -o "$obj" "$srcfull" $cflags
+        builder_command $cc -c -o "$obj" "$srcfull" $cflags
         fail_panic "Could not compile ${_BUILD_PREFIX}$src"
         _BUILD_OBJECTS=$_BUILD_OBJECTS" $obj"
     done
@@ -591,10 +591,6 @@ builder_begin_android ()
         esac
         SCRATCH_FLAGS="-target $LLVM_TRIPLE $FLAGS"
         builder_ldflags "$SCRATCH_FLAGS"
-        if [ "$ABI" == "mips64" ]; then
-            # https://github.com/android-ndk/ndk/issues/399
-            SCRATCH_FLAGS="$SCRATCH_FLAGS -fintegrated-as"
-        fi
         builder_cflags  "$SCRATCH_FLAGS"
         builder_cxxflags "$SCRATCH_FLAGS"
         if [ ! -z $GCC_TOOLCHAIN ]; then
@@ -638,7 +634,7 @@ builder_begin_android ()
             SCRATCH_FLAGS="-march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=softfp"
             builder_cflags "$SCRATCH_FLAGS"
             builder_cxxflags "$SCRATCH_FLAGS"
-            builder_ldflags "-march=armv7-a -Wl,--fix-cortex-a8"
+            builder_ldflags "-march=armv7-a"
             ;;
         mips)
             SCRATCH_FLAGS="-mips32"

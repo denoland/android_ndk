@@ -16,12 +16,14 @@
 //     ...
 // };
 
+#include <limits>
 #include <memory>
 #include <new>
 #include <type_traits>
 #include <cassert>
 
 #include "test_macros.h"
+#include "incomplete_type_helper.h"
 
 template <class T>
 struct A
@@ -50,6 +52,12 @@ int main()
     {
         const B<int> b = {};
         assert(std::allocator_traits<B<int> >::max_size(b) == 100);
+    }
+    {
+        typedef IncompleteHolder* VT;
+        typedef B<VT> Alloc;
+        Alloc a;
+        assert(std::allocator_traits<Alloc >::max_size(a) == 100);
     }
 #if TEST_STD_VER >= 11
     {
