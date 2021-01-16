@@ -1,4 +1,43 @@
 
+build 6859468
+Add --csv option in report cmd.
+Add --sort option in stat cmd.
+Add --tp-filter option to filter tracepoint events in record cmd.
+Add --addr-filter to filter etm recording in record cmd.
+Fix finding symbols from kernel modules.
+Better ART JIT support (dump jit symfiles to a single file instead of multiple
+temporary files).
+Support generic JIT symbols from symbol map file. See doc/jit_symbols.md.
+
+
+ndk r22
+build 6401870
+Support multiple record files in pprof_proto_generator.py.
+In stat cmd, add --per-thread and --per-core options to report per thread and per core.
+In record cmd, add --exclude-perf option to exclude simpleperf samples in system wide
+recording.
+In inject cmd, support decoding coresight etm data to branch list data in protobuf format.
+Fix and add doc for app_api, which can control simpleperf recording in app code.
+Support pmu event types:
+  list supported pmu events via `simpleperf list pmu`.
+  record/stat pmu events via options like -e armv8_pmuv3/cpu_cycles/.
+Switch to llvm-objdump.
+Add doc for line and disassembly annotation in README.md.
+Add doc for profiling profileable release app on Android >= Q.
+Remove dependency on libncurses.
+
+ndk r21
+In record cmd, support recording coresight etm data (via -e cs-etm option).
+Add inject cmd to decode coresight etm data.
+Add doc for downloading unstripped libraries on device.
+Fix scripts for using unstripped libraries without build ids for reporting.
+Switch to llvm-symbolizer.
+Add app_api and api_profiler.py, which can control simpleperf recording in app code.
+Fix pprof_proto_generator.py to support line and disassembly annotation via pprof.
+
+ndk r20
+Skipped.
+
 ndk r19
 Fix report-sample command on Windows.
 

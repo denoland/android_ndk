@@ -84,10 +84,13 @@ endef
 
 cmd-strip = $(PRIVATE_STRIP) $(PRIVATE_STRIP_MODE) $(call host-path,$1)
 
-# The command objcopy --add-gnu-debuglink= will be needed for Valgrind
-cmd-add-gnu-debuglink = $(PRIVATE_OBJCOPY) --add-gnu-debuglink=$(strip $(call host-path,$2)) $(call host-path,$1)
-
-TARGET_LIBGCC = -lgcc -Wl,--exclude-libs,libgcc.a
+# arm32 currently uses a linker script in place of libgcc to ensure that
+# libunwind is linked in the correct order. --exclude-libs does not propagate to
+# the contents of the linker script and can't be specified within the linker
+# script. Hide both regardless of architecture to future-proof us in case we
+# move other architectures to a linker script (which we may want to do so we
+# automatically link libclangrt on other architectures).
+TARGET_LIBGCC = -lgcc -Wl,--exclude-libs,libgcc.a -Wl,--exclude-libs,libgcc_real.a
 TARGET_LIBATOMIC = -latomic -Wl,--exclude-libs,libatomic.a
 TARGET_LDLIBS := -lc -lm
 
@@ -128,8 +131,7 @@ GLOBAL_CFLAGS += \
     -Wno-invalid-command-line-argument \
     -Wno-unused-command-line-argument \
 
-# TODO: Remove when https://github.com/android-ndk/ndk/issues/884 is fixed.
-GLOBAL_CFLAGS += -fno-addrsig
+GLOBAL_CFLAGS += -D_FORTIFY_SOURCE=2
 
 GLOBAL_LDFLAGS = \
     -target $(LLVM_TRIPLE)$(TARGET_PLATFORM_LEVEL) \
@@ -159,15 +161,13 @@ endif
 TARGET_ASM      = $(TOOLCHAIN_ROOT)/bin/yasm
 TARGET_ASMFLAGS =
 
-TARGET_LD       = $(TOOLCHAIN_PREFIX)ld
+TARGET_LD       = $(TOOLCHAIN_ROOT)/bin/ld
 TARGET_LDFLAGS :=
 
-TARGET_AR = $(TOOLCHAIN_PREFIX)ar
+TARGET_AR = $(LLVM_TOOLCHAIN_PREFIX)llvm-ar$(HOST_EXEEXT)
 TARGET_ARFLAGS := crsD
 
-TARGET_STRIP    = $(TOOLCHAIN_PREFIX)strip
-
-TARGET_OBJCOPY  = $(TOOLCHAIN_PREFIX)objcopy
+TARGET_STRIP = $(LLVM_TOOLCHAIN_PREFIX)llvm-strip$(HOST_EXEEXT)
 
 TARGET_OBJ_EXTENSION := .o
 TARGET_LIB_EXTENSION := .a

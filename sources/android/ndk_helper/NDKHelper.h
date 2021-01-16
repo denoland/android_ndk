@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef _NDKSUPPORT_H
-#define _NDKSUPPORT_H
+#pragma once
 
 /******************************************************************
  * NDK support helpers
@@ -36,4 +35,3 @@
 #include "gestureDetector.h"    //Tap/Doubletap/Pinch detector
 #include "perfMonitor.h"        //FPS counter
 #include "interpolator.h"       //Interpolator
-#endif

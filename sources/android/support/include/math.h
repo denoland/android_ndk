@@ -26,8 +26,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef NDK_ANDROID_SUPPORT_MATH_H
-#define NDK_ANDROID_SUPPORT_MATH_H
+#pragma once
 
 #include_next <math.h>
 
@@ -80,5 +79,3 @@ long long int llrintl(long double);
 #endif
 
 __END_DECLS
-
-#endif

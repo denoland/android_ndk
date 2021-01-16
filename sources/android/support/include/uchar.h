@@ -26,8 +26,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef NDK_ANDROID_SUPPORT_UCHAR_H
-#define NDK_ANDROID_SUPPORT_UCHAR_H
+#pragma once
 
 #include_next <uchar.h>
 
@@ -41,5 +40,3 @@ size_t mbrtoc32(char32_t* __restrict, const char* __restrict, size_t, mbstate_t*
 #endif
 
 __END_DECLS
-
-#endif

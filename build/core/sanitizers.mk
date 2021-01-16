@@ -14,14 +14,6 @@
 # limitations under the License.
 #
 
-NDK_TOOLCHAIN_LIB_SUFFIX := 64
-ifeq ($(HOST_ARCH64),x86)
-    NDK_TOOLCHAIN_LIB_SUFFIX :=
-endif
-
-NDK_TOOLCHAIN_RESOURCE_DIR := $(shell $(TARGET_CXX) -print-resource-dir)
-NDK_TOOLCHAIN_LIB_DIR := $(strip $(NDK_TOOLCHAIN_RESOURCE_DIR))/lib/linux
-
 NDK_APP_ASAN := $(NDK_APP_DST_DIR)/$(TARGET_ASAN_BASENAME)
 NDK_APP_UBSAN := $(NDK_APP_DST_DIR)/$(TARGET_UBSAN_BASENAME)
 
@@ -33,18 +25,19 @@ NDK_SANITIZERS := $(strip \
     $(NDK_APP_LDFLAGS) $(NDK_MODULES_LDFLAGS)))
 
 NDK_SANITIZER_NAME := UBSAN
-NDK_SANITIZER_FSANITIZE_ARGS := undefined
+NDK_SANITIZER_FSANITIZE_ARGS := fuzzer undefined
+NDK_SANITIZER_EXCLUDE_FSANITIZE_ARGS := address
 include $(BUILD_SYSTEM)/install_sanitizer.mk
 
 NDK_SANITIZER_NAME := ASAN
 NDK_SANITIZER_FSANITIZE_ARGS := address
+NDK_SANITIZER_EXCLUDE_FSANITIZE_ARGS :=
 include $(BUILD_SYSTEM)/install_sanitizer.mk
 
 # If the user has not specified their own wrap.sh and is using ASAN, install a
 # default ASAN wrap.sh for them.
 ifneq (,$(filter address,$(NDK_SANITIZERS)))
     ifeq ($(NDK_NO_USER_WRAP_SH),true)
-        NDK_APP_WRAP_SH_$(TARGET_ARCH_ABI) := \
-            $(NDK_ROOT)/wrap.sh/asan.$(TARGET_ARCH_ABI).sh
+        NDK_APP_WRAP_SH_$(TARGET_ARCH_ABI) := $(NDK_ROOT)/wrap.sh/asan.sh
     endif
 endif

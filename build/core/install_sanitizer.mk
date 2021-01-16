@@ -24,6 +24,11 @@
 #       is also used as the name printed to the terminal for the build step.
 #   NDK_SANITIZER_FSANITIZE_ARGS:
 #       -fsanitize= arguments that require this runtime library.
+#   NDK_SANITIZER_EXCLUDE_FSANITIZE_ARGS:
+#       -fsanitize= arguments that exclude this runtime library. For example,
+#       the UBSan runtime is included in the ASan runtime, so if we have both
+#       the address and undefined sanitizers enabled, we only need to install
+#       the ASan runtime.
 #
 # Example usage:
 #   NDK_SANITIZER_NAME := UBSAN
@@ -31,6 +36,7 @@
 #   include $(BUILD_SYSTEM)/install_sanitizer.mk
 
 ifneq (,$(filter $(NDK_SANITIZER_FSANITIZE_ARGS),$(NDK_SANITIZERS)))
+ifeq (,$(filter $(NDK_SANITIZER_EXCLUDE_FSANITIZE_ARGS),$(NDK_SANITIZERS)))
 installed_modules: $(NDK_APP_$(NDK_SANITIZER_NAME))
 
 NDK_SANITIZER_TARGET := $(NDK_APP_$(NDK_SANITIZER_NAME))
@@ -46,4 +52,5 @@ $(call generate-file-dir,$(NDK_APP_$(NDK_SANITIZER_NAME)))
 $(NDK_SANITIZER_TARGET): clean-installed-binaries
 	$(call host-echo-build-step,$(PRIVATE_ABI),$(PRIVATE_NAME) "$(call pretty-dir,$(PRIVATE_DST))")
 	$(hide) $(call host-install,$(PRIVATE_SRC),$(PRIVATE_DST))
+endif
 endif

@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SHADER_H_
-#define SHADER_H_
+#pragma once
 
 #include <jni.h>
 
@@ -121,4 +120,3 @@ bool ValidateProgram( const GLuint prog );
 } //namespace shader
 
 } //namespace ndkHelper
-#endif /* SHADER_H_ */

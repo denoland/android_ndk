@@ -22,12 +22,18 @@ libcxx_export_includes := $(libcxx_includes)
 libcxx_sources := \
     algorithm.cpp \
     any.cpp \
+    atomic.cpp \
+    barrier.cpp \
     bind.cpp \
     charconv.cpp \
     chrono.cpp \
     condition_variable.cpp \
+    condition_variable_destructor.cpp \
     debug.cpp \
     exception.cpp \
+    filesystem/directory_iterator.cpp \
+    filesystem/int128_builtins.cpp \
+    filesystem/operations.cpp \
     functional.cpp \
     future.cpp \
     hash.cpp \
@@ -36,6 +42,7 @@ libcxx_sources := \
     locale.cpp \
     memory.cpp \
     mutex.cpp \
+    mutex_destructor.cpp \
     new.cpp \
     optional.cpp \
     random.cpp \
@@ -158,6 +165,7 @@ LOCAL_EXPORT_C_INCLUDES := $(libcxx_export_includes)
 LOCAL_EXPORT_CPPFLAGS := $(libcxx_export_cxxflags)
 LOCAL_EXPORT_LDFLAGS := $(libcxx_export_ldflags)
 LOCAL_STATIC_LIBRARIES := libc++abi
+LOCAL_ARM_NEON := false
 
 ifeq ($(NDK_PLATFORM_NEEDS_ANDROID_SUPPORT),true)
     LOCAL_STATIC_LIBRARIES += android_support
@@ -190,6 +198,7 @@ LOCAL_LDFLAGS := $(libcxx_ldflags)
 # driver always links for C++ but we don't use.
 # See https://github.com/android-ndk/ndk/issues/105
 LOCAL_LDFLAGS += -Wl,--as-needed
+LOCAL_ARM_NEON := false
 
 # We use the LLVM unwinder for all the 32-bit ARM targets.
 ifneq (,$(filter armeabi%,$(TARGET_ARCH_ABI)))
@@ -203,8 +212,8 @@ ifeq ($(TARGET_ARCH_ABI),armeabi)
 endif
 include $(BUILD_SHARED_LIBRARY)
 
-$(call import-add-path, $(LOCAL_PATH)/../..)
-$(call import-module, external/libcxxabi)
+$(call import-add-path, $(LOCAL_PATH)/../../..)
+$(call import-module, toolchain/llvm-project/libcxxabi)
 
 endif # LIBCXX_FORCE_REBUILD == true
 

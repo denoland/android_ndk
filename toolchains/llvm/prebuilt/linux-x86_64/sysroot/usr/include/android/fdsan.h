@@ -192,7 +192,8 @@ enum android_fdsan_error_level android_fdsan_get_error_level() __INTRODUCED_IN(2
  * Set the error level and return the previous state.
  *
  * Error checking is automatically disabled in the child of a fork, to maintain
- * compatibility with code that forks, blindly closes FDs, and then execs.
+ * compatibility with code that forks, closes all file descriptors, and then
+ * execs.
  *
  * In cases such as the zygote, where the child has no intention of calling
  * exec, call this function to reenable fdsan checks.
@@ -204,5 +205,13 @@ enum android_fdsan_error_level android_fdsan_get_error_level() __INTRODUCED_IN(2
 enum android_fdsan_error_level android_fdsan_set_error_level(enum android_fdsan_error_level new_level) __INTRODUCED_IN(29) __attribute__((__weak__));
 #endif /* __ANDROID_API__ >= 29 */
 
+
+/*
+ * Set the error level to the global setting if available, or a default value.
+ */
+
+#if __ANDROID_API__ >= 30
+enum android_fdsan_error_level android_fdsan_set_error_level_from_property(enum android_fdsan_error_level default_level) __INTRODUCED_IN(30) __attribute__((__weak__));
+#endif /* __ANDROID_API__ >= 30 */
 
 __END_DECLS

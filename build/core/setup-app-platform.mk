@@ -101,14 +101,6 @@ ifneq ($(call gt,$(APP_PLATFORM_LEVEL),$(NDK_MAX_PLATFORM_LEVEL)),)
     $(call __ndk_error,Aborting.)
 endif
 
-# We pull low values up, fill in gaps, replace platform code names, replace
-# "latest", and error out on high values. Anything left is either a gap or
-# codename we missed, or user error.
-ifneq (,$(strip $(filter-out $(NDK_ALL_PLATFORMS),$(APP_PLATFORM))))
-    $(call __ndk_info,APP_PLATFORM set to unknown platform: $(APP_PLATFORM).)
-    $(call __ndk_error,Aborting)
-endif
-
 ifneq (null,$(APP_PROJECT_PATH))
 
 # Check platform level (after adjustment) against android:minSdkVersion in AndroidManifest.xml

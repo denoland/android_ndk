@@ -25,8 +25,8 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#ifndef ANDROID_SUPPORT_UNIQUE_PTR_H
-#define ANDROID_SUPPORT_UNIQUE_PTR_H
+
+#pragma once
 
 namespace {
 
@@ -135,5 +135,3 @@ class UniquePtr<T[], D> {
 };
 
 } // anonymous namespace
-
-#endif  /* ANDROID_SUPPORT_UNIQUE_PTR_H */

@@ -17,7 +17,7 @@
 # to setup the target toolchain for a given platform/abi combination.
 #
 
-$(call assert-defined,TARGET_PLATFORM TARGET_ARCH TARGET_ARCH_ABI)
+$(call assert-defined,TARGET_PLATFORM_LEVEL TARGET_ARCH TARGET_ARCH_ABI)
 $(call assert-defined,NDK_APPS NDK_APP_STL)
 
 # Check that we have a toolchain that supports the current ABI.
@@ -48,13 +48,7 @@ ifndef NDK_TOOLCHAIN
     # We default to using Clang, which is the last item in the list.
     TARGET_TOOLCHAIN := $(lastword $(TARGET_TOOLCHAIN_LIST))
 
-    ifeq ($(NDK_TOOLCHAIN_VERSION),4.9)
-        $(call __ndk_error,Invalid NDK_TOOLCHAIN_VERSION value: \
-            $(NDK_TOOLCHAIN_VERSION). GCC is no longer supported. See \
-            https://android.googlesource.com/platform/ndk/+/master/docs/ClangMigration.md.)
-    else
-        $(call ndk_log,Using target toolchain '$(TARGET_TOOLCHAIN)' for '$(TARGET_ARCH_ABI)' ABI)
-    endif
+    $(call ndk_log,Using target toolchain '$(TARGET_TOOLCHAIN)' for '$(TARGET_ARCH_ABI)' ABI)
 else # NDK_TOOLCHAIN is not empty
     TARGET_TOOLCHAIN_LIST := $(strip $(filter $(NDK_TOOLCHAIN),$(NDK_ABI.$(TARGET_ARCH_ABI).toolchains)))
     ifndef TARGET_TOOLCHAIN_LIST
@@ -66,8 +60,6 @@ else # NDK_TOOLCHAIN is not empty
     endif
     TARGET_TOOLCHAIN := $(NDK_TOOLCHAIN)
 endif # NDK_TOOLCHAIN is not empty
-
-TARGET_ABI := $(TARGET_PLATFORM)-$(TARGET_ARCH_ABI)
 
 TARGET_PREBUILT_SHARED_LIBRARIES :=
 
@@ -116,6 +108,9 @@ SYSROOT_LINK_ARG := -L $(SYSROOT_API_LIB_DIR) -L $(SYSROOT_LIB_DIR)
 SYSROOT_ARCH_INC_ARG := \
     -isystem $(SYSROOT_INC)/usr/include/$(TOOLCHAIN_NAME)
 
+NDK_TOOLCHAIN_RESOURCE_DIR := $(shell $(TARGET_CXX) -print-resource-dir)
+NDK_TOOLCHAIN_LIB_DIR := $(strip $(NDK_TOOLCHAIN_RESOURCE_DIR))/lib/linux
+
 clean-installed-binaries::
 
 include $(BUILD_SYSTEM)/gdb.mk
@@ -137,6 +132,7 @@ ifeq (,$(DUMP_VAR))
     # Comes after NDK_APP_BUILD_SCRIPT because we need to know if *any* module
     # has -fsanitize in its ldflags.
     include $(BUILD_SYSTEM)/sanitizers.mk
+    include $(BUILD_SYSTEM)/openmp.mk
 
     ifneq ($(NDK_APP_WRAP_SH_$(TARGET_ARCH_ABI)),)
         include $(BUILD_SYSTEM)/install_wrap_sh.mk

@@ -27,6 +27,7 @@
 #define IFNAMSIZ 16
 #endif
 #define IFALIASZ 256
+#define ALTIFNAMSIZ 128
 #include <linux/hdlc/ioctl.h>
 #if __UAPI_DEF_IF_NET_DEVICE_FLAGS_LOWER_UP_DORMANT_ECHO != 0 || __UAPI_DEF_IF_NET_DEVICE_FLAGS != 0
 enum net_device_flags {
@@ -113,6 +114,7 @@ enum {
 enum {
   IF_LINK_MODE_DEFAULT,
   IF_LINK_MODE_DORMANT,
+  IF_LINK_MODE_TESTING,
 };
 #if __UAPI_DEF_IF_IFMAP
 struct ifmap {
@@ -133,6 +135,7 @@ struct if_settings {
     fr_proto __user * fr;
     fr_proto_pvc __user * fr_pvc;
     fr_proto_pvc_info __user * fr_pvc_info;
+    x25_hdlc_proto __user * x25;
     sync_serial_settings __user * sync;
     te1_settings __user * te1;
   } ifs_ifsu;

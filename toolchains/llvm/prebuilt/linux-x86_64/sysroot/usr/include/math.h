@@ -10,12 +10,10 @@
  */
 
 /*
- * from: @(#)fdlibm.h 5.1 93/09/24
- * $FreeBSD$
+ * Originally based on fdlibm.h 5.1 via FreeBSD.
  */
 
-#ifndef _MATH_H_
-#define _MATH_H_
+#pragma once
 
 #include <sys/cdefs.h>
 #include <limits.h>
@@ -221,7 +219,7 @@ float lgammaf(float __x);
 long double lgammal(long double __x) __RENAME_LDBL(lgamma, 3, 21);
 
 double tgamma(double __x);
-float tgammaf(float __x) __INTRODUCED_IN_ARM(13) __INTRODUCED_IN_MIPS(13) __INTRODUCED_IN_X86(9);
+float tgammaf(float __x);
 long double tgammal(long double __x) __RENAME_LDBL(tgamma, 3, 21);
 
 double ceil(double __x);
@@ -280,8 +278,8 @@ double copysign(double __value, double __sign) __attribute_const__;
 float copysignf(float __value, float __sign) __attribute_const__;
 long double copysignl(long double __value, long double __sign) __RENAME_LDBL(copysign, 3, 3) __attribute_const__;
 
-double nan(const char* __kind) __attribute_const__ __INTRODUCED_IN_ARM(13) __INTRODUCED_IN_MIPS(13) __INTRODUCED_IN_X86(9);
-float nanf(const char* __kind) __attribute_const__ __INTRODUCED_IN_ARM(13) __INTRODUCED_IN_MIPS(13) __INTRODUCED_IN_X86(9);
+double nan(const char* __kind) __attribute_const__;
+float nanf(const char* __kind) __attribute_const__;
 long double nanl(const char* __kind) __RENAME_LDBL(nan, 13, 13) __attribute_const__;
 
 double nextafter(double __x, double __y);
@@ -424,5 +422,3 @@ void sincosl(long double __x, long double* __sin, long double* __cos);
 #endif
 
 __END_DECLS
-
-#endif

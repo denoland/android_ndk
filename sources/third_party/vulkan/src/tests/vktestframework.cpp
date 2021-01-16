@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2015-2016 The Khronos Group Inc.
- * Copyright (c) 2015-2016 Valve Corporation
- * Copyright (c) 2015-2016 LunarG, Inc.
+ * Copyright (c) 2015-2019 The Khronos Group Inc.
+ * Copyright (c) 2015-2019 Valve Corporation
+ * Copyright (c) 2015-2019 LunarG, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -144,6 +144,7 @@ bool VkTestFramework::m_canonicalize_spv = false;
 bool VkTestFramework::m_strip_spv = false;
 bool VkTestFramework::m_do_everything_spv = false;
 bool VkTestFramework::m_devsim_layer = false;
+bool VkTestFramework::m_khronos_layer_disable = false;
 int VkTestFramework::m_width = 0;
 int VkTestFramework::m_height = 0;
 
@@ -164,6 +165,8 @@ void VkTestFramework::InitArgs(int *argc, char *argv[]) {
             m_canonicalize_spv = true;
         else if (optionMatch("--devsim", argv[i]))
             m_devsim_layer = true;
+        else if (optionMatch("--disable_uberlayer", argv[i]))
+            m_khronos_layer_disable = true;
         else if (optionMatch("--help", argv[i]) || optionMatch("-h", argv[i])) {
             printf("\nOther options:\n");
             printf(
@@ -721,6 +724,30 @@ EShLanguage VkTestFramework::FindLanguage(const VkShaderStageFlagBits shader_typ
         case VK_SHADER_STAGE_COMPUTE_BIT:
             return EShLangCompute;
 
+        case VK_SHADER_STAGE_RAYGEN_BIT_NV:
+            return EShLangRayGenNV;
+
+        case VK_SHADER_STAGE_ANY_HIT_BIT_NV:
+            return EShLangAnyHitNV;
+
+        case VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV:
+            return EShLangClosestHitNV;
+
+        case VK_SHADER_STAGE_MISS_BIT_NV:
+            return EShLangMissNV;
+
+        case VK_SHADER_STAGE_INTERSECTION_BIT_NV:
+            return EShLangIntersectNV;
+
+        case VK_SHADER_STAGE_CALLABLE_BIT_NV:
+            return EShLangCallableNV;
+
+        case VK_SHADER_STAGE_TASK_BIT_NV:
+            return EShLangTaskNV;
+
+        case VK_SHADER_STAGE_MESH_BIT_NV:
+            return EShLangMeshNV;
+
         default:
             return EShLangVertex;
     }
@@ -730,7 +757,8 @@ EShLanguage VkTestFramework::FindLanguage(const VkShaderStageFlagBits shader_typ
 // Compile a given string containing GLSL into SPV for use by VK
 // Return value of false means an error was encountered.
 //
-bool VkTestFramework::GLSLtoSPV(const VkShaderStageFlagBits shader_type, const char *pshader, std::vector<unsigned int> &spirv) {
+bool VkTestFramework::GLSLtoSPV(const VkShaderStageFlagBits shader_type, const char *pshader, std::vector<unsigned int> &spirv,
+                                bool debug) {
     glslang::TProgram program;
     const char *shaderStrings[1];
 
@@ -743,6 +771,9 @@ bool VkTestFramework::GLSLtoSPV(const VkShaderStageFlagBits shader_type, const c
     EShMessages messages = EShMsgDefault;
     SetMessageOptions(messages);
     messages = static_cast<EShMessages>(messages | EShMsgSpvRules | EShMsgVulkanRules);
+    if (debug) {
+        messages = static_cast<EShMessages>(messages | EShMsgDebugInfo);
+    }
 
     EShLanguage stage = FindLanguage(shader_type);
     glslang::TShader *shader = new glslang::TShader(stage);
@@ -779,7 +810,11 @@ bool VkTestFramework::GLSLtoSPV(const VkShaderStageFlagBits shader_type, const c
         program.dumpReflection();
     }
 
-    glslang::GlslangToSpv(*program.getIntermediate(stage), spirv);
+    glslang::SpvOptions spv_options;
+    if (debug) {
+        spv_options.generateDebugInfo = true;
+    }
+    glslang::GlslangToSpv(*program.getIntermediate(stage), spirv, &spv_options);
 
     //
     // Test the different modes of SPIR-V modification

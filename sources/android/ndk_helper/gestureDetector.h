@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-//--------------------------------------------------------------------------------
-// gestureDetector.h
-//--------------------------------------------------------------------------------
-#ifndef GESTUREDETECTOR_H_
-#define GESTUREDETECTOR_H_
+#pragma once
 
 #include <vector>
 
@@ -163,4 +159,3 @@ public:
 };
 
 }   //namespace ndkHelper
-#endif /* GESTUREDETECTOR_H_ */

@@ -70,6 +70,17 @@ def log_exit(msg):
 def disable_debug_log():
     logging.getLogger().setLevel(logging.WARN)
 
+def set_log_level(level_name):
+    if level_name == 'debug':
+        level = logging.DEBUG
+    elif level_name == 'info':
+        level = logging.INFO
+    elif level_name == 'warning':
+        level = logging.WARNING
+    else:
+        log_fatal('unknown log level: %s' % level_name)
+    logging.getLogger().setLevel(level)
+
 def str_to_bytes(str_value):
     if not is_python3():
         return str_value
@@ -127,95 +138,143 @@ def is_executable_available(executable, option='--help'):
     except OSError:
         return False
 
-DEFAULT_NDK_PATH = {
-    'darwin': 'Library/Android/sdk/ndk-bundle',
-    'linux': 'Android/Sdk/ndk-bundle',
-    'windows': 'AppData/Local/Android/sdk/ndk-bundle',
-}
 
-EXPECTED_TOOLS = {
-    'adb': {
-        'is_binutils': False,
-        'test_option': 'version',
-        'path_in_ndk': lambda _: '../platform-tools/adb',
-    },
-    'readelf': {
-        'is_binutils': True,
-        'accept_tool_without_arch': True,
-    },
-    'llvm-symbolizer': {
-        'is_binutils': False,
-        'path_in_ndk': lambda platform: 'toolchains/llvm/prebuilt/%s-x86_64/bin/llvm-symbolizer' % platform,
-    },
-    'objdump': {
-        'is_binutils': True,
-    },
-    'strip': {
-        'is_binutils': True,
-    },
-}
+class ToolFinder:
+    """ Find tools in ndk or sdk. """
+    DEFAULT_SDK_PATH = {
+        'darwin': 'Library/Android/sdk',
+        'linux': 'Android/Sdk',
+        'windows': 'AppData/Local/Android/sdk',
+    }
 
-def _get_binutils_path_in_ndk(toolname, arch, platform):
-    if not arch:
-        arch = 'arm64'
-    if arch == 'arm64':
-        name = 'aarch64-linux-android-' + toolname
-        path = 'toolchains/aarch64-linux-android-4.9/prebuilt/%s-x86_64/bin/%s' % (platform, name)
-    elif arch == 'arm':
-        name = 'arm-linux-androideabi-' + toolname
-        path = 'toolchains/arm-linux-androideabi-4.9/prebuilt/%s-x86_64/bin/%s' % (platform, name)
-    elif arch == 'x86_64':
-        name = 'x86_64-linux-android-' + toolname
-        path = 'toolchains/x86_64-4.9/prebuilt/%s-x86_64/bin/%s' % (platform, name)
-    elif arch == 'x86':
-        name = 'i686-linux-android-' + toolname
-        path = 'toolchains/x86-4.9/prebuilt/%s-x86_64/bin/%s' % (platform, name)
-    else:
-        log_fatal('unexpected arch %s' % arch)
-    return (name, path)
+    EXPECTED_TOOLS = {
+        'adb': {
+            'is_binutils': False,
+            'test_option': 'version',
+            'path_in_sdk': 'platform-tools/adb',
+        },
+        'readelf': {
+            'is_binutils': True,
+            'accept_tool_without_arch': True,
+        },
+        'llvm-symbolizer': {
+            'is_binutils': False,
+            'path_in_ndk':
+                lambda platform: 'toolchains/llvm/prebuilt/%s-x86_64/bin/llvm-symbolizer' % platform,
+        },
+        'objdump': {
+            'is_binutils': True,
+        },
+        'strip': {
+            'is_binutils': True,
+        },
+    }
+
+    @classmethod
+    def find_ndk_and_sdk_paths(cls, ndk_path=None):
+        # Use the given ndk path.
+        if ndk_path and os.path.isdir(ndk_path):
+            ndk_path = os.path.abspath(ndk_path)
+            yield ndk_path, cls.find_sdk_path(ndk_path)
+        # Find ndk in the parent directory containing simpleperf scripts.
+        ndk_path = os.path.dirname(os.path.abspath(get_script_dir()))
+        yield ndk_path, cls.find_sdk_path(ndk_path)
+        # Find ndk in the default sdk installation path.
+        if is_windows():
+            home = os.environ.get('HOMEDRIVE') + os.environ.get('HOMEPATH')
+        else:
+            home = os.environ.get('HOME')
+        if home:
+            platform = get_platform()
+            sdk_path = os.path.join(home, cls.DEFAULT_SDK_PATH[platform].replace('/', os.sep))
+            if os.path.isdir(sdk_path):
+                path = os.path.join(sdk_path, 'ndk')
+                if os.path.isdir(path):
+                    # Android Studio can install multiple ndk versions in 'ndk'.
+                    # Find the newest one.
+                    ndk_version = None
+                    for name in os.listdir(path):
+                        if not ndk_version or ndk_version < name:
+                            ndk_version = name
+                    if ndk_version:
+                        yield os.path.join(path, ndk_version), sdk_path
+            ndk_path = os.path.join(sdk_path, 'ndk-bundle')
+            if os.path.isdir(ndk_path):
+                yield ndk_path, sdk_path
+
+    @classmethod
+    def find_sdk_path(cls, ndk_path):
+        path = ndk_path
+        for _ in range(2):
+            path = os.path.dirname(path)
+            if os.path.isdir(os.path.join(path, 'platform-tools')):
+                return path
+        return None
+
+    @classmethod
+    def _get_binutils_path_in_ndk(cls, toolname, arch, platform):
+        if not arch:
+            arch = 'arm64'
+        if arch == 'arm64':
+            name = 'aarch64-linux-android-' + toolname
+        elif arch == 'arm':
+            name = 'arm-linux-androideabi-' + toolname
+        elif arch == 'x86_64':
+            name = 'x86_64-linux-android-' + toolname
+        elif arch == 'x86':
+            name = 'i686-linux-android-' + toolname
+        else:
+            log_fatal('unexpected arch %s' % arch)
+        path = 'toolchains/llvm/prebuilt/%s-x86_64/bin/%s' % (platform, name)
+        return (name, path)
+
+    @classmethod
+    def find_tool_path(cls, toolname, ndk_path=None, arch=None):
+        tool_info = cls.EXPECTED_TOOLS.get(toolname)
+        if not tool_info:
+            return None
+        is_binutils = tool_info['is_binutils']
+        test_option = tool_info.get('test_option', '--help')
+        platform = get_platform()
+        path_in_ndk = None
+        path_in_sdk = None
+        if is_binutils:
+            toolname_with_arch, path_in_ndk = cls._get_binutils_path_in_ndk(
+                toolname, arch, platform)
+        else:
+            toolname_with_arch = toolname
+            if 'path_in_ndk' in tool_info:
+                path_in_ndk = tool_info['path_in_ndk'](platform)
+            elif 'path_in_sdk' in tool_info:
+                path_in_sdk = tool_info['path_in_sdk']
+        if path_in_ndk:
+            path_in_ndk = path_in_ndk.replace('/', os.sep)
+        elif path_in_sdk:
+            path_in_sdk = path_in_sdk.replace('/', os.sep)
+
+        for ndk_dir, sdk_dir in cls.find_ndk_and_sdk_paths(ndk_path):
+            if path_in_ndk and ndk_dir:
+                path = os.path.join(ndk_dir, path_in_ndk)
+                if is_executable_available(path, test_option):
+                    return path
+            elif path_in_sdk and sdk_dir:
+                path = os.path.join(sdk_dir, path_in_sdk)
+                if is_executable_available(path, test_option):
+                    return path
+
+        # Find tool in $PATH.
+        if is_executable_available(toolname_with_arch, test_option):
+            return toolname_with_arch
+
+        # Find tool without arch in $PATH.
+        if is_binutils and tool_info.get('accept_tool_without_arch'):
+            if is_executable_available(toolname, test_option):
+                return toolname
+        return None
+
 
 def find_tool_path(toolname, ndk_path=None, arch=None):
-    if toolname not in EXPECTED_TOOLS:
-        return None
-    tool_info = EXPECTED_TOOLS[toolname]
-    is_binutils = tool_info['is_binutils']
-    test_option = tool_info.get('test_option', '--help')
-    platform = get_platform()
-    if is_binutils:
-        toolname_with_arch, path_in_ndk = _get_binutils_path_in_ndk(toolname, arch, platform)
-    else:
-        toolname_with_arch = toolname
-        path_in_ndk = tool_info['path_in_ndk'](platform)
-    path_in_ndk = path_in_ndk.replace('/', os.sep)
-
-    # 1. Find tool in the given ndk path.
-    if ndk_path:
-        path = os.path.join(ndk_path, path_in_ndk)
-        if is_executable_available(path, test_option):
-            return path
-
-    # 2. Find tool in the ndk directory containing simpleperf scripts.
-    path = os.path.join('..', path_in_ndk)
-    if is_executable_available(path, test_option):
-        return path
-
-    # 3. Find tool in the default ndk installation path.
-    home = os.environ.get('HOMEPATH') if is_windows() else os.environ.get('HOME')
-    if home:
-        default_ndk_path = os.path.join(home, DEFAULT_NDK_PATH[platform].replace('/', os.sep))
-        path = os.path.join(default_ndk_path, path_in_ndk)
-        if is_executable_available(path, test_option):
-            return path
-
-    # 4. Find tool in $PATH.
-    if is_executable_available(toolname_with_arch, test_option):
-        return toolname_with_arch
-
-    # 5. Find tool without arch in $PATH.
-    if is_binutils and tool_info.get('accept_tool_without_arch'):
-        if is_executable_available(toolname, test_option):
-            return toolname
-    return None
+    return ToolFinder.find_tool_path(toolname, ndk_path, arch)
 
 
 class AdbHelper(object):
@@ -225,30 +284,33 @@ class AdbHelper(object):
             log_exit("Can't find adb in PATH environment.")
         self.adb_path = adb_path
         self.enable_switch_to_root = enable_switch_to_root
+        self.serial_number = None
 
 
     def run(self, adb_args):
         return self.run_and_return_output(adb_args)[0]
 
 
-    def run_and_return_output(self, adb_args, stdout_file=None, log_output=True):
+    def run_and_return_output(self, adb_args, log_output=True, log_stderr=True):
         adb_args = [self.adb_path] + adb_args
         log_debug('run adb cmd: %s' % adb_args)
-        if stdout_file:
-            with open(stdout_file, 'wb') as stdout_fh:
-                returncode = subprocess.call(adb_args, stdout=stdout_fh)
-            stdoutdata = ''
-        else:
-            subproc = subprocess.Popen(adb_args, stdout=subprocess.PIPE)
-            (stdoutdata, _) = subproc.communicate()
-            stdoutdata = bytes_to_str(stdoutdata)
-            returncode = subproc.returncode
+        env = None
+        if self.serial_number:
+            env = os.environ.copy()
+            env['ANDROID_SERIAL'] = self.serial_number
+        subproc = subprocess.Popen(
+            adb_args, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout_data, stderr_data = subproc.communicate()
+        stdout_data = bytes_to_str(stdout_data)
+        stderr_data = bytes_to_str(stderr_data)
+        returncode = subproc.returncode
         result = (returncode == 0)
-        if stdoutdata and adb_args[1] != 'push' and adb_args[1] != 'pull':
-            if log_output:
-                log_debug(stdoutdata)
+        if log_output and stdout_data and adb_args[1] != 'push' and adb_args[1] != 'pull':
+            log_debug(stdout_data)
+        if log_stderr and stderr_data:
+            log_warning(stderr_data)
         log_debug('run adb cmd: %s  [result %s]' % (adb_args, result))
-        return (result, stdoutdata)
+        return (result, stdout_data)
 
     def check_run(self, adb_args):
         self.check_run_and_return_output(adb_args)
@@ -314,6 +376,7 @@ class AdbHelper(object):
 
 
     def get_android_version(self):
+        """ Get Android version on device, like 7 is for Android N, 8 is for Android O."""
         build_version = self.get_property('ro.build.version.release')
         android_version = 0
         if build_version:
@@ -363,15 +426,11 @@ def open_report_in_browser(report_path):
 def is_elf_file(path):
     if os.path.isfile(path):
         with open(path, 'rb') as fh:
-            data = fh.read(4)
-            if len(data) == 4 and bytes_to_str(data) == '\x7fELF':
-                return True
+            return fh.read(4) == b'\x7fELF'
     return False
 
 def find_real_dso_path(dso_path_in_record_file, binary_cache_path):
     """ Given the path of a shared library in perf.data, find its real path in the file system. """
-    if dso_path_in_record_file[0] != '/' or dso_path_in_record_file == '//anon':
-        return None
     if binary_cache_path:
         tmp_path = os.path.join(binary_cache_path, dso_path_in_record_file[1:])
         if is_elf_file(tmp_path):
@@ -382,9 +441,9 @@ def find_real_dso_path(dso_path_in_record_file, binary_cache_path):
 
 
 class Addr2Nearestline(object):
-    """ Use llvm-symbolizer to convert (dso_path, func_addr, addr) to (source_file, line) pairs.
+    """ Use llvm-symbolizer to convert (dso_path, func_addr, addr) to (source_file, line).
         For instructions generated by C++ compilers without a matching statement in source code
-        (like stack corruption check, switch optimization, etc.), llvm-symbolizer can't generate
+        (like stack corruption check, switch optimization, etc.), addr2line can't generate
         line information. However, we want to assign the instruction to the nearest line before
         the instruction (just like objdump -dl). So we use below strategy:
         Instead of finding the exact line of the instruction in an address, we find the nearest
@@ -394,16 +453,16 @@ class Addr2Nearestline(object):
 
         The implementation steps are as below:
         1. Collect all (dso_path, func_addr, addr) requests before converting. This saves the
-        times to call llvm-symbolizer.
+        times to call addr2line.
         2. Convert addrs to (source_file, line) pairs for each dso_path as below:
           2.1 Check if the dso_path has .debug_line. If not, omit its conversion.
           2.2 Get arch of the dso_path, and decide the addr_step for it. addr_step is the step we
           change addr each time. For example, since instructions of arm64 are all 4 bytes long,
           addr_step for arm64 can be 4.
-          2.3 Use llvm-symbolizer to find line info for each addr in the dso_path.
-          2.4 For each addr without line info, use llvm-symbolizer to find line info for
+          2.3 Use addr2line to find line info for each addr in the dso_path.
+          2.4 For each addr without line info, use addr2line to find line info for
               range(addr - addr_step, addr - addr_step * 4 - 1, -addr_step).
-          2.5 For each addr without line info, use llvm-symbolizer to find line info for
+          2.5 For each addr without line info, use addr2line to find line info for
               range(addr - addr_step * 5, addr - addr_step * 128 - 1, -addr_step).
               (128 is a guess number. A nested switch statement in
                system/core/demangle/Demangler.cpp has >300 bytes without line info in arm64.)
@@ -480,8 +539,8 @@ class Addr2Nearestline(object):
         return 1
 
     def _collect_line_info(self, dso, real_path, addr_shifts):
-        """ Use llvm-symbolizer to get line info in a dso, with given addr shifts. """
-        # 1. Collect addrs to send to llvm-symbolizer.
+        """ Use addr2line to get line info in a dso, with given addr shifts. """
+        # 1. Collect addrs to send to addr2line.
         addr_set = set()
         for addr in dso.addrs:
             addr_obj = dso.addrs[addr]
@@ -497,7 +556,7 @@ class Addr2Nearestline(object):
             return
         addr_request = '\n'.join(['0x%x' % addr for addr in sorted(addr_set)])
 
-        # 2. Use llvm-symbolizer to collect line info.
+        # 2. Use addr2line to collect line info.
         try:
             subproc = subprocess.Popen(self._build_symbolizer_args(real_path),
                                        stdin=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -604,7 +663,7 @@ class Addr2Nearestline(object):
 
 class SourceFileSearcher(object):
     """ Find source file paths in the file system.
-        The file paths reported by llvm-symbolizer are the paths stored in debug sections
+        The file paths reported by addr2line are the paths stored in debug sections
         of shared libraries. And we need to convert them to file paths in the file
         system. It is done in below steps:
         1. Collect all file paths under the provided source_dirs. The suffix of a
@@ -613,7 +672,7 @@ class SourceFileSearcher(object):
             c: for C/C++ source files.
             java: for Java source files.
             kt: for Kotlin source files.
-        2. Given an abstract_path reported by llvm-symbolizer, select the best real path
+        2. Given an abstract_path reported by addr2line, select the best real path
            as below:
            2.1 Find all real paths with the same file name as the abstract path.
            2.2 Select the real path having the longest common suffix with the abstract path.
@@ -745,7 +804,7 @@ class ReadElf(object):
                 pass
         return 'unknown'
 
-    def get_build_id(self, elf_file_path):
+    def get_build_id(self, elf_file_path, with_padding=True):
         """ Get build id of an elf file. """
         if is_elf_file(elf_file_path):
             try:
@@ -754,15 +813,21 @@ class ReadElf(object):
                 result = re.search(r'Build ID:\s*(\S+)', output)
                 if result:
                     build_id = result.group(1)
-                    if len(build_id) < 40:
-                        build_id += '0' * (40 - len(build_id))
-                    else:
-                        build_id = build_id[:40]
-                    build_id = '0x' + build_id
+                    if with_padding:
+                        build_id = self.pad_build_id(build_id)
                     return build_id
             except subprocess.CalledProcessError:
                 pass
         return ""
+
+    @staticmethod
+    def pad_build_id(build_id):
+        """ Pad build id to 40 hex numbers (20 bytes). """
+        if len(build_id) < 40:
+            build_id += '0' * (40 - len(build_id))
+        else:
+            build_id = build_id[:40]
+        return '0x' + build_id
 
     def get_sections(self, elf_file_path):
         """ Get sections of an elf file. """

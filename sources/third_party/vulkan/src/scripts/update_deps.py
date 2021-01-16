@@ -306,9 +306,9 @@ class GoodRepo(object):
         self.build_dir = None
         self.install_dir = None
         if json.get('build_dir'):
-            self.build_dir = json['build_dir']
+            self.build_dir = os.path.normpath(json['build_dir'])
         if json.get('install_dir'):
-            self.install_dir = json['install_dir']
+            self.install_dir = os.path.normpath(json['install_dir'])
         self.deps = json['deps'] if ('deps' in json) else []
         self.prebuild = json['prebuild'] if ('prebuild' in json) else []
         self.prebuild_linux = json['prebuild_linux'] if (
@@ -343,7 +343,7 @@ class GoodRepo(object):
     def Checkout(self):
         print('Checking out {n} in {d}'.format(n=self.name, d=self.repo_dir))
         if self._args.do_clean_repo:
-            shutil.rmtree(self.repo_dir)
+            shutil.rmtree(self.repo_dir, ignore_errors=True)
         if not os.path.exists(os.path.join(self.repo_dir, '.git')):
             self.Clone()
         self.Fetch()
@@ -415,6 +415,12 @@ class GoodRepo(object):
                 cmake_cmd.append('-A')
                 cmake_cmd.append('x64')
 
+        # Apply a generator, if one is specified.  This can be used to supply
+        # a specific generator for the dependent repositories to match
+        # that of the main repository.
+        if self._args.generator is not None:
+            cmake_cmd.extend(['-G', self._args.generator])
+
         if VERBOSE:
             print("CMake command: " + " ".join(cmake_cmd))
 
@@ -435,8 +441,15 @@ class GoodRepo(object):
         # Speed up the build.
         if platform.system() == 'Linux' or platform.system() == 'Darwin':
             cmake_cmd.append('--')
-            cmake_cmd.append('-j{ncpu}'
-                             .format(ncpu=multiprocessing.cpu_count()))
+            num_make_jobs = multiprocessing.cpu_count()
+            env_make_jobs = os.environ.get('MAKE_JOBS', None)
+            if env_make_jobs is not None:
+                try:
+                    num_make_jobs = min(num_make_jobs, int(env_make_jobs))
+                except ValueError:
+                    print('warning: environment variable MAKE_JOBS has non-numeric value "{}".  '
+                          'Using {} (CPU count) instead.'.format(env_make_jobs, num_make_jobs))
+            cmake_cmd.append('-j{}'.format(num_make_jobs))
         if platform.system() == 'Windows':
             cmake_cmd.append('--')
             cmake_cmd.append('/maxcpucount')
@@ -520,6 +533,8 @@ def CreateHelper(args, repos, filename):
     This information is baked into the CMake files of the home repo and so
     this dictionary is kept with the repo via the json file.
     """
+    def escape(path):
+        return path.replace('\\', '\\\\')
     install_names = GetInstallNames(args)
     with open(filename, 'w') as helper_file:
         for repo in repos:
@@ -527,7 +542,7 @@ def CreateHelper(args, repos, filename):
                 helper_file.write('set({var} "{dir}" CACHE STRING "" FORCE)\n'
                                   .format(
                                       var=install_names[repo.name],
-                                      dir=repo.install_dir))
+                                      dir=escape(repo.install_dir)))
 
 
 def main():
@@ -592,6 +607,11 @@ def main():
         type=str.lower,
         help="Set build files configuration",
         default='debug')
+    parser.add_argument(
+        '--generator',
+        dest='generator',
+        help="Set the CMake generator",
+        default=None)
 
     args = parser.parse_args()
     save_cwd = os.getcwd()
@@ -626,7 +646,7 @@ def main():
                       'build_platforms',
                       'repo_dir',
                       'on_build_platform')
-        repo_dict[repo.name] = {field: getattr(repo, field) for field in field_list};
+        repo_dict[repo.name] = {field: getattr(repo, field) for field in field_list}
 
         # If the repo has a CI whitelist, skip the repo unless
         # one of the CI's environment variable is set to true.

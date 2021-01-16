@@ -70,6 +70,11 @@ libs_in_ldflags := \
 
 include $(BUILD_SYSTEM)/system_libs.mk
 
+# The only way to statically link libomp.a is with
+# `-Wl,-Bstatic -lomp -Wl,-Bdynamic`, so we need to accept `-lomp`.
+# https://github.com/android-ndk/ndk/issues/1028
+NDK_SYSTEM_LIBS += libomp.so
+
 libs_in_ldflags := $(filter-out $(NDK_SYSTEM_LIBS:lib%.so=-l%),$(libs_in_ldflags))
 
 ifneq (,$(strip $(libs_in_ldflags)))
@@ -159,8 +164,6 @@ ifeq ($(LOCAL_CPP_EXTENSION),)
 endif
 LOCAL_RS_EXTENSION := $(default-rs-extensions)
 
-LOCAL_LDFLAGS += -Wl,--build-id
-
 ifneq ($(NDK_APP_STL),system)
     LOCAL_CFLAGS += -nostdinc++
     LOCAL_LDFLAGS += -nostdlib++
@@ -184,22 +187,6 @@ ifneq ($(LOCAL_ALLOW_UNDEFINED_SYMBOLS),true)
   LOCAL_LDFLAGS += $(TARGET_NO_UNDEFINED_LDFLAGS)
 endif
 
-# These flags are used to enforce the NX (no execute) security feature in the
-# generated machine code. This adds a special section to the generated shared
-# libraries that instruct the Linux kernel to disable code execution from the
-# stack and the heap.
-#
-# TODO: Should be a Clang default: https://github.com/android-ndk/ndk/issues/812
-LOCAL_CFLAGS += -Wa,--noexecstack
-LOCAL_LDFLAGS += -Wl,-z,noexecstack
-
-# We enable shared text relocation warnings by default. These are not allowed in
-# current versions of Android (android-21 for LP64 ABIs, android-23 for LP32
-# ABIs).
-#
-# TODO: Should be a Clang default: https://github.com/android-ndk/ndk/issues/812
-LOCAL_LDFLAGS += -Wl,--warn-shared-textrel
-
 # We enable fatal linker warnings by default.
 # If LOCAL_DISABLE_FATAL_LINKER_WARNINGS is true, we don't enable this check.
 ifneq ($(LOCAL_DISABLE_FATAL_LINKER_WARNINGS),true)
@@ -220,15 +207,6 @@ endif
 ifeq ($(TARGET_ARCH_ABI),x86)
     ifneq (,$(call lt,$(APP_PLATFORM_LEVEL),24))
         LOCAL_CFLAGS += -mstackrealign
-    endif
-endif
-
-# https://github.com/android-ndk/ndk/issues/297
-ifeq ($(TARGET_ARCH_ABI),x86)
-    ifneq (,$(call lt,$(APP_PLATFORM_LEVEL),17))
-        ifeq ($(NDK_TOOLCHAIN_VERSION),4.9)
-            LOCAL_CFLAGS += -mstack-protector-guard=global
-        endif
     endif
 endif
 
@@ -276,9 +254,6 @@ $(call clear-all-src-tags)
 # files
 #
 
-neon_sources  := $(filter %.neon,$(LOCAL_SRC_FILES))
-neon_sources  := $(neon_sources:%.neon=%)
-
 LOCAL_ARM_NEON := $(strip $(LOCAL_ARM_NEON))
 ifdef LOCAL_ARM_NEON
   $(if $(filter-out true false,$(LOCAL_ARM_NEON)),\
@@ -287,22 +262,14 @@ ifdef LOCAL_ARM_NEON
   )
 endif
 
-ifeq ($(LOCAL_ARM_NEON),true)
-  neon_sources += $(LOCAL_SRC_FILES:%.neon=%)
+ifeq ($(LOCAL_ARM_NEON),false)
+  no_neon_sources := $(filter-out %.neon,$(LOCAL_SRC_FILES))
+  no_neon_sources := $(strip $(no_neon_sources))
+  $(call tag-src-files,$(no_neon_sources:%.arm=%),no_neon)
   # tag the precompiled header with 'neon' tag if it exists
   ifneq (,$(LOCAL_PCH))
-    $(call tag-src-files,$(LOCAL_PCH),neon)
+    $(call tag-src-files,$(LOCAL_PCH),no_neon)
   endif
-endif
-
-neon_sources := $(strip $(neon_sources))
-ifdef neon_sources
-  ifeq ($(filter $(TARGET_ARCH_ABI), armeabi-v7a arm64-v8a x86 x86_64),)
-    $(call __ndk_info,NEON support is only available for armeabi-v7a, arm64-v8a, x86, and x86_64 ABIs)
-    $(call __ndk_info,Please add checks against TARGET_ARCH_ABI in $(LOCAL_MAKEFILE))
-    $(call __ndk_error,Aborting)
-  endif
-  $(call tag-src-files,$(neon_sources:%.arm=%),neon)
 endif
 
 LOCAL_SRC_FILES := $(LOCAL_SRC_FILES:%.neon=%)
@@ -528,19 +495,40 @@ CLEAN_OBJS_DIRS     += $(LOCAL_OBJS_DIR)
 # Handle the static and shared libraries this module depends on
 #
 
-my_ldflags := $(TARGET_LDFLAGS) $(NDK_APP_LDFLAGS) $(LOCAL_LDFLAGS)
-ifneq ($(filter armeabi%,$(TARGET_ARCH_ABI)),)
-    my_ldflags += $(TARGET_$(my_link_arm_mode)_LDFLAGS)
-endif
-
-# https://github.com/android-ndk/ndk/issues/855
-ifeq ($(HOST_OS),windows)
-    ndk_fuse_ld_flags := $(filter -fuse-ld=%,$(my_ldflags))
-    ndk_used_linker := $(lastword $(ndk_fuse_ld_flags))
-    ifeq ($(ndk_used_linker),-fuse-ld=lld)
-        my_ldflags += -Wl,--no-threads
+linker_ldflags :=
+ifeq ($(APP_LD),deprecated)
+    ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
+        linker_ldflags := -fuse-ld=bfd
+    else
+        linker_ldflags := -fuse-ld=gold
     endif
 endif
+
+combined_ldflags := \
+    $(linker_ldflags) $(TARGET_LDFLAGS) $(NDK_APP_LDFLAGS) $(LOCAL_LDFLAGS)
+ndk_fuse_ld_flags := $(filter -fuse-ld=%,$(combined_ldflags))
+ndk_used_linker := $(lastword $(ndk_fuse_ld_flags))
+ifneq ($(filter -fuse-ld=bfd -fuse-ld=gold,$(ndk_used_linker)),)
+    using_lld := false
+else
+    using_lld := true
+endif
+
+# https://github.com/android/ndk/issues/885
+# If we're using LLD we need to use a slower build-id algorithm to work around
+# the old version of LLDB in Android Studio, which doesn't understand LLD's
+# default hash ("fast").
+ifeq ($(using_lld),true)
+    linker_ldflags += -Wl,--build-id=sha1
+    ifneq (,$(call lt,$(APP_PLATFORM_LEVEL),29))
+        # https://github.com/android/ndk/issues/1196
+        linker_ldflags += -Wl,--no-rosegment
+    endif
+else
+    linker_ldflags += -Wl,--build-id
+endif
+
+my_ldflags := $(TARGET_LDFLAGS) $(linker_ldflags) $(NDK_APP_LDFLAGS) $(LOCAL_LDFLAGS)
 
 # When LOCAL_SHORT_COMMANDS is defined to 'true' we are going to write the
 # list of all object files and/or static/shared libraries that appear on the
@@ -676,7 +664,13 @@ ifdef undefined_libs
     # Application.mk or on the command line to revert to the old, broken
     # behavior.
     ifneq ($(APP_ALLOW_MISSING_DEPS),true)
-        $(call __ndk_error,Aborting (set APP_ALLOW_MISSING_DEPS=true to allow missing dependencies))
+        $(call __ndk_error,Note that old versions of ndk-build silently ignored \
+            this error case. If your project worked on those versions$(comma) \
+            the missing libraries were not needed and you can remove those \
+            dependencies from the module to fix your build. \
+            Alternatively$(comma) set APP_ALLOW_MISSING_DEPS=true to allow \
+            missing dependencies.)
+        $(call __ndk_error,Aborting.)
     endif
 endif
 
@@ -710,7 +704,8 @@ ifeq ($(LOCAL_SHORT_COMMANDS),true)
     linker_options   := $(linker_objects_and_libraries)
     linker_list_file := $(LOCAL_OBJS_DIR)/linker.list
     linker_objects_and_libraries := @$(call host-path,$(linker_list_file))
-    $(call generate-list-file,$(linker_options),$(linker_list_file))
+    $(call generate-list-file,\
+        $(call escape-backslashes,$(linker_options)),$(linker_list_file))
     $(LOCAL_BUILT_MODULE): $(linker_list_file)
 endif
 
@@ -775,15 +770,11 @@ $(LOCAL_INSTALLED): PRIVATE_DST         := $(LOCAL_INSTALLED)
 $(LOCAL_INSTALLED): PRIVATE_STRIP       := $(TARGET_STRIP)
 $(LOCAL_INSTALLED): PRIVATE_STRIP_MODE  := $(NDK_STRIP_MODE)
 $(LOCAL_INSTALLED): PRIVATE_STRIP_CMD   := $(call cmd-strip, $(PRIVATE_DST))
-$(LOCAL_INSTALLED): PRIVATE_OBJCOPY     := $(TARGET_OBJCOPY)
-$(LOCAL_INSTALLED): PRIVATE_OBJCOPY_CMD := $(call cmd-add-gnu-debuglink, $(PRIVATE_DST), $(PRIVATE_SRC))
 
 $(LOCAL_INSTALLED): $(LOCAL_BUILT_MODULE) clean-installed-binaries
 	$(call host-echo-build-step,$(PRIVATE_ABI),Install) "$(PRIVATE_NAME) => $(call pretty-dir,$(PRIVATE_DST))"
 	$(hide) $(call host-install,$(PRIVATE_SRC),$(PRIVATE_DST))
 	$(if $(filter none,$(PRIVATE_STRIP_MODE)),,$(hide) $(PRIVATE_STRIP_CMD))
-
-#$(hide) $(PRIVATE_OBJCOPY_CMD)
 
 $(call generate-file-dir,$(LOCAL_INSTALLED))
 

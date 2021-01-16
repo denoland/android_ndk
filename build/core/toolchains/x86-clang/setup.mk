@@ -16,6 +16,7 @@
 TOOLCHAIN_NAME := i686-linux-android
 LLVM_TRIPLE := i686-none-linux-android
 
+TARGET_TOOLCHAIN_ARCH_LIB_DIR := i386
 TARGET_ASAN_BASENAME := libclang_rt.asan-i686-android.so
 TARGET_UBSAN_BASENAME := libclang_rt.ubsan_standalone-i686-android.so
 

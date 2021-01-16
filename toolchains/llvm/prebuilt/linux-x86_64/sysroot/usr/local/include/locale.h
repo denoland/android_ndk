@@ -26,8 +26,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef NDK_ANDROID_SUPPORT_LOCALE_H
-#define NDK_ANDROID_SUPPORT_LOCALE_H
+#pragma once
 
 #include_next <locale.h>
 
@@ -42,5 +41,3 @@ locale_t uselocale(locale_t);
 #endif
 
 __END_DECLS
-
-#endif

@@ -1,6 +1,3 @@
-#ifndef __gl3_h_
-#define __gl3_h_
-
 /*
  * stub gl3.h for dynamic loading, based on:
  * gl3.h last updated on $Date: 2013-02-12 14:37:24 -0800 (Tue, 12 Feb 2013) $
@@ -12,6 +9,8 @@
  *   declarations
  * - Added gl3stubInit() declaration
  */
+
+#pragma once
 
 #include <GLES2/gl2.h>
 #include <android/api-level.h>
@@ -499,6 +498,4 @@ extern GL_APICALL void (* GL_APIENTRY glGetInternalformativ) (GLenum target, GLe
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

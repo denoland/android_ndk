@@ -39,11 +39,10 @@ libcxxabi_src_files := \
 
 libcxxabi_includes := \
     $(LOCAL_PATH)/include \
-    $(LOCAL_PATH)/../libunwind_llvm/include \
     $(LOCAL_PATH)/../libcxx/include \
 
 libcxxabi_cflags := -D__STDC_FORMAT_MACROS
-libcxxabi_cppflags := -std=c++11 -Wno-unknown-attributes
+libcxxabi_cppflags := -std=c++11 -Wno-unknown-attributes -DHAS_THREAD_LOCAL
 
 ifneq (,$(filter armeabi%,$(TARGET_ARCH_ABI)))
     use_llvm_unwinder := true
@@ -79,6 +78,7 @@ LOCAL_C_INCLUDES := $(libcxxabi_includes)
 LOCAL_CPPFLAGS := $(libcxxabi_cppflags)
 LOCAL_CPP_FEATURES := rtti exceptions
 LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/include
+LOCAL_ARM_NEON := false
 
 ifeq ($(NDK_PLATFORM_NEEDS_ANDROID_SUPPORT),true)
     # This doesn't affect the prebuilt itself since this is a prebuilt library,
@@ -98,7 +98,7 @@ endif
 include $(BUILD_STATIC_LIBRARY)
 
 $(call import-add-path, $(LOCAL_PATH)/../..)
-$(call import-module, external/libunwind_llvm)
+$(call import-module, toolchain/llvm-project/libunwind)
 
 endif # Prebuilt/building
 

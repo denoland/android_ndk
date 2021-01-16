@@ -16,12 +16,9 @@
 import argparse
 import multiprocessing
 import os
-import shutil
 import site
 import subprocess
 import sys
-import tempfile
-import zipfile
 
 
 # "build" is not a valid package name for setuptools. This package will be
@@ -47,7 +44,8 @@ from ndk.abis import (
     toolchain_to_arch,
 )
 
-from ndk.hosts import get_default_host, host_to_tag
+from ndk.hosts import Host, get_default_host, host_to_tag
+
 from ndk.paths import (
     android_path,
     get_dist_dir,
@@ -115,7 +113,9 @@ class ArgParser(argparse.ArgumentParser):
         super(ArgParser, self).__init__()
 
         self.add_argument(
-            '--host', choices=('darwin', 'linux', 'windows', 'windows64'),
+            '--host',
+            choices=Host,
+            type=Host,
             default=get_default_host(),
             help='Build binaries for given OS (e.g. linux).')
 

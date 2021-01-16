@@ -72,7 +72,7 @@ class ArgumentParser(gdbrunner.ArgumentParser):
 
         self.add_argument(
             "--port", type=int, nargs="?", default="5039",
-            help="override the port used on the host")
+            help="override the port used on the host.")
 
         self.add_argument(
             "--delay", type=float, default=0.25,
@@ -82,6 +82,10 @@ class ArgumentParser(gdbrunner.ArgumentParser):
         self.add_argument(
             "-p", "--project", dest="project",
             help="specify application project path")
+
+        lldb_group = self.add_mutually_exclusive_group()
+        lldb_group.add_argument("--lldb", action="store_true", help="Use lldb.")
+        lldb_group.add_argument("--no-lldb", action="store_true", help="Do not use lldb.")
 
         app_group = self.add_argument_group("target selection")
         start_group = app_group.add_mutually_exclusive_group()
@@ -401,40 +405,85 @@ def abi_to_arch(abi):
         return abi
 
 
-def get_gdbserver_path(args, package_name, app_data_dir, arch):
-    app_gdbserver_path = "{}/lib/gdbserver".format(app_data_dir)
-    cmd = ["ls", app_gdbserver_path, "2>/dev/null"]
+def abi_to_llvm_arch(abi):
+    if abi.startswith("armeabi"):
+        return "arm"
+    elif abi == "arm64-v8a":
+        return "aarch64"
+    elif abi == "x86":
+        return "i386"
+    else:
+        return "x86_64"
+
+
+def get_llvm_host_name():
+    platform = sys.platform
+    if platform.startswith("win"):
+        return "windows-x86_64"
+    elif platform.startswith("darwin"):
+        return "darwin-x86_64"
+    else:
+        return "linux-x86_64"
+
+
+def get_python_executable(toolchain_path):
+    if sys.platform.startswith("win"):
+        return os.path.join(toolchain_path, 'python3', 'python.exe')
+    else:
+        return os.path.join(toolchain_path, 'python3', 'bin', 'python3')
+
+
+def get_lldb_path(toolchain_path):
+    for lldb_name in ['lldb.sh', 'lldb.cmd', 'lldb', 'lldb.exe']:
+        debugger_path = os.path.join(toolchain_path, "bin", lldb_name)
+        if os.path.isfile(debugger_path):
+            return debugger_path
+    return None
+
+
+def get_llvm_package_version(llvm_toolchain_dir):
+    version_file_path = os.path.join(llvm_toolchain_dir, "AndroidVersion.txt")
+    try:
+        version_file = open(version_file_path, "r")
+    except IOError:
+        error("Failed to open llvm package version file: '{}'.".format(version_file_path))
+
+    with version_file:
+        return version_file.readline().strip()
+
+
+def get_debugger_server_path(args, package_name, app_data_dir, arch, server_name, local_path):
+    app_debugger_server_path = "{}/lib/{}".format(app_data_dir, server_name)
+    cmd = ["ls", app_debugger_server_path, "2>/dev/null"]
     cmd = get_run_as_cmd(package_name, cmd)
     (rc, _, _) = args.device.shell_nocheck(cmd)
     if rc == 0:
-        log("Found app gdbserver: {}".format(app_gdbserver_path))
-        return app_gdbserver_path
+        log("Found app {}: {}".format(server_name, app_debugger_server_path))
+        return app_debugger_server_path
 
-    # We need to upload our gdbserver
-    log("App gdbserver not found at {}, uploading.".format(app_gdbserver_path))
-    local_path = "{}/prebuilt/android-{}/gdbserver/gdbserver"
-    local_path = local_path.format(NDK_PATH, arch)
-    remote_path = "/data/local/tmp/{}-gdbserver".format(arch)
+    # We need to upload our debugger server
+    log("App {} not found at {}, uploading.".format(server_name, app_debugger_server_path))
+    remote_path = "/data/local/tmp/{}-{}".format(arch, server_name)
     args.device.push(local_path, remote_path)
 
-    # Copy gdbserver into the data directory on M+, because selinux prevents
+    # Copy debugger server into the data directory on M+, because selinux prevents
     # execution of binaries directly from /data/local/tmp.
     if get_api_level(args.device) >= 23:
-        destination = "{}/{}-gdbserver".format(app_data_dir, arch)
-        log("Copying gdbserver to {}.".format(destination))
+        destination = "{}/{}-{}".format(app_data_dir, arch, server_name)
+        log("Copying {} to {}.".format(server_name, destination))
         cmd = ["cat", remote_path, "|", "run-as", package_name,
                "sh", "-c", "'cat > {}'".format(destination)]
         (rc, _, _) = args.device.shell_nocheck(cmd)
         if rc != 0:
-            error("Failed to copy gdbserver to {}.".format(destination))
+            error("Failed to copy {} to {}.".format(server_name, destination))
         (rc, _, _) = args.device.shell_nocheck(["run-as", package_name,
                                                 "chmod", "700", destination])
         if rc != 0:
-            error("Failed to chmod gdbserver at {}.".format(destination))
+            error("Failed to chmod {} at {}.".format(server_name, destination))
 
         remote_path = destination
 
-    log("Uploaded gdbserver to {}".format(remote_path))
+    log("Uploaded {} to {}".format(server_name, remote_path))
     return remote_path
 
 
@@ -470,6 +519,59 @@ def pull_binaries(device, out_dir, app_64bit):
             device.pull("/system/bin/app_process32", destination)
         except:
             device.pull("/system/bin/app_process", destination)
+
+def generate_lldb_script(args, sysroot, binary_path, app_64bit, jdb_pid, llvm_toolchain_dir):
+    lldb_commands = []
+    solib_search_paths = [
+        "{}/system/bin".format(sysroot),
+        "{}/system/lib{}".format(sysroot, "64" if app_64bit else ""),
+    ]
+    lldb_commands.append(
+        'settings append target.exec-search-paths {}'.format(' '.join(solib_search_paths)))
+
+    lldb_commands.append("target create '{}'".format(binary_path))
+    lldb_commands.append('target modules search-paths add / {}/'.format(sysroot))
+
+    lldb_commands.append('gdb-remote {}'.format(args.port))
+    if jdb_pid is not None:
+        # After we've interrupted the app, reinvoke ndk-gdb.py to start jdb and
+        # wake up the app.
+        lldb_commands.append("""
+script
+def start_jdb_to_unblock_app():
+  import subprocess
+  subprocess.Popen({})
+
+start_jdb_to_unblock_app()
+exit()
+    """.format(repr(
+            [
+                # We can't use sys.executable because it is the python2.
+                # lldb wrapper will set PYTHONHOME to point to python3.
+                get_python_executable(llvm_toolchain_dir),
+                os.path.realpath(__file__),
+                "--internal-wakeup-pid-with-jdb",
+                args.device.adb_path,
+                args.device.serial,
+                args.jdb_cmd,
+                str(jdb_pid),
+                str(bool(args.verbose)),
+            ])))
+
+    if args.tui:
+        lldb_commands.append("gui")
+
+    if args.exec_file is not None:
+        try:
+            exec_file = open(args.exec_file, "r")
+        except IOError:
+            error("Failed to open lldb exec file: '{}'.".format(args.exec_file))
+
+        with exec_file:
+            lldb_commands.append(exec_file.read())
+
+    return "\n".join(lldb_commands)
+
 
 def generate_gdb_script(args, sysroot, binary_path, app_64bit, jdb_pid, connect_timeout=5):
     if sys.platform.startswith("win"):
@@ -578,7 +680,7 @@ def start_jdb(adb_path, serial, jdb_cmd, pid, verbose):
     # start polling for a Java debugger (e.g. every 200ms). We need to wait
     # a while longer then so that the app notices jdb.
     jdb_magic = "__verify_jdb_has_started__"
-    jdb.stdin.write('print "{}"\n'.format(jdb_magic))
+    jdb.stdin.write('print "{}"\n'.format(jdb_magic).encode('utf-8'))
     saw_magic_str = False
     while True:
         line = jdb.stdout.readline()
@@ -602,6 +704,7 @@ def main():
 
     args = handle_args()
     device = args.device
+    use_lldb = not args.no_lldb
 
     if device is None:
         error("Could not find a unique connected device/emulator.")
@@ -635,17 +738,32 @@ def main():
         log("Selected target activity: '{}'".format(args.launch))
 
     abi = fetch_abi(args)
+    arch = abi_to_arch(abi)
 
     out_dir = os.path.join(project, (dump_var(args, "TARGET_OUT", abi)))
     out_dir = os.path.realpath(out_dir)
 
     app_data_dir = get_app_data_dir(args, pkg_name)
-    arch = abi_to_arch(abi)
-    gdbserver_path = get_gdbserver_path(args, pkg_name, app_data_dir, arch)
+
+    llvm_toolchain_dir = os.path.join(NDK_PATH, "toolchains", "llvm", "prebuilt", get_llvm_host_name())
+    if use_lldb:
+        server_local_path = os.path.join(llvm_toolchain_dir, "lib64", "clang",
+                                         get_llvm_package_version(llvm_toolchain_dir),
+                                         "lib", "linux", abi_to_llvm_arch(abi), "lldb-server")
+        server_name = "lldb-server"
+    else:
+        server_local_path = "{}/prebuilt/android-{}/gdbserver/gdbserver"
+        server_local_path = server_local_path.format(NDK_PATH, arch)
+        server_name = "gdbserver"
+    if not os.path.exists(server_local_path):
+        error("Can not find {}: {}", server_name, server_local_path)
+    log("Using {}: {}".format(server_name, server_local_path))
+    debugger_server_path = get_debugger_server_path(args, pkg_name, app_data_dir, arch,
+                                                    server_name, server_local_path)
 
     # Kill the process and gdbserver if requested.
     if args.force:
-        kill_pids = gdbrunner.get_pids(device, gdbserver_path)
+        kill_pids = gdbrunner.get_pids(device, debugger_server_path)
         if args.launch:
             kill_pids += gdbrunner.get_pids(device, pkg_name)
         kill_pids = map(str, kill_pids)
@@ -686,23 +804,26 @@ def main():
 
     # Start gdbserver.
     debug_socket = posixpath.join(app_data_dir, "debug_socket")
-    log("Starting gdbserver...")
+    log("Starting {}...".format(server_name))
     gdbrunner.start_gdbserver(
-        device, None, gdbserver_path,
+        device, None, debugger_server_path,
         target_pid=pid, run_cmd=None, debug_socket=debug_socket,
-        port=args.port, run_as_cmd=["run-as", pkg_name])
-
-    gdb_path = os.path.join(ndk_bin_path(), "gdb")
+        port=args.port, run_as_cmd=["run-as", pkg_name], lldb=use_lldb)
 
     # Start jdb to unblock the application if necessary.
     jdb_pid = pid if (args.launch and not args.nowait) else None
 
     # Start gdb.
-    gdb_commands = generate_gdb_script(args, out_dir, zygote_path, app_64bit, jdb_pid)
-    gdb_flags = []
-    if args.tui:
-        gdb_flags.append("--tui")
-    gdbrunner.start_gdb(gdb_path, gdb_commands, gdb_flags)
+    if use_lldb:
+        script_commands = generate_lldb_script(args, out_dir, zygote_path, app_64bit, jdb_pid, llvm_toolchain_dir)
+        debugger_path = get_lldb_path(llvm_toolchain_dir)
+        flags = []
+    else:
+        script_commands = generate_gdb_script(args, out_dir, zygote_path, app_64bit, jdb_pid)
+        debugger_path = os.path.join(ndk_bin_path(), "gdb")
+        flags = ["--tui"] if args.tui else []
+    print(debugger_path)
+    gdbrunner.start_gdb(debugger_path, script_commands, flags, lldb=use_lldb)
 
 if __name__ == "__main__":
     main()

@@ -39,9 +39,6 @@ $(foreach __name,$(NDK_APP_VARS),\
 ndk-app-$(_app): $(NDK_APP_MODULES)
 all: ndk-app-$(_app)
 
-# which platform/abi/toolchain are we going to use?
-TARGET_PLATFORM := $(call get,$(_map),APP_PLATFORM)
-
 # The ABI(s) to use
 NDK_APP_ABI := $(subst $(comma),$(space),$(strip $(NDK_APP_ABI)))
 ifndef NDK_APP_ABI

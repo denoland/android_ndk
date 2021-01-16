@@ -116,7 +116,6 @@ const TBuiltInResource kDefaultTBuiltInResource = {
     /*.maxCullDistances = */ 8,                 // ARB_cull_distance.
     /*.maxCombinedClipAndCullDistances = */ 8,  // ARB_cull_distance.
     /*.maxSamples = */ 4,
-#ifdef NV_EXTENSIONS
     /* .maxMeshOutputVerticesNV = */ 256,
     /* .maxMeshOutputPrimitivesNV = */ 512,
     /* .maxMeshWorkGroupSizeX_NV = */ 32,
@@ -126,8 +125,7 @@ const TBuiltInResource kDefaultTBuiltInResource = {
     /* .maxTaskWorkGroupSizeY_NV = */ 1,
     /* .maxTaskWorkGroupSizeZ_NV = */ 1,
     /* .maxMeshViewCountNV = */ 4,
-#endif
-
+    /* .maxDualSourceDrawBuffersEXT = */ 1,
     // This is the glslang TLimits structure.
     // It defines whether or not the following features are enabled.
     // We want them to all be enabled.

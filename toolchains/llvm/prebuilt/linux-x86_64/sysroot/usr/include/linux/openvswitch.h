@@ -70,6 +70,7 @@ struct ovs_vport_stats {
 };
 #define OVS_DP_F_UNALIGNED (1 << 0)
 #define OVS_DP_F_VPORT_PIDS (1 << 1)
+#define OVS_DP_F_TC_RECIRC_SHARING (1 << 2)
 #define OVSP_LOCAL ((__u32) 0)
 #define OVS_PACKET_FAMILY "ovs_packet"
 #define OVS_PACKET_VERSION 0x1
@@ -91,6 +92,7 @@ enum ovs_packet_attr {
   OVS_PACKET_ATTR_PROBE,
   OVS_PACKET_ATTR_MRU,
   OVS_PACKET_ATTR_LEN,
+  OVS_PACKET_ATTR_HASH,
   __OVS_PACKET_ATTR_MAX
 };
 #define OVS_PACKET_ATTR_MAX (__OVS_PACKET_ATTR_MAX - 1)
@@ -205,6 +207,7 @@ enum ovs_tunnel_key_attr {
   OVS_TUNNEL_KEY_ATTR_IPV6_DST,
   OVS_TUNNEL_KEY_ATTR_PAD,
   OVS_TUNNEL_KEY_ATTR_ERSPAN_OPTS,
+  OVS_TUNNEL_KEY_ATTR_IPV4_INFO_BRIDGE,
   __OVS_TUNNEL_KEY_ATTR_MAX
 };
 #define OVS_TUNNEL_KEY_ATTR_MAX (__OVS_TUNNEL_KEY_ATTR_MAX - 1)
@@ -363,6 +366,12 @@ struct ovs_action_push_mpls {
   __be32 mpls_lse;
   __be16 mpls_ethertype;
 };
+struct ovs_action_add_mpls {
+  __be32 mpls_lse;
+  __be16 mpls_ethertype;
+  __u16 tun_flags;
+};
+#define OVS_MPLS_L3_TUNNEL_FLAG_MASK (1 << 0)
 struct ovs_action_push_vlan {
   __be16 vlan_tpid;
   __be16 vlan_tci;
@@ -384,6 +393,7 @@ enum ovs_ct_attr {
   OVS_CT_ATTR_NAT,
   OVS_CT_ATTR_FORCE_COMMIT,
   OVS_CT_ATTR_EVENTMASK,
+  OVS_CT_ATTR_TIMEOUT,
   __OVS_CT_ATTR_MAX
 };
 #define OVS_CT_ATTR_MAX (__OVS_CT_ATTR_MAX - 1)
@@ -404,6 +414,14 @@ enum ovs_nat_attr {
 struct ovs_action_push_eth {
   struct ovs_key_ethernet addresses;
 };
+enum ovs_check_pkt_len_attr {
+  OVS_CHECK_PKT_LEN_ATTR_UNSPEC,
+  OVS_CHECK_PKT_LEN_ATTR_PKT_LEN,
+  OVS_CHECK_PKT_LEN_ATTR_ACTIONS_IF_GREATER,
+  OVS_CHECK_PKT_LEN_ATTR_ACTIONS_IF_LESS_EQUAL,
+  __OVS_CHECK_PKT_LEN_ATTR_MAX,
+};
+#define OVS_CHECK_PKT_LEN_ATTR_MAX (__OVS_CHECK_PKT_LEN_ATTR_MAX - 1)
 enum ovs_action_attr {
   OVS_ACTION_ATTR_UNSPEC,
   OVS_ACTION_ATTR_OUTPUT,
@@ -426,6 +444,9 @@ enum ovs_action_attr {
   OVS_ACTION_ATTR_POP_NSH,
   OVS_ACTION_ATTR_METER,
   OVS_ACTION_ATTR_CLONE,
+  OVS_ACTION_ATTR_CHECK_PKT_LEN,
+  OVS_ACTION_ATTR_ADD_MPLS,
+  OVS_ACTION_ATTR_DEC_TTL,
   __OVS_ACTION_ATTR_MAX,
 };
 #define OVS_ACTION_ATTR_MAX (__OVS_ACTION_ATTR_MAX - 1)
@@ -488,5 +509,10 @@ struct ovs_zone_limit {
   int zone_id;
   __u32 limit;
   __u32 count;
+};
+enum ovs_dec_ttl_attr {
+  OVS_DEC_TTL_ATTR_UNSPEC,
+  OVS_DEC_TTL_ATTR_ACTION,
+  __OVS_DEC_TTL_ATTR_MAX
 };
 #endif

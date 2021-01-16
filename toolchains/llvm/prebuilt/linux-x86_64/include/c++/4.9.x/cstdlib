@@ -106,10 +106,14 @@ using ::ldiv;
 using ::lldiv_t;
 using ::lldiv;
 
+#if __ANDROID_API__ >= 26
 using ::mblen;
+#endif
 using ::mbstowcs;
+#if __ANDROID_API__ >= 21
 using ::mbtowc;
 using ::wctomb;
+#endif
 using ::wcstombs;
 
 #if __ANDROID_API__ >= 9

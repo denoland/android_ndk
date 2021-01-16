@@ -42,7 +42,7 @@ def logger():
 
 
 def check_ndk_or_die():
-    """Verify that our NDK installation is sane or die."""
+    """Verify that our NDK installation is somewhat present or die."""
     checks = [
         'build/core',
         'prebuilt',
@@ -52,7 +52,7 @@ def check_ndk_or_die():
     for check in checks:
         check_path = os.path.join(NDK_DIR, check)
         if not os.path.exists(check_path):
-            sys.exit('Failed sanity check: missing {}'.format(check_path))
+            sys.exit('Missing {}'.format(check_path))
 
 
 def get_triple(arch):
@@ -72,10 +72,7 @@ def get_host_tag_or_die():
     elif sys.platform == 'darwin':
         return 'darwin-x86_64'
     elif sys.platform == 'win32' or sys.platform == 'cygwin':
-        host_tag = 'windows-x86_64'
-        if not os.path.exists(os.path.join(NDK_DIR, 'prebuilt', host_tag)):
-            host_tag = 'windows'
-        return host_tag
+        return 'windows-x86_64'
     sys.exit('Unsupported platform: ' + sys.platform)
 
 
@@ -135,9 +132,6 @@ def make_clang_scripts(install_dir, arch, api, windows):
     # https://github.com/android-ndk/ndk/issues/693
     if arch == 'i686' and api < 24:
         flags += ' -mstackrealign'
-
-    # TODO: Remove when https://github.com/android-ndk/ndk/issues/884 is fixed.
-    flags += ' -fno-addrsig'
 
     cxx_flags = str(flags)
 
@@ -229,8 +223,8 @@ def create_toolchain(install_path, arch, api, toolchain_path, host_tag):
     """Create a standalone toolchain."""
     copy_tree(toolchain_path, install_path)
     triple = get_triple(arch)
-    make_clang_scripts(install_path, arch, api, host_tag.startswith('windows'))
-    replace_gcc_wrappers(install_path, triple, host_tag.startswith('windows'))
+    make_clang_scripts(install_path, arch, api, host_tag == 'windows-x86_64')
+    replace_gcc_wrappers(install_path, triple, host_tag == 'windows-x86_64')
 
     prebuilt_path = os.path.join(NDK_DIR, 'prebuilt', host_tag)
     copy_tree(prebuilt_path, install_path)
@@ -243,7 +237,7 @@ def create_toolchain(install_path, arch, api, toolchain_path, host_tag):
 
 def warn_unnecessary(arch, api, host_tag):
     """Emits a warning that this script is no longer needed."""
-    if host_tag.startswith('windows'):
+    if host_tag == 'windows-x86_64':
         ndk_var = '%NDK%'
         prompt = 'C:\\>'
     else:
@@ -367,7 +361,7 @@ def main():
     create_toolchain(install_path, args.arch, api, toolchain_path, host_tag)
 
     if args.install_dir is None:
-        if host_tag.startswith('windows'):
+        if host_tag == 'windows-x86_64':
             package_format = 'zip'
         else:
             package_format = 'bztar'

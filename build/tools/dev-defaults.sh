@@ -56,7 +56,6 @@ DEFAULT_LLVM_GCC32_VERSION=4.9
 DEFAULT_LLVM_GCC64_VERSION=4.9
 
 DEFAULT_BINUTILS_VERSION=2.27
-DEFAULT_GDB_VERSION=7.11
 DEFAULT_MPFR_VERSION=3.1.1
 DEFAULT_GMP_VERSION=5.0.5
 DEFAULT_MPC_VERSION=1.0.1
@@ -67,7 +66,7 @@ DEFAULT_PYTHON_VERSION=2.7.5
 DEFAULT_PERL_VERSION=5.16.2
 
 # The list of default CPU architectures we support
-DEFAULT_ARCHS="arm x86 mips arm64 x86_64 mips64"
+DEFAULT_ARCHS="arm x86 arm64 x86_64"
 
 # Default toolchain names and prefix
 #
@@ -84,12 +83,6 @@ DEFAULT_ARCH_TOOLCHAIN_PREFIX_x86=i686-linux-android
 
 DEFAULT_ARCH_TOOLCHAIN_NAME_x86_64=x86_64
 DEFAULT_ARCH_TOOLCHAIN_PREFIX_x86_64=x86_64-linux-android
-
-DEFAULT_ARCH_TOOLCHAIN_NAME_mips=mips64el-linux-android
-DEFAULT_ARCH_TOOLCHAIN_PREFIX_mips=mips64el-linux-android
-
-DEFAULT_ARCH_TOOLCHAIN_NAME_mips64=mips64el-linux-android
-DEFAULT_ARCH_TOOLCHAIN_PREFIX_mips64=mips64el-linux-android
 
 # The build number of clang used to build pieces of the NDK (like platforms).
 DEFAULT_LLVM_VERSION="2455903"
@@ -272,24 +265,4 @@ get_default_binutils_version_for_gcc ()
 get_default_binutils_version_for_llvm ()
 {
     echo "$DEFAULT_BINUTILS_VERSION"
-}
-
-# Return the gdb version to be used by default when building a given
-# version of GCC.
-#
-# $1: toolchain with version number (e.g. 'arm-linux-androideabi-4.8')
-#
-get_default_gdb_version_for_gcc ()
-{
-    echo "$DEFAULT_GDB_VERSION"
-}
-
-# Return the gdbserver version to be used by default when building a given
-# version of GCC.
-#
-# $1: toolchain with version number (e.g. 'arm-linux-androideabi-4.8')
-#
-get_default_gdbserver_version ()
-{
-    echo "$DEFAULT_GDB_VERSION"
 }

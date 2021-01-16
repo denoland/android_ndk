@@ -34,7 +34,8 @@ struct btrfs_ioctl_vol_args {
 #define BTRFS_SUBVOL_RDONLY (1ULL << 1)
 #define BTRFS_SUBVOL_QGROUP_INHERIT (1ULL << 2)
 #define BTRFS_DEVICE_SPEC_BY_ID (1ULL << 3)
-#define BTRFS_VOL_ARG_V2_FLAGS_SUPPORTED (BTRFS_SUBVOL_CREATE_ASYNC | BTRFS_SUBVOL_RDONLY | BTRFS_SUBVOL_QGROUP_INHERIT | BTRFS_DEVICE_SPEC_BY_ID)
+#define BTRFS_SUBVOL_SPEC_BY_ID (1ULL << 4)
+#define BTRFS_VOL_ARG_V2_FLAGS_SUPPORTED (BTRFS_SUBVOL_RDONLY | BTRFS_SUBVOL_QGROUP_INHERIT | BTRFS_DEVICE_SPEC_BY_ID | BTRFS_SUBVOL_SPEC_BY_ID)
 #define BTRFS_FSID_SIZE 16
 #define BTRFS_UUID_SIZE 16
 #define BTRFS_UUID_UNPARSED_SIZE 37
@@ -64,6 +65,9 @@ struct btrfs_ioctl_qgroup_limit_args {
   __u64 qgroupid;
   struct btrfs_qgroup_limit lim;
 };
+#define BTRFS_DEVICE_REMOVE_ARGS_MASK (BTRFS_DEVICE_SPEC_BY_ID)
+#define BTRFS_SUBVOL_CREATE_ARGS_MASK (BTRFS_SUBVOL_RDONLY | BTRFS_SUBVOL_QGROUP_INHERIT)
+#define BTRFS_SUBVOL_DELETE_ARGS_MASK (BTRFS_SUBVOL_SPEC_BY_ID)
 struct btrfs_ioctl_vol_args_v2 {
   __s64 fd;
   __u64 transid;
@@ -78,6 +82,7 @@ struct btrfs_ioctl_vol_args_v2 {
   union {
     char name[BTRFS_SUBVOL_NAME_MAX + 1];
     __u64 devid;
+    __u64 subvolid;
   };
 };
 struct btrfs_scrub_progress {
@@ -174,6 +179,7 @@ struct btrfs_ioctl_fs_info_args {
 #define BTRFS_FEATURE_INCOMPAT_SKINNY_METADATA (1ULL << 8)
 #define BTRFS_FEATURE_INCOMPAT_NO_HOLES (1ULL << 9)
 #define BTRFS_FEATURE_INCOMPAT_METADATA_UUID (1ULL << 10)
+#define BTRFS_FEATURE_INCOMPAT_RAID1C34 (1ULL << 11)
 struct btrfs_ioctl_feature_flags {
   __u64 compat_flags;
   __u64 compat_ro_flags;
@@ -452,12 +458,15 @@ enum btrfs_err_code {
   BTRFS_ERROR_DEV_TGT_REPLACE,
   BTRFS_ERROR_DEV_MISSING_NOT_FOUND,
   BTRFS_ERROR_DEV_ONLY_WRITABLE,
-  BTRFS_ERROR_DEV_EXCL_RUN_IN_PROGRESS
+  BTRFS_ERROR_DEV_EXCL_RUN_IN_PROGRESS,
+  BTRFS_ERROR_DEV_RAID1C3_MIN_NOT_MET,
+  BTRFS_ERROR_DEV_RAID1C4_MIN_NOT_MET,
 };
 #define BTRFS_IOC_SNAP_CREATE _IOW(BTRFS_IOCTL_MAGIC, 1, struct btrfs_ioctl_vol_args)
 #define BTRFS_IOC_DEFRAG _IOW(BTRFS_IOCTL_MAGIC, 2, struct btrfs_ioctl_vol_args)
 #define BTRFS_IOC_RESIZE _IOW(BTRFS_IOCTL_MAGIC, 3, struct btrfs_ioctl_vol_args)
 #define BTRFS_IOC_SCAN_DEV _IOW(BTRFS_IOCTL_MAGIC, 4, struct btrfs_ioctl_vol_args)
+#define BTRFS_IOC_FORGET_DEV _IOW(BTRFS_IOCTL_MAGIC, 5, struct btrfs_ioctl_vol_args)
 #define BTRFS_IOC_TRANS_START _IO(BTRFS_IOCTL_MAGIC, 6)
 #define BTRFS_IOC_TRANS_END _IO(BTRFS_IOCTL_MAGIC, 7)
 #define BTRFS_IOC_SYNC _IO(BTRFS_IOCTL_MAGIC, 8)
@@ -500,8 +509,8 @@ enum btrfs_err_code {
 #define BTRFS_IOC_QUOTA_RESCAN _IOW(BTRFS_IOCTL_MAGIC, 44, struct btrfs_ioctl_quota_rescan_args)
 #define BTRFS_IOC_QUOTA_RESCAN_STATUS _IOR(BTRFS_IOCTL_MAGIC, 45, struct btrfs_ioctl_quota_rescan_args)
 #define BTRFS_IOC_QUOTA_RESCAN_WAIT _IO(BTRFS_IOCTL_MAGIC, 46)
-#define BTRFS_IOC_GET_FSLABEL _IOR(BTRFS_IOCTL_MAGIC, 49, char[BTRFS_LABEL_SIZE])
-#define BTRFS_IOC_SET_FSLABEL _IOW(BTRFS_IOCTL_MAGIC, 50, char[BTRFS_LABEL_SIZE])
+#define BTRFS_IOC_GET_FSLABEL FS_IOC_GETFSLABEL
+#define BTRFS_IOC_SET_FSLABEL FS_IOC_SETFSLABEL
 #define BTRFS_IOC_GET_DEV_STATS _IOWR(BTRFS_IOCTL_MAGIC, 52, struct btrfs_ioctl_get_dev_stats)
 #define BTRFS_IOC_DEV_REPLACE _IOWR(BTRFS_IOCTL_MAGIC, 53, struct btrfs_ioctl_dev_replace_args)
 #define BTRFS_IOC_FILE_EXTENT_SAME _IOWR(BTRFS_IOCTL_MAGIC, 54, struct btrfs_ioctl_same_args)
@@ -513,4 +522,5 @@ enum btrfs_err_code {
 #define BTRFS_IOC_GET_SUBVOL_INFO _IOR(BTRFS_IOCTL_MAGIC, 60, struct btrfs_ioctl_get_subvol_info_args)
 #define BTRFS_IOC_GET_SUBVOL_ROOTREF _IOWR(BTRFS_IOCTL_MAGIC, 61, struct btrfs_ioctl_get_subvol_rootref_args)
 #define BTRFS_IOC_INO_LOOKUP_USER _IOWR(BTRFS_IOCTL_MAGIC, 62, struct btrfs_ioctl_ino_lookup_user_args)
+#define BTRFS_IOC_SNAP_DESTROY_V2 _IOW(BTRFS_IOCTL_MAGIC, 63, struct btrfs_ioctl_vol_args_v2)
 #endif

@@ -16,6 +16,7 @@
 TOOLCHAIN_NAME := x86_64-linux-android
 LLVM_TRIPLE := x86_64-none-linux-android
 
+TARGET_TOOLCHAIN_ARCH_LIB_DIR := x86_64
 TARGET_ASAN_BASENAME := libclang_rt.asan-x86_64-android.so
 TARGET_UBSAN_BASENAME := libclang_rt.ubsan_standalone-x86_64-android.so
 

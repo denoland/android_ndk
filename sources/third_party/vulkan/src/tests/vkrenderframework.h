@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2015-2017 The Khronos Group Inc.
- * Copyright (c) 2015-2017 Valve Corporation
- * Copyright (c) 2015-2017 LunarG, Inc.
+ * Copyright (c) 2015-2019 The Khronos Group Inc.
+ * Copyright (c) 2015-2019 Valve Corporation
+ * Copyright (c) 2015-2019 LunarG, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ class VkDeviceObj : public vk_testing::Device {
    public:
     VkDeviceObj(uint32_t id, VkPhysicalDevice obj);
     VkDeviceObj(uint32_t id, VkPhysicalDevice obj, std::vector<const char *> &extension_names,
-                VkPhysicalDeviceFeatures *features = nullptr, VkPhysicalDeviceFeatures2KHR *features2 = nullptr);
+                VkPhysicalDeviceFeatures *features = nullptr, void *create_device_pnext = nullptr);
 
     uint32_t QueueFamilyMatching(VkQueueFlags with, VkQueueFlags without, bool all_bits = true);
     uint32_t QueueFamilyWithoutCapabilities(VkQueueFlags capabilities) {
@@ -63,6 +63,7 @@ class VkDeviceObj : public vk_testing::Device {
     VkDevice device() { return handle(); }
     void SetDeviceQueue();
     VkQueueObj *GetDefaultQueue();
+    VkQueueObj *GetDefaultComputeQueue();
 
     uint32_t id;
     VkPhysicalDeviceProperties props;
@@ -77,9 +78,6 @@ class VkDepthStencilObj;
 
 class VkRenderFramework : public VkTestFramework {
    public:
-    VkRenderFramework();
-    ~VkRenderFramework();
-
     VkInstance instance() { return inst; }
     VkDevice device() { return m_device->device(); }
     VkDeviceObj *DeviceObj() const { return m_device; }
@@ -89,17 +87,24 @@ class VkRenderFramework : public VkTestFramework {
     VkFramebuffer framebuffer() { return m_framebuffer; }
     void InitViewport(float width, float height);
     void InitViewport();
+    bool InitSurface();
+    bool InitSurface(float width, float height);
+    bool InitSwapchain(VkSurfaceKHR &surface, VkImageUsageFlags imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                       VkSurfaceTransformFlagBitsKHR preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR);
+    bool InitSwapchain(VkImageUsageFlags imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                       VkSurfaceTransformFlagBitsKHR preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR);
+    void DestroySwapchain();
     void InitRenderTarget();
     void InitRenderTarget(uint32_t targets);
     void InitRenderTarget(VkImageView *dsBinding);
     void InitRenderTarget(uint32_t targets, VkImageView *dsBinding);
     void DestroyRenderTarget();
-    void InitFramework(PFN_vkDebugReportCallbackEXT = NULL, void *userData = NULL);
+    void InitFramework(PFN_vkDebugReportCallbackEXT = NULL, void *userData = NULL, void *instance_pnext = NULL);
 
     void ShutdownFramework();
     void GetPhysicalDeviceFeatures(VkPhysicalDeviceFeatures *features);
     void GetPhysicalDeviceProperties(VkPhysicalDeviceProperties *props);
-    void InitState(VkPhysicalDeviceFeatures *features = nullptr, VkPhysicalDeviceFeatures2 *features2 = nullptr,
+    void InitState(VkPhysicalDeviceFeatures *features = nullptr, void *create_device_pnext = nullptr,
                    const VkCommandPoolCreateFlags flags = 0);
 
     const VkRenderPassBeginInfo &renderPassBeginInfo() const { return m_renderPassBeginInfo; }
@@ -110,8 +115,14 @@ class VkRenderFramework : public VkTestFramework {
     bool InstanceExtensionEnabled(const char *name);
     bool DeviceExtensionSupported(VkPhysicalDevice dev, const char *layer, const char *name, uint32_t specVersion = 0);
     bool DeviceExtensionEnabled(const char *name);
+    bool DeviceIsMockICD();
+    bool DeviceSimulation();
+    bool DeviceCanDraw();
 
    protected:
+    VkRenderFramework();
+    virtual ~VkRenderFramework() = 0;
+
     VkApplicationInfo app_info;
     VkInstance inst;
     VkPhysicalDevice objs[16];
@@ -122,6 +133,8 @@ class VkRenderFramework : public VkTestFramework {
     VkRenderPass m_renderPass;
     VkRenderPassCreateInfo renderPass_info_ = {};
     VkFramebuffer m_framebuffer;
+    VkSurfaceKHR m_surface;
+    VkSwapchainKHR m_swapchain;
     std::vector<VkViewport> m_viewports;
     std::vector<VkRect2D> m_scissors;
     float m_lineWidth;
@@ -155,24 +168,6 @@ class VkRenderFramework : public VkTestFramework {
     std::vector<const char *> m_instance_layer_names;
     std::vector<const char *> m_instance_extension_names;
     std::vector<const char *> m_device_extension_names;
-
-    /*
-     * SetUp and TearDown are called by the Google Test framework
-     * to initialize a test framework based on this class.
-     */
-    virtual void SetUp() {
-        this->app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        this->app_info.pNext = NULL;
-        this->app_info.pApplicationName = "base";
-        this->app_info.applicationVersion = 1;
-        this->app_info.pEngineName = "unittest";
-        this->app_info.engineVersion = 1;
-        this->app_info.apiVersion = VK_API_VERSION_1_0;
-
-        InitFramework();
-    }
-
-    virtual void TearDown() { ShutdownFramework(); }
 };
 
 class VkDescriptorSetObj;
@@ -181,6 +176,7 @@ class VkPipelineObj;
 class VkDescriptorSetObj;
 typedef vk_testing::Fence VkFenceObj;
 typedef vk_testing::Buffer VkBufferObj;
+typedef vk_testing::AccelerationStructure VkAccelerationStructureObj;
 
 class VkCommandPoolObj : public vk_testing::CommandPool {
    public:
@@ -220,6 +216,8 @@ class VkCommandBufferObj : public vk_testing::CommandBuffer {
                          const VkImageSubresourceRange *pRanges);
     void ClearDepthStencilImage(VkImage image, VkImageLayout imageLayout, const VkClearDepthStencilValue *pColor,
                                 uint32_t rangeCount, const VkImageSubresourceRange *pRanges);
+    void BuildAccelerationStructure(VkAccelerationStructureObj *as, VkBuffer scratchBuffer);
+    void BuildAccelerationStructure(VkAccelerationStructureObj *as, VkBuffer scratchBuffer, VkBuffer instanceData);
 
    protected:
     VkDeviceObj *m_device;
@@ -258,13 +256,12 @@ class VkImageObj : public vk_testing::Image {
    public:
     void Init(uint32_t const width, uint32_t const height, uint32_t const mipLevels, VkFormat const format, VkFlags const usage,
               VkImageTiling const tiling = VK_IMAGE_TILING_LINEAR, VkMemoryPropertyFlags const reqs = 0,
-              const std::vector<uint32_t> *queue_families = nullptr);
-
+              const std::vector<uint32_t> *queue_families = nullptr, bool memory = true);
     void init(const VkImageCreateInfo *create_info);
 
     void InitNoLayout(uint32_t const width, uint32_t const height, uint32_t const mipLevels, VkFormat const format,
                       VkFlags const usage, VkImageTiling tiling = VK_IMAGE_TILING_LINEAR, VkMemoryPropertyFlags reqs = 0,
-                      const std::vector<uint32_t> *queue_families = nullptr);
+                      const std::vector<uint32_t> *queue_families = nullptr, bool memory = true);
 
     //    void clear( CommandBuffer*, uint32_t[4] );
 
@@ -277,13 +274,20 @@ class VkImageObj : public vk_testing::Image {
     void UnmapMemory() { Image::memory().unmap(); }
 
     void ImageMemoryBarrier(VkCommandBufferObj *cmd, VkImageAspectFlags aspect, VkFlags output_mask, VkFlags input_mask,
-                            VkImageLayout image_layout);
+                            VkImageLayout image_layout, VkPipelineStageFlags src_stages = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                            VkPipelineStageFlags dest_stages = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                            uint32_t srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                            uint32_t dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED);
 
     VkResult CopyImage(VkImageObj &src_image);
 
+    VkResult CopyImageOut(VkImageObj &dst_image);
+
+    std::array<std::array<uint32_t, 16>, 16> Read();
+
     VkImage image() const { return handle(); }
 
-    VkImageView targetView(VkFormat format) {
+    VkImageView targetView(VkFormat format, VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT) {
         if (!m_targetView.initialized()) {
             VkImageViewCreateInfo createView = {};
             createView.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -294,7 +298,7 @@ class VkImageObj : public vk_testing::Image {
             createView.components.g = VK_COMPONENT_SWIZZLE_G;
             createView.components.b = VK_COMPONENT_SWIZZLE_B;
             createView.components.a = VK_COMPONENT_SWIZZLE_A;
-            createView.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+            createView.subresourceRange = {aspect, 0, 1, 0, 1};
             createView.flags = 0;
             m_targetView.init(*m_device, createView);
         }
@@ -320,7 +324,7 @@ class VkTextureObj : public VkImageObj {
    public:
     VkTextureObj(VkDeviceObj *device, uint32_t *colors = NULL);
 
-    VkDescriptorImageInfo m_imageInfo;
+    const VkDescriptorImageInfo &DescriptorImageInfo() const { return m_descriptorImageInfo; }
 
    protected:
     VkDeviceObj *m_device;
@@ -358,7 +362,7 @@ class VkDescriptorSetLayoutObj : public vk_testing::DescriptorSetLayout {
     VkDescriptorSetLayoutObj() = default;
     VkDescriptorSetLayoutObj(const VkDeviceObj *device,
                              const std::vector<VkDescriptorSetLayoutBinding> &descriptor_set_bindings = {},
-                             VkDescriptorSetLayoutCreateFlags flags = 0);
+                             VkDescriptorSetLayoutCreateFlags flags = 0, void *pNext = NULL);
 
     // Move constructor and move assignment operator for Visual Studio 2013
     VkDescriptorSetLayoutObj(VkDescriptorSetLayoutObj &&src) : DescriptorSetLayout(std::move(src)){};
@@ -398,9 +402,9 @@ class VkDescriptorSetObj : public vk_testing::DescriptorPool {
 class VkShaderObj : public vk_testing::ShaderModule {
    public:
     VkShaderObj(VkDeviceObj *device, const char *shaderText, VkShaderStageFlagBits stage, VkRenderFramework *framework,
-                char const *name = "main");
+                char const *name = "main", bool debug = false, VkSpecializationInfo *specInfo = nullptr);
     VkShaderObj(VkDeviceObj *device, const std::string spv_source, VkShaderStageFlagBits stage, VkRenderFramework *framework,
-                char const *name = "main");
+                char const *name = "main", VkSpecializationInfo *specInfo = nullptr);
     VkPipelineShaderStageCreateInfo const &GetStageCreateInfo() const;
 
    protected:
@@ -448,6 +452,7 @@ class VkPipelineObj : public vk_testing::Pipeline {
     void SetTessellation(const VkPipelineTessellationStateCreateInfo *te_state);
     void SetViewport(const vector<VkViewport> viewports);
     void SetScissor(const vector<VkRect2D> scissors);
+    void SetLineState(const VkPipelineRasterizationLineStateCreateInfoEXT *line_state);
 
     void InitGraphicsPipelineCreateInfo(VkGraphicsPipelineCreateInfo *gp_ci);
 
@@ -463,6 +468,7 @@ class VkPipelineObj : public vk_testing::Pipeline {
     VkPipelineMultisampleStateCreateInfo m_ms_state;
     VkPipelineTessellationStateCreateInfo const *m_te_state;
     VkPipelineDynamicStateCreateInfo m_pd_state;
+    VkPipelineRasterizationLineStateCreateInfoEXT m_line_state;
     vector<VkDynamicState> m_dynamic_state_enables;
     vector<VkViewport> m_viewports;
     vector<VkRect2D> m_scissors;

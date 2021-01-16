@@ -1,6 +1,6 @@
 Name: Android NDK
 URL: http://developer.android.com/ndk/index.html
-Version: r20
+Version: r22
 Security Critical: no
 License: Apache Version 2.0
 License File: NOTICE
@@ -10,25 +10,7 @@ The Android NDK provides libraries and tools necessary for building, running,
 and debugging C/C++ on Android.
 
 Downloaded from: https://developer.android.com/ndk/downloads/index.html
-SHA1 of Linux 64-bit .zip: 8665fc84a1b1f0d6ab3b5fdd1e30200cc7b9adff
+SHA1 of Linux 64-bit .zip: 82274313aba10da6177fd41868f56a0f9651dd81
 
 Local Modifications:
-
-Removes case-sensitive duplicated sysroot include files in "netfilter":
-
-sysroot/usr/include/linux/netfilter_ipv4/ipt_ECN.h
-sysroot/usr/include/linux/netfilter_ipv4/ipt_TTL.h
-sysroot/usr/include/linux/netfilter_ipv6/ip6t_HL.h
-sysroot/usr/include/linux/netfilter/xt_CONNMARK.h
-sysroot/usr/include/linux/netfilter/xt_DSCP.h
-sysroot/usr/include/linux/netfilter/xt_MARK.h
-sysroot/usr/include/linux/netfilter/xt_RATEEST.h
-sysroot/usr/include/linux/netfilter/xt_TCPMSS.h
-toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/linux/netfilter_ipv4/ipt_ECN.h
-toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/linux/netfilter_ipv4/ipt_TTL.h
-toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/linux/netfilter_ipv6/ip6t_HL.h
-toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/linux/netfilter/xt_CONNMARK.h
-toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/linux/netfilter/xt_DSCP.h
-toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/linux/netfilter/xt_MARK.h
-toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/linux/netfilter/xt_RATEEST.h
-toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/linux/netfilter/xt_TCPMSS.h
+None

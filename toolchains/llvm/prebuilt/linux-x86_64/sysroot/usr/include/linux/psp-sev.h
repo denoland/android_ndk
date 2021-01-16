@@ -28,6 +28,7 @@ enum {
   SEV_PDH_CERT_EXPORT,
   SEV_PEK_CERT_IMPORT,
   SEV_GET_ID,
+  SEV_GET_ID2,
   SEV_MAX,
 };
 typedef enum {
@@ -53,6 +54,9 @@ typedef enum {
   SEV_RET_HWSEV_RET_PLATFORM,
   SEV_RET_HWSEV_RET_UNSAFE,
   SEV_RET_UNSUPPORTED,
+  SEV_RET_INVALID_PARAM,
+  SEV_RET_RESOURCE_LIMIT,
+  SEV_RET_SECURE_DATA_INVALID,
   SEV_RET_MAX,
 } sev_ret_code;
 struct sev_user_data_status {
@@ -63,6 +67,7 @@ struct sev_user_data_status {
   __u8 build;
   __u32 guest_count;
 } __packed;
+#define SEV_STATUS_FLAGS_CONFIG_ES 0x0100
 struct sev_user_data_pek_csr {
   __u64 address;
   __u32 length;
@@ -82,6 +87,10 @@ struct sev_user_data_pdh_cert_export {
 struct sev_user_data_get_id {
   __u8 socket1[64];
   __u8 socket2[64];
+} __packed;
+struct sev_user_data_get_id2 {
+  __u64 address;
+  __u32 length;
 } __packed;
 struct sev_issue_cmd {
   __u32 cmd;

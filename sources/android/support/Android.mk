@@ -118,6 +118,7 @@ LOCAL_MODULE := android_support
 LOCAL_SRC_FILES := $(android_support_sources)
 LOCAL_C_INCLUDES := $(android_support_c_includes)
 LOCAL_CFLAGS := $(android_support_cflags)
+LOCAL_ARM_NEON := false
 
 LOCAL_CPPFLAGS := \
     -fvisibility-inlines-hidden \

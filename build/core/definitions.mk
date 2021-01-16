@@ -23,6 +23,10 @@ include $(BUILD_SYSTEM)/definitions-utils.mk
 include $(BUILD_SYSTEM)/definitions-host.mk
 include $(BUILD_SYSTEM)/definitions-graph.mk
 
+include $(BUILD_SYSTEM)/version.mk
+
+ndk-major-at-least = $(if $(filter $(true),$(call gte,$(NDK_MAJOR),$1)),true,false)
+
 # -----------------------------------------------------------------------------
 # Macro    : this-makefile
 # Returns  : the name of the current Makefile in the inclusion stack
@@ -35,7 +39,9 @@ this-makefile = $(lastword $(MAKEFILE_LIST))
 # Returns  : the name of the last parsed Android.mk file
 # Usage    : $(local-makefile)
 # -----------------------------------------------------------------------------
-local-makefile = $(lastword $(filter %Android.mk,$(MAKEFILE_LIST)))
+_last_android_mk = $(lastword $(filter %Android.mk,$(MAKEFILE_LIST)))
+_last_non_ndk_makefile = $(lastword $(filter-out $(NDK_ROOT)%,$(MAKEFILE_LIST)))
+local-makefile = $(if $(_last_android_mk),$(_last_android_mk),$(_last_non_ndk_makefile))
 
 # -----------------------------------------------------------------------------
 # Function : assert-defined
@@ -147,23 +153,6 @@ generate-file-dir = $(eval $(call ev-generate-file-dir,$1))
 #
 # -----------------------------------------------------------------------------
 
-list_file_words_per_echo := 10
-
-# 1: First word index
-# 2: Last word index
-# 3: Full text length
-# 4: Full text
-define list_file_echo
-
-	$(hide) $(HOST_ECHO_N) "$(wordlist $1,$2,$4) " >> $$@
-$(if $(call lt,$2,$3),\
-    $(call list_file_echo,\
-        $(call plus,$1,$(list_file_words_per_echo)),\
-        $(call plus,$2,$(list_file_words_per_echo)),\
-        $3,\
-        $4))
-endef
-
 define generate-list-file-ev
 
 __list_file := $2
@@ -173,8 +162,7 @@ __list_file := $2
 $$(call generate-file-dir,$$(__list_file).tmp)
 
 $$(__list_file).tmp:
-	$$(hide) $$(call generate-empty-file,$$@)
-	$(call list_file_echo,1,$(list_file_words_per_echo),$(words $1),$1)
+	$$(file >$$@,$1)
 
 $$(__list_file): $$(__list_file).tmp
 	$$(hide) $$(call host-copy-if-differ,$$@.tmp,$$@)
@@ -1690,7 +1678,6 @@ _FLAGS := \
     $$(TARGET_CXXFLAGS) \
     $$(call get-src-file-target-cflags,$(1)) \
     $$(call host-c-includes, $$(LOCAL_C_INCLUDES) $$(LOCAL_PATH)) \
-    $(STL_DEFAULT_STD_VERSION) \
     $$(NDK_APP_CFLAGS) \
     $$(NDK_APP_CPPFLAGS) \
     $$(NDK_APP_CXXFLAGS) \
@@ -1823,7 +1810,6 @@ _FLAGS := \
     $$(TARGET_CXXFLAGS) \
     $$(call get-src-file-target-cflags,$(1)) \
     $$(call host-c-includes, $$(LOCAL_C_INCLUDES) $$(LOCAL_PATH)) \
-    $(STL_DEFAULT_STD_VERSION) \
     $$(NDK_APP_CFLAGS) \
     $$(NDK_APP_CPPFLAGS) \
     $$(NDK_APP_CXXFLAGS) \
@@ -2085,7 +2071,6 @@ NDK_STL_LIST :=
 # $2: STL module path (e.g. cxx-stl/system)
 # $3: list of static libraries all modules will depend on
 # $4: list of shared libraries all modules will depend on
-# $5: Default standard version for this STL (with `-std` prefix).
 #
 ndk-stl-register = \
     $(eval __ndk_stl := $(strip $1)) \
@@ -2093,7 +2078,6 @@ ndk-stl-register = \
     $(eval NDK_STL.$(__ndk_stl).IMPORT_MODULE := $(strip $2)) \
     $(eval NDK_STL.$(__ndk_stl).STATIC_LIBS := $(strip $(call strip-lib-prefix,$3))) \
     $(eval NDK_STL.$(__ndk_stl).SHARED_LIBS := $(strip $(call strip-lib-prefix,$4))) \
-    $(eval NDK_STL.$(__ndk_stl).DEFAULT_STD_VERSION := $(strip $5))
 
 # Called to check that the value of APP_STL is a valid one.
 # $1: STL name as it apperas in APP_STL (e.g. 'system')
@@ -2110,8 +2094,10 @@ ndk-stl-check = \
 #
 ndk-stl-select = \
     $(if $(filter none,$1),,\
-        $(call import-module,$(NDK_STL.$1.IMPORT_MODULE)) \
-        $(eval STL_DEFAULT_STD_VERSION := $(strip $(NDK_STL.$1.DEFAULT_STD_VERSION))))
+        $(if $(NDK_STL.$1.IMPORT_MODULE),\
+            $(call import-module,$(NDK_STL.$1.IMPORT_MODULE)) \
+        )\
+    )
 
 # Called after all Android.mk files are parsed to add
 # proper STL dependencies to every C++ module.
@@ -2124,22 +2110,19 @@ ndk-stl-add-dependencies = \
         $(NDK_STL.$1.LDLIBS))
 
 $(call ndk-stl-register,none)
-$(call ndk-stl-register,system,cxx-stl/system,libstdc++)
+$(call ndk-stl-register,system)
 
 $(call ndk-stl-register,\
     c++_static,\
     cxx-stl/llvm-libc++,\
-    c++_static,\
-    ,\
-    -std=c++11\
+    c++_static\
     )
 
 $(call ndk-stl-register,\
     c++_shared,\
     cxx-stl/llvm-libc++,\
     ,\
-    c++_shared,\
-    -std=c++11\
+    c++_shared\
     )
 
 ifneq (,$(NDK_UNIT_TESTS))

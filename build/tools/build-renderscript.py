@@ -16,49 +16,44 @@
 #
 """Packages the platform's RenderScript for the NDK."""
 import os
-import shutil
 import site
-import subprocess
 import sys
 
 site.addsitedir(os.path.join(os.path.dirname(__file__), '../lib'))
+site.addsitedir(os.path.join(os.path.dirname(__file__), '../..'))
 
-import build_support  # pylint: disable=import-error
+# pylint: disable=import-error,wrong-import-position
+import build_support
+from ndk.hosts import Host, host_to_tag
+# pylint: enable=import-error,wrong-import-position
 
 
-def get_rs_prebuilt_path(host):
-    rel_prebuilt_path = 'prebuilts/renderscript/host/{}'.format(host)
+def get_rs_prebuilt_path(host_tag: str) -> str:
+    rel_prebuilt_path = f'prebuilts/renderscript/host/{host_tag}'
     prebuilt_path = os.path.join(build_support.android_path(),
                                  rel_prebuilt_path)
     if not os.path.isdir(prebuilt_path):
-        sys.exit('Could not find prebuilt RenderScript at {}'.format(prebuilt_path))
+        sys.exit(f'Could not find prebuilt RenderScript at {prebuilt_path}')
     return prebuilt_path
 
 
-def main(args):
+def main(args) -> None:
     RS_VERSION = 'current'
 
-    host = args.host
-    out_dir = args.out_dir;
+    host: Host = args.host
     package_dir = args.dist_dir
 
-    os_name = host
+    os_name = args.host.value
     if os_name == 'windows64':
         os_name = 'windows'
-    prebuilt_path = get_rs_prebuilt_path(os_name + '-x86')
-    print('prebuilt path: ' + prebuilt_path)
-    if host == 'darwin':
-        host = 'darwin-x86_64'
-    elif host == 'linux':
-        host = 'linux-x86_64'
-    elif host == 'windows':
-        host = 'windows'
-    elif host == 'windows64':
-        host = 'windows-x86_64'
 
-    package_name = 'renderscript-toolchain-{}'.format(host)
+    prebuilt_path = get_rs_prebuilt_path(f'{os_name}-x86')
+    print(f'prebuilt path: {prebuilt_path}')
+
+    package_name = f'renderscript-toolchain-{host_to_tag(host)}'
     built_path = os.path.join(prebuilt_path, RS_VERSION)
     build_support.make_package(package_name, built_path, package_dir)
+
 
 if __name__ == '__main__':
     build_support.run(main)

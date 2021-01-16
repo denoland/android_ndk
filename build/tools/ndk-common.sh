@@ -26,7 +26,7 @@ fi
 
 OS=`uname -s`
 if [ "$OS" == "Darwin" -a -z "$MACOSX_DEPLOYMENT_TARGET" ]; then
-    export MACOSX_DEPLOYMENT_TARGET="10.8"
+    export MACOSX_DEPLOYMENT_TARGET="10.9"
 fi
 
 # Find the Android NDK root, assuming we are invoked from a script
@@ -51,9 +51,7 @@ find_ndk_root ()
     eval $1="$PROGDIR"
 }
 
-# Put location of Android NDK into ANDROID_NDK_ROOT and
-# perform a tiny amount of sanity check
-#
+# Setup default ANDROID_NDK_ROOT and verify.
 if [ -z "$ANDROID_NDK_ROOT" ] ; then
     find_ndk_root ANDROID_NDK_ROOT "$0"
     if [ $? != 0 ]; then

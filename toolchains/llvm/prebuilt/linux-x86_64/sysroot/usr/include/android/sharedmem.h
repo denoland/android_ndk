@@ -21,7 +21,7 @@
 
 /**
  * @file sharedmem.h
- * @brief Shared memory buffers that can be shared across process.
+ * @brief Shared memory buffers that can be shared between processes.
  */
 
 #ifndef ANDROID_SHARED_MEMORY_H
@@ -61,11 +61,19 @@ extern "C" {
  *
  * Use close() to release the shared memory region.
  *
+ * Use {@link android.os.ParcelFileDescriptor} to pass the file descriptor to
+ * another process. File descriptors may also be sent to other processes over a Unix domain
+ * socket with sendmsg and SCM_RIGHTS. See sendmsg(3) and cmsg(3) man pages for more information.
+ *
+ * If you intend to share this file descriptor with a child process after
+ * calling exec(3), note that you will need to use fcntl(2) with FD_SETFD
+ * to clear the FD_CLOEXEC flag for this to work on all versions of Android.
+ *
  * Available since API level 26.
  *
  * \param name an optional name.
  * \param size size of the shared memory region
- * \return file descriptor that denotes the shared memory; error code on failure.
+ * \return file descriptor that denotes the shared memory; -1 and sets errno on failure, or -EINVAL if the error is that size was 0.
  */
 int ASharedMemory_create(const char *name, size_t size) __INTRODUCED_IN(26);
 
@@ -109,7 +117,7 @@ size_t ASharedMemory_getSize(int fd) __INTRODUCED_IN(26);
  * \param fd   file descriptor of the shared memory region.
  * \param prot any bitwise-or'ed combination of PROT_READ, PROT_WRITE, PROT_EXEC denoting
  *             updated access. Note access can only be removed, but not added back.
- * \return 0 for success, error code on failure.
+ * \return 0 for success, -1 and sets errno on failure.
  */
 int ASharedMemory_setProt(int fd, int prot) __INTRODUCED_IN(26);
 

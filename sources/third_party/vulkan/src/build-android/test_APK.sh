@@ -14,6 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Quiet by default
+set +x
+
+echo
+echo === Vulkan Validation Layers Tests ===
+echo Running test script: build-android/test_APK.sh
+echo
+
 #
 # Parse parameters
 #
@@ -23,6 +31,7 @@ function printUsage {
    echo "    -p|--platform <platform> (optional)"
    echo "    -f|--filter <gtest filter list> (optional)"
    echo "    -s|--serial <target device serial number> (optional)"
+   echo "    -a|--abi <target abi> (optional)"
    echo
    echo "i.e. ${0##*/} -p <platform> -f <test filter> -s <serial number>"
    exit 1
@@ -50,6 +59,10 @@ do
             ;;
         -s|--serial)
             serial="$2"
+            shift 2
+            ;;
+        -a|--abi)
+            abi="$2"
             shift 2
             ;;
         -*)
@@ -90,8 +103,12 @@ fi
 if [[ $platform ]]; then echo platform = "${platform}"; fi
 if [[ $filter ]]; then echo filter = "${filter}"; fi
 if [[ $serial ]]; then echo serial = "${serial}"; fi
+if [[ $abi ]]; then echo abi = "${abi}"; fi
 
-set -ev
+set -e
+
+echo
+echo Setting up...
 
 #
 # Start up
@@ -144,8 +161,19 @@ fi
 # Re-enable exit on error
 set -e
 
+echo
+echo Installing ./bin/VulkanLayerValidationTests.apk...
+
 # Install the current build
-adb $serialFlag install -r bin/VulkanLayerValidationTests.apk
+if [[ -z $abi ]]
+then
+  adb $serialFlag install -r bin/VulkanLayerValidationTests.apk
+else
+  adb $serialFlag install --abi $abi -r bin/VulkanLayerValidationTests.apk
+fi
+
+echo
+echo Launching tests...
 
 # Kick off the tests with known expection list
 adb $serialFlag shell am start -a android.intent.action.MAIN -c android-intent.category.LAUNCH -n com.example.VulkanLayerValidationTests/android.app.NativeActivity --es args --gtest_filter="${filter}"
@@ -169,7 +197,9 @@ while [ $(date +%s) -lt $endTime ]; do  # Loop until interval has elapsed.
     adb $serialFlag logcat -d | grep "==== Tests PASSED ===="
     if [ $? -eq 0 ]
     then
+        echo
         echo VulkanLayerValidationTests PASSED!
+        echo
         exitCode=0
         break
     fi
@@ -178,7 +208,9 @@ while [ $(date +%s) -lt $endTime ]; do  # Loop until interval has elapsed.
     adb $serialFlag logcat -d | grep "==== Tests FAILED ===="
     if [ $? -eq 0 ]
     then
+        echo
         echo VulkanLayerValidationTests FAILED!
+        echo
         exitCode=1
         break
     fi
@@ -188,7 +220,9 @@ while [ $(date +%s) -lt $endTime ]; do  # Loop until interval has elapsed.
     if [ $? -eq 0 ]
     then
         exitCode=2
+        echo
         echo VulkanLayerValidationTests CRASHED!
+        echo
         break
     fi
 
@@ -214,11 +248,18 @@ adb $serialFlag shell input keyevent "KEYCODE_HOME"
 # Stop the activity
 adb $serialFlag shell am force-stop com.example.VulkanLayerValidationTests
 
-today=$(date +%Y-%m-%d.%H:%M:%S)
+echo
+echo Fetching test output and filtered logcat text...
+
+# Avoid characters that are illegal in Windows filenames, so these
+# files can be archived to a Windows host system for later reference
+today=$(date +%Y%m%d-%H%M%S)
 outFile="VulkanLayerValidationTests.$platform.$today.out.txt"
 errFile="VulkanLayerValidationTests.$platform.$today.err.txt"
-adb $serialFlag pull /sdcard/Android/data/com.example.VulkanLayerValidationTests/files/out.txt VulkanLayerValidationTests.$platform.$today.out.txt
-adb $serialFlag pull /sdcard/Android/data/com.example.VulkanLayerValidationTests/files/err.txt VulkanLayerValidationTests.$platform.$today.err.txt
+logFile="VulkanLayerValidationTests.$platform.$today.logcat.txt"
+adb $serialFlag pull /sdcard/Android/data/com.example.VulkanLayerValidationTests/files/out.txt $outFile
+adb $serialFlag pull /sdcard/Android/data/com.example.VulkanLayerValidationTests/files/err.txt $errFile
+adb $serialFlag logcat -d | grep VulkanLayerValidationTests > $logFile
 
 if [ -f $outFile ]; then
     echo $outFile size $(wc -c < $outFile)
@@ -228,12 +269,23 @@ if [ -f $errFile ]; then
     echo $errFile size $(wc -c < $errFile)
 fi
 
-echo
-echo ===== Dumping logcat of VulkanLayerValidationTests =====
-echo If the test is crashing, be sure to inspect full log for complete stack trace.
-echo "adb $serialFlag logcat -d | grep VulkanLayerValidationTests"
-echo ========================================================
-echo
-adb $serialFlag logcat -d | grep VulkanLayerValidationTests
+if [ -f $logFile ]; then
+    echo $logFile size $(wc -c < $logFile)
+fi
+
+if [ $exitCode -ne 0 ]
+then
+    echo 
+    echo VulkanLayerValidationTests result status is unsuccessful.  Dumping test output file:
+    echo =========================================================================================
+    cat $outFile
+    echo =========================================================================================
+    echo
+    echo 
+    echo Dumping logcat text, filtered by ''"VulkanLayerValidationTests"'':
+    echo =========================================================================================
+    cat $logFile
+    echo =========================================================================================
+fi
 
 exit $exitCode

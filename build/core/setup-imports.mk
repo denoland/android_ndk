@@ -34,3 +34,9 @@ $(foreach __path,$(subst $(HOST_DIRSEP),$(space),$(NDK_MODULE_PATH)),\
 )
 $(call import-add-path-optional,$(NDK_ROOT)/sources)
 $(call import-add-path-optional,$(NDK_ROOT)/../development/ndk/sources)
+
+# Gradle can inject its own import paths to expose other ndk-build modules to
+# ndk-build (such as those generate by Prefab).
+ifdef NDK_GRADLE_INJECTED_IMPORT_PATH
+  $(call import-add-path,$(NDK_GRADLE_INJECTED_IMPORT_PATH))
+endif

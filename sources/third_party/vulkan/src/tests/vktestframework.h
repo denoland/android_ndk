@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2015-2016 The Khronos Group Inc.
- * Copyright (c) 2015-2016 Valve Corporation
- * Copyright (c) 2015-2016 LunarG, Inc.
+ * Copyright (c) 2015-2019 The Khronos Group Inc.
+ * Copyright (c) 2015-2019 Valve Corporation
+ * Copyright (c) 2015-2019 LunarG, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,23 +59,26 @@ class VkImageObj;
 
 class VkTestFramework : public ::testing::Test {
    public:
-    VkTestFramework();
-    ~VkTestFramework();
-
     VkFormat GetFormat(VkInstance instance, vk_testing::Device *device);
     static bool optionMatch(const char *option, char *optionLine);
     static void InitArgs(int *argc, char *argv[]);
     static void Finish();
 
-    bool GLSLtoSPV(const VkShaderStageFlagBits shader_type, const char *pshader, std::vector<unsigned int> &spv);
+    bool GLSLtoSPV(const VkShaderStageFlagBits shader_type, const char *pshader, std::vector<unsigned int> &spv,
+                   bool debug = false);
     bool ASMtoSPV(const spv_target_env target_env, const uint32_t options, const char *pasm, std::vector<unsigned int> &spv);
     static bool m_canonicalize_spv;
     static bool m_strip_spv;
     static bool m_do_everything_spv;
     static bool m_devsim_layer;
+    static bool m_khronos_layer_disable;
 
     char **ReadFileData(const char *fileName);
     void FreeFileData(char **data);
+
+   protected:
+    VkTestFramework();
+    virtual ~VkTestFramework() = 0;
 
    private:
     int m_compile_options;

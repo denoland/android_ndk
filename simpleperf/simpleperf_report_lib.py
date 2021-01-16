@@ -83,12 +83,14 @@ class TracingFieldFormatStruct(ct.Structure):
        elem_size: size of the element type.
        elem_count: the number of elements in this field, more than one if the field is an array.
        is_signed: whether the element type is signed or unsigned.
+       is_dynamic: whether the element is a dynamic string.
     """
     _fields_ = [('_name', ct.c_char_p),
                 ('offset', ct.c_uint32),
                 ('elem_size', ct.c_uint32),
                 ('elem_count', ct.c_uint32),
-                ('is_signed', ct.c_uint32)]
+                ('is_signed', ct.c_uint32),
+                ('is_dynamic', ct.c_uint32)]
 
     _unpack_key_dict = {1: 'b', 2: 'h', 4: 'i', 8: 'q'}
 
@@ -102,8 +104,16 @@ class TracingFieldFormatStruct(ct.Structure):
             an array of int values, etc. If the type can't be parsed, return a byte array or an
             array of byte arrays.
         """
-        if self.elem_count > 1 and self.elem_size == 1 and self.is_signed == 0:
-            # The field is a string.
+        if self.is_dynamic:
+            offset, max_len = struct.unpack('<HH', data[self.offset:self.offset + 4])
+            length = 0
+            while length < max_len and bytes_to_str(data[offset + length]) != '\x00':
+                length += 1
+            return bytes_to_str(data[offset: offset + length])
+
+        if self.elem_count > 1 and self.elem_size == 1:
+            # Probably the field is a string.
+            # Don't use self.is_signed, which has different values on x86 and arm.
             length = 0
             while length < self.elem_count and bytes_to_str(data[self.offset + length]) != '\x00':
                 length += 1
@@ -240,6 +250,7 @@ class ReportLib(object):
         self._SetKallsymsFileFunc = self._lib.SetKallsymsFile
         self._ShowIpForUnknownSymbolFunc = self._lib.ShowIpForUnknownSymbol
         self._ShowArtFramesFunc = self._lib.ShowArtFrames
+        self._MergeJavaMethodsFunc = self._lib.MergeJavaMethods
         self._GetNextSampleFunc = self._lib.GetNextSample
         self._GetNextSampleFunc.restype = ct.POINTER(SampleStruct)
         self._GetEventOfCurrentSampleFunc = self._lib.GetEventOfCurrentSample
@@ -293,6 +304,17 @@ class ReportLib(object):
     def ShowArtFrames(self, show=True):
         """ Show frames of internal methods of the Java interpreter. """
         self._ShowArtFramesFunc(self.getInstance(), show)
+
+    def MergeJavaMethods(self, merge=True):
+        """ This option merges jitted java methods with the same name but in different jit
+            symfiles. If possible, it also merges jitted methods with interpreted methods,
+            by mapping jitted methods to their corresponding dex files.
+            Side effects:
+              It only works at method level, not instruction level.
+              It makes symbol.vaddr_in_file and symbol.mapping not accurate for jitted methods.
+            Java methods are merged by default.
+        """
+        self._MergeJavaMethodsFunc(self.getInstance(), merge)
 
     def SetKallsymsFile(self, kallsym_file):
         """ Set the file path to a copy of the /proc/kallsyms file (for off device decoding) """

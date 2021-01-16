@@ -2,12 +2,14 @@
 # - Change 'binary' if clang-include-fixer is not on the path (see below).
 # - Add to your .vimrc:
 #
-#   noremap <leader>cf :pyf path/to/llvm/source/tools/clang/tools/extra/include-fixer/tool/clang-include-fixer.py<cr>
+#   noremap <leader>cf :pyf path/to/llvm/source/tools/clang/tools/extra/clang-include-fixer/tool/clang-include-fixer.py<cr>
 #
-# This enables clang-include-fixer for NORMAL and VISUAL mode. Change "<leader>cf"
-# to another binding if you need clang-include-fixer on a different key.
+# This enables clang-include-fixer for NORMAL and VISUAL mode. Change
+# "<leader>cf" to another binding if you need clang-include-fixer on a
+# different key.
 #
-# To set up clang-include-fixer, see http://clang.llvm.org/extra/include-fixer.html
+# To set up clang-include-fixer, see
+# http://clang.llvm.org/extra/clang-include-fixer.html
 #
 # With this integration you can press the bound key and clang-include-fixer will
 # be run on the current buffer.
@@ -15,6 +17,7 @@
 # It operates on the current, potentially unsaved buffer and does not create
 # or save any files. To revert a fix, just undo.
 
+from __future__ import print_function
 import argparse
 import difflib
 import json
@@ -76,17 +79,24 @@ def GetUserSelection(message, headers, maximum_suggested_headers):
         raise Exception()
     except Exception:
       # Show a new prompt on invalid option instead of aborting so that users
-      # don't need to wait for another include-fixer run.
-      print >> sys.stderr, "Invalid option:", res
+      # don't need to wait for another clang-include-fixer run.
+      print("Invalid option: {}".format(res), file=sys.stderr)
       return GetUserSelection(message, headers, maximum_suggested_headers)
   return headers[idx - 1]
 
 
 def execute(command, text):
+  # Avoid flashing a cmd prompt on Windows.
+  startupinfo = None
+  if sys.platform.startswith('win32'):
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    startupinfo.wShowWindow = subprocess.SW_HIDE
+
   p = subprocess.Popen(command,
                        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                       stdin=subprocess.PIPE)
-  return p.communicate(input=text)
+                       stdin=subprocess.PIPE, startupinfo=startupinfo)
+  return p.communicate(input=text.encode('utf-8'))
 
 
 def InsertHeaderToVimBuffer(header, text):
@@ -136,7 +146,7 @@ def main():
                       help='clang-include-fixer input format.')
   parser.add_argument('-input', default='',
                       help='String to initialize the database.')
-  # Don't throw exception when parsing unknown arguements to make the script
+  # Don't throw exception when parsing unknown arguments to make the script
   # work in neovim.
   # Neovim (at least v0.2.1) somehow mangles the sys.argv in a weird way: it
   # will pass additional arguments (e.g. "-c script_host.py") to sys.argv,
@@ -150,7 +160,7 @@ def main():
   if query_mode:
     symbol = get_symbol_under_cursor()
     if len(symbol) == 0:
-      print "Skip querying empty symbol."
+      print("Skip querying empty symbol.")
       return
     command = [binary, "-stdin", "-query-symbol="+get_symbol_under_cursor(),
                "-db=" + args.db, "-input=" + args.input,
@@ -161,16 +171,17 @@ def main():
                "-input=" + args.input, vim.current.buffer.name]
   stdout, stderr = execute(command, text)
   if stderr:
-    print >> sys.stderr, "Error while running clang-include-fixer: " + stderr
+    print("Error while running clang-include-fixer: {}".format(stderr),
+          file=sys.stderr)
     return
 
   include_fixer_context = json.loads(stdout)
   query_symbol_infos = include_fixer_context["QuerySymbolInfos"]
   if not query_symbol_infos:
-    print "The file is fine, no need to add a header."
+    print("The file is fine, no need to add a header.")
     return
   symbol = query_symbol_infos[0]["RawIdentifier"]
-  # The header_infos is already sorted by include-fixer.
+  # The header_infos is already sorted by clang-include-fixer.
   header_infos = include_fixer_context["HeaderInfos"]
   # Deduplicate headers while keeping the order, so that the same header would
   # not be suggested twice.
@@ -183,7 +194,7 @@ def main():
       unique_headers.append(header)
 
   if not unique_headers:
-    print "Couldn't find a header for {0}.".format(symbol)
+    print("Couldn't find a header for {0}.".format(symbol))
     return
 
   try:
@@ -198,9 +209,9 @@ def main():
     include_fixer_context["HeaderInfos"] = inserted_header_infos
 
     InsertHeaderToVimBuffer(include_fixer_context, text)
-    print "Added #include {0} for {1}.".format(selected, symbol)
+    print("Added #include {0} for {1}.".format(selected, symbol))
   except Exception as error:
-    print >> sys.stderr, error.message
+    print(error, file=sys.stderr)
   return
 
 

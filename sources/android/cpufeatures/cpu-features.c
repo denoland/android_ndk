@@ -1088,7 +1088,7 @@ android_getCpuCount(void)
 }
 
 static void
-android_cpuInitDummy(void)
+android_cpuInitTrivial(void)
 {
     g_inited = 1;
 }
@@ -1103,7 +1103,7 @@ android_setCpu(int cpu_count, uint64_t cpu_features)
     android_cpuInitFamily();
     g_cpuCount = (cpu_count <= 0 ? 1 : cpu_count);
     g_cpuFeatures = cpu_features;
-    pthread_once(&g_once, android_cpuInitDummy);
+    pthread_once(&g_once, android_cpuInitTrivial);
 
     return 1;
 }

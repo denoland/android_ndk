@@ -30,6 +30,9 @@ struct gpiochip_info {
 #define GPIOLINE_FLAG_ACTIVE_LOW (1UL << 2)
 #define GPIOLINE_FLAG_OPEN_DRAIN (1UL << 3)
 #define GPIOLINE_FLAG_OPEN_SOURCE (1UL << 4)
+#define GPIOLINE_FLAG_BIAS_PULL_UP (1UL << 5)
+#define GPIOLINE_FLAG_BIAS_PULL_DOWN (1UL << 6)
+#define GPIOLINE_FLAG_BIAS_DISABLE (1UL << 7)
 struct gpioline_info {
   __u32 line_offset;
   __u32 flags;
@@ -37,11 +40,25 @@ struct gpioline_info {
   char consumer[32];
 };
 #define GPIOHANDLES_MAX 64
+enum {
+  GPIOLINE_CHANGED_REQUESTED = 1,
+  GPIOLINE_CHANGED_RELEASED,
+  GPIOLINE_CHANGED_CONFIG,
+};
+struct gpioline_info_changed {
+  struct gpioline_info info;
+  __u64 timestamp;
+  __u32 event_type;
+  __u32 padding[5];
+};
 #define GPIOHANDLE_REQUEST_INPUT (1UL << 0)
 #define GPIOHANDLE_REQUEST_OUTPUT (1UL << 1)
 #define GPIOHANDLE_REQUEST_ACTIVE_LOW (1UL << 2)
 #define GPIOHANDLE_REQUEST_OPEN_DRAIN (1UL << 3)
 #define GPIOHANDLE_REQUEST_OPEN_SOURCE (1UL << 4)
+#define GPIOHANDLE_REQUEST_BIAS_PULL_UP (1UL << 5)
+#define GPIOHANDLE_REQUEST_BIAS_PULL_DOWN (1UL << 6)
+#define GPIOHANDLE_REQUEST_BIAS_DISABLE (1UL << 7)
 struct gpiohandle_request {
   __u32 lineoffsets[GPIOHANDLES_MAX];
   __u32 flags;
@@ -50,6 +67,12 @@ struct gpiohandle_request {
   __u32 lines;
   int fd;
 };
+struct gpiohandle_config {
+  __u32 flags;
+  __u8 default_values[GPIOHANDLES_MAX];
+  __u32 padding[4];
+};
+#define GPIOHANDLE_SET_CONFIG_IOCTL _IOWR(0xB4, 0x0a, struct gpiohandle_config)
 struct gpiohandle_data {
   __u8 values[GPIOHANDLES_MAX];
 };
@@ -73,6 +96,8 @@ struct gpioevent_data {
 };
 #define GPIO_GET_CHIPINFO_IOCTL _IOR(0xB4, 0x01, struct gpiochip_info)
 #define GPIO_GET_LINEINFO_IOCTL _IOWR(0xB4, 0x02, struct gpioline_info)
+#define GPIO_GET_LINEINFO_WATCH_IOCTL _IOWR(0xB4, 0x0b, struct gpioline_info)
+#define GPIO_GET_LINEINFO_UNWATCH_IOCTL _IOWR(0xB4, 0x0c, __u32)
 #define GPIO_GET_LINEHANDLE_IOCTL _IOWR(0xB4, 0x03, struct gpiohandle_request)
 #define GPIO_GET_LINEEVENT_IOCTL _IOWR(0xB4, 0x04, struct gpioevent_request)
 #endif

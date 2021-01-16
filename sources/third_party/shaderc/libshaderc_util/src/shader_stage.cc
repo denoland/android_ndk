@@ -33,7 +33,16 @@ EShLanguage MapStageNameToLanguage(const string_piece& stage_name) {
       {"tesscontrol", EShLangTessControl},
       {"tesseval", EShLangTessEvaluation},
       {"geometry", EShLangGeometry},
-      {"compute", EShLangCompute}};
+      {"compute", EShLangCompute},
+      {"raygen", EShLangRayGenNV},
+      {"intersect", EShLangIntersectNV},
+      {"anyhit", EShLangAnyHitNV},
+      {"closest", EShLangClosestHitNV},
+      {"miss", EShLangMissNV},
+      {"callable", EShLangCallableNV},
+      {"task", EShLangTaskNV},
+      {"mesh", EShLangMeshNV},
+  };
 
   for (const auto& entry : string_to_stage) {
     if (stage_name == entry.id) return entry.language;

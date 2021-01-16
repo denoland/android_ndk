@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef INTERPOLATOR_H_
-#define INTERPOLATOR_H_
+#pragma once
 
 #include <jni.h>
 #include <errno.h>
@@ -86,4 +85,3 @@ public:
 };
 
 }   //namespace ndkHelper
-#endif /* INTERPOLATOR_H_ */

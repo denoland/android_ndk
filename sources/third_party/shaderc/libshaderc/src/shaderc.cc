@@ -12,21 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "shaderc_private.h"
-
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
+#include <memory>
 #include <sstream>
 #include <vector>
-
-#include "SPIRV/spirv.hpp"
 
 #include "libshaderc_util/compiler.h"
 #include "libshaderc_util/counting_includer.h"
 #include "libshaderc_util/resources.h"
 #include "libshaderc_util/spirv_tools_wrapper.h"
 #include "libshaderc_util/version_profile.h"
+#include "shaderc_private.h"
+#include "spirv/unified1/spirv.hpp"
 
 #if (defined(_MSC_VER) && !defined(_CPPUNWIND)) || !defined(__EXCEPTIONS)
 #define TRY_IF_EXCEPTIONS_ENABLED
@@ -57,7 +56,6 @@ EShLanguage GetForcedStage(shaderc_shader_kind kind) {
     case shaderc_glsl_tess_evaluation_shader:
       return EShLangTessEvaluation;
 
-#ifdef NV_EXTENSIONS
     case shaderc_glsl_raygen_shader:
       return EShLangRayGenNV;
     case shaderc_glsl_anyhit_shader:
@@ -74,7 +72,6 @@ EShLanguage GetForcedStage(shaderc_shader_kind kind) {
       return EShLangTaskNV;
     case shaderc_glsl_mesh_shader:
       return EShLangMeshNV;
-#endif
 
     case shaderc_glsl_infer_from_source:
     case shaderc_glsl_default_vertex_shader:
@@ -83,7 +80,6 @@ EShLanguage GetForcedStage(shaderc_shader_kind kind) {
     case shaderc_glsl_default_geometry_shader:
     case shaderc_glsl_default_tess_control_shader:
     case shaderc_glsl_default_tess_evaluation_shader:
-#ifdef NV_EXTENSIONS
     case shaderc_glsl_default_raygen_shader:
     case shaderc_glsl_default_anyhit_shader:
     case shaderc_glsl_default_closesthit_shader:
@@ -92,7 +88,6 @@ EShLanguage GetForcedStage(shaderc_shader_kind kind) {
     case shaderc_glsl_default_callable_shader:
     case shaderc_glsl_default_task_shader:
     case shaderc_glsl_default_mesh_shader:
-#endif
     case shaderc_spirv_assembly:
       return EShLangCount;
   }
@@ -113,7 +108,7 @@ class StageDeducer {
  public:
   explicit StageDeducer(
       shaderc_shader_kind kind = shaderc_glsl_infer_from_source)
-      : kind_(kind), error_(false){};
+      : kind_(kind), error_(false){}
   // The method that underlying glslang will call to determine the shader stage
   // to be used in current compilation. It is called only when there is neither
   // forced shader kind (or say stage, in the view of glslang), nor #pragma
@@ -133,7 +128,7 @@ class StageDeducer {
       error_ = false;
     }
     return stage;
-  };
+  }
 
   // Returns true if there is error during shader stage deduction.
   bool error() const { return error_; }
@@ -150,7 +145,6 @@ class StageDeducer {
       case shaderc_glsl_tess_control_shader:
       case shaderc_glsl_tess_evaluation_shader:
       case shaderc_glsl_infer_from_source:
-#ifdef NV_EXTENSIONS
       case shaderc_glsl_raygen_shader:
       case shaderc_glsl_anyhit_shader:
       case shaderc_glsl_closesthit_shader:
@@ -159,7 +153,6 @@ class StageDeducer {
       case shaderc_glsl_callable_shader:
       case shaderc_glsl_task_shader:
       case shaderc_glsl_mesh_shader:
-#endif
         return EShLangCount;
       case shaderc_glsl_default_vertex_shader:
         return EShLangVertex;
@@ -173,7 +166,6 @@ class StageDeducer {
         return EShLangTessControl;
       case shaderc_glsl_default_tess_evaluation_shader:
         return EShLangTessEvaluation;
-#ifdef NV_EXTENSIONS
       case shaderc_glsl_default_raygen_shader:
         return EShLangRayGenNV;
       case shaderc_glsl_default_anyhit_shader:
@@ -189,7 +181,7 @@ class StageDeducer {
       case shaderc_glsl_default_task_shader:
         return EShLangTaskNV;
       case shaderc_glsl_default_mesh_shader:
-#endif
+        return EShLangMeshNV;
       case shaderc_spirv_assembly:
         return EShLangCount;
     }
@@ -209,9 +201,9 @@ class InternalFileIncluder : public shaderc_util::CountingIncluder {
                        void* user_data)
       : resolver_(resolver),
         result_releaser_(result_releaser),
-        user_data_(user_data){};
+        user_data_(user_data){}
   InternalFileIncluder()
-      : resolver_(nullptr), result_releaser_(nullptr), user_data_(nullptr){};
+      : resolver_(nullptr), result_releaser_(nullptr), user_data_(nullptr){}
 
  private:
   // Check the validity of the callbacks.
@@ -286,12 +278,38 @@ shaderc_util::Compiler::TargetEnv GetCompilerTargetEnv(shaderc_target_env env) {
       return shaderc_util::Compiler::TargetEnv::OpenGL;
     case shaderc_target_env_opengl_compat:
       return shaderc_util::Compiler::TargetEnv::OpenGLCompat;
+    case shaderc_target_env_webgpu:
+      return shaderc_util::Compiler::TargetEnv::WebGPU;
     case shaderc_target_env_vulkan:
     default:
       break;
   }
 
   return shaderc_util::Compiler::TargetEnv::Vulkan;
+}
+
+shaderc_util::Compiler::TargetEnvVersion GetCompilerTargetEnvVersion(
+    uint32_t version_number) {
+  using namespace shaderc_util;
+
+  if (static_cast<uint32_t>(Compiler::TargetEnvVersion::Vulkan_1_0) ==
+      version_number) {
+    return Compiler::TargetEnvVersion::Vulkan_1_0;
+  }
+  if (static_cast<uint32_t>(Compiler::TargetEnvVersion::Vulkan_1_1) ==
+      version_number) {
+    return Compiler::TargetEnvVersion::Vulkan_1_1;
+  }
+  if (static_cast<uint32_t>(Compiler::TargetEnvVersion::Vulkan_1_2) ==
+      version_number) {
+    return Compiler::TargetEnvVersion::Vulkan_1_2;
+  }
+  if (static_cast<uint32_t>(Compiler::TargetEnvVersion::OpenGL_4_5) ==
+      version_number) {
+    return Compiler::TargetEnvVersion::OpenGL_4_5;
+  }
+
+  return Compiler::TargetEnvVersion::Default;
 }
 
 // Returns the Compiler::Limit enum for the given shaderc_limit enum.
@@ -452,7 +470,15 @@ void shaderc_compile_options_set_target_env(shaderc_compile_options_t options,
                                             shaderc_target_env target,
                                             uint32_t version) {
   options->target_env = target;
-  options->compiler.SetTargetEnv(GetCompilerTargetEnv(target), version);
+  options->compiler.SetTargetEnv(GetCompilerTargetEnv(target),
+                                 GetCompilerTargetEnvVersion(version));
+}
+
+void shaderc_compile_options_set_target_spirv(shaderc_compile_options_t options,
+                                              shaderc_spirv_version ver) {
+  // We made the values match, so we can get away with a static cast.
+  options->compiler.SetTargetSpirv(
+      static_cast<shaderc_util::Compiler::SpirvVersion>(ver));
 }
 
 void shaderc_compile_options_set_warnings_as_errors(
@@ -516,15 +542,27 @@ void shaderc_compile_options_set_hlsl_functionality1(
   options->compiler.EnableHlslFunctionality1(enable);
 }
 
+void shaderc_compile_options_set_invert_y(
+    shaderc_compile_options_t options, bool enable) {
+  options->compiler.EnableInvertY(enable);
+}
+
+void shaderc_compile_options_set_nan_clamp(shaderc_compile_options_t options,
+                                           bool enable) {
+  options->compiler.SetNanClamp(enable);
+}
+
 shaderc_compiler_t shaderc_compiler_initialize() {
-  static shaderc_util::GlslangInitializer* initializer =
-      new shaderc_util::GlslangInitializer;
   shaderc_compiler_t compiler = new (std::nothrow) shaderc_compiler;
-  compiler->initializer = initializer;
+  if (compiler) {
+    compiler->initializer.reset(new shaderc_util::GlslangInitializer);
+  }
   return compiler;
 }
 
-void shaderc_compiler_release(shaderc_compiler_t compiler) { delete compiler; }
+void shaderc_compiler_release(shaderc_compiler_t compiler) {
+  delete compiler;
+}
 
 namespace {
 shaderc_compilation_result_t CompileToSpecifiedOutputType(
@@ -569,7 +607,7 @@ shaderc_compilation_result_t CompileToSpecifiedOutputType(
               // We need to make this a reference wrapper, so that std::function
               // won't make a copy for this callable object.
               std::ref(stage_deducer), includer, output_type, &errors,
-              &total_warnings, &total_errors, compiler->initializer);
+              &total_warnings, &total_errors);
     } else {
       // Compile with default options.
       InternalFileIncluder includer;
@@ -578,7 +616,7 @@ shaderc_compilation_result_t CompileToSpecifiedOutputType(
           shaderc_util::Compiler().Compile(
               source_string, forced_stage, input_file_name_str, entry_point_name,
               std::ref(stage_deducer), includer, output_type, &errors,
-              &total_warnings, &total_errors, compiler->initializer);
+              &total_warnings, &total_errors);
     }
 
     result->messages = errors.str();
@@ -652,8 +690,11 @@ shaderc_compilation_result_t shaderc_assemble_into_spv(
     std::string errors;
     const auto target_env = additional_options ? additional_options->target_env
                                                : shaderc_target_env_default;
+    const uint32_t target_env_version =
+        additional_options ? additional_options->target_env_version : 0;
     const bool assembling_succeeded = shaderc_util::SpirvToolsAssemble(
         GetCompilerTargetEnv(target_env),
+        GetCompilerTargetEnvVersion(target_env_version),
         {source_assembly, source_assembly + source_assembly_size},
         &assembling_output_data, &errors);
     result->num_errors = !assembling_succeeded;
@@ -733,6 +774,7 @@ bool shaderc_parse_version_profile(const char* str, int* version,
       *profile = shaderc_profile_none;
       return true;
     case EBadProfile:
+    case EProfileCount:
       return false;
   }
 

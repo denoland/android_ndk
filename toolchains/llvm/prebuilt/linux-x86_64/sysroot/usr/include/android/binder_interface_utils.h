@@ -30,6 +30,11 @@
 #include <android/binder_auto_utils.h>
 #include <android/binder_ibinder.h>
 
+#if __has_include(<android/binder_shell.h>)
+#include <android/binder_shell.h>
+#define HAS_BINDER_SHELL_COMMAND
+#endif  //_has_include
+
 #include <assert.h>
 
 #include <memory>
@@ -81,6 +86,20 @@ class SharedRefBase {
         return t->template ref<T>();
     }
 
+    static void operator delete(void* p) { std::free(p); }
+
+    // Once minSdkVersion is 30, we are guaranteed to be building with the
+    // Android 11 AIDL compiler which supports the SharedRefBase::make API.
+    //
+    // Use 'SharedRefBase::make<T>(...)' to make. SharedRefBase has implicit
+    // ownership. Making this operator private to avoid double-ownership.
+#if !defined(__ANDROID_API__) || __ANDROID_API__ >= 30 || defined(__ANDROID_APEX__)
+   private:
+#else
+    [[deprecated("Prefer SharedRefBase::make<T>(...) if possible.")]]
+#endif
+    static void* operator new(size_t s) { return std::malloc(s); }
+
    private:
     std::once_flag mFlagThis;
     std::weak_ptr<SharedRefBase> mThis;
@@ -108,7 +127,15 @@ class ICInterface : public SharedRefBase {
     /**
      * Dumps information about the interface. By default, dumps nothing.
      */
-    virtual inline binder_status_t dump(int /*fd*/, const char** /*args*/, uint32_t /*numArgs*/);
+    virtual inline binder_status_t dump(int fd, const char** args, uint32_t numArgs);
+
+#ifdef HAS_BINDER_SHELL_COMMAND
+    /**
+     * Process shell commands. By default, does nothing.
+     */
+    virtual inline binder_status_t handleShellCommand(int in, int out, int err, const char** argv,
+                                                      uint32_t argc);
+#endif
 
     /**
      * Interprets this binder as this underlying interface if this has stored an ICInterface in the
@@ -136,6 +163,11 @@ class ICInterface : public SharedRefBase {
         static inline void onDestroy(void* userData);
         static inline binder_status_t onDump(AIBinder* binder, int fd, const char** args,
                                              uint32_t numArgs);
+
+#ifdef HAS_BINDER_SHELL_COMMAND
+        static inline binder_status_t handleShellCommand(AIBinder* binder, int in, int out, int err,
+                                                         const char** argv, uint32_t argc);
+#endif
     };
 };
 
@@ -191,6 +223,13 @@ binder_status_t ICInterface::dump(int /*fd*/, const char** /*args*/, uint32_t /*
     return STATUS_OK;
 }
 
+#ifdef HAS_BINDER_SHELL_COMMAND
+binder_status_t ICInterface::handleShellCommand(int /*in*/, int /*out*/, int /*err*/,
+                                                const char** /*argv*/, uint32_t /*argc*/) {
+    return STATUS_OK;
+}
+#endif
+
 std::shared_ptr<ICInterface> ICInterface::asInterface(AIBinder* binder) {
     return ICInterfaceData::getInterface(binder);
 }
@@ -203,9 +242,14 @@ AIBinder_Class* ICInterface::defineClass(const char* interfaceDescriptor,
         return nullptr;
     }
 
-    // We can't know if this method is overriden by a subclass interface, so we must register
-    // ourselves. The default (nothing to dump) is harmless.
+    // We can't know if these methods are overridden by a subclass interface, so we must register
+    // ourselves. The defaults are harmless.
     AIBinder_Class_setOnDump(clazz, ICInterfaceData::onDump);
+#ifdef HAS_BINDER_SHELL_COMMAND
+    if (AIBinder_Class_setHandleShellCommand != nullptr) {
+        AIBinder_Class_setHandleShellCommand(clazz, ICInterfaceData::handleShellCommand);
+    }
+#endif
     return clazz;
 }
 
@@ -233,6 +277,15 @@ binder_status_t ICInterface::ICInterfaceData::onDump(AIBinder* binder, int fd, c
     std::shared_ptr<ICInterface> interface = getInterface(binder);
     return interface->dump(fd, args, numArgs);
 }
+
+#ifdef HAS_BINDER_SHELL_COMMAND
+binder_status_t ICInterface::ICInterfaceData::handleShellCommand(AIBinder* binder, int in, int out,
+                                                                 int err, const char** argv,
+                                                                 uint32_t argc) {
+    std::shared_ptr<ICInterface> interface = getInterface(binder);
+    return interface->handleShellCommand(in, out, err, argv, argc);
+}
+#endif
 
 template <typename INTERFACE>
 SpAIBinder BnCInterface<INTERFACE>::asBinder() {

@@ -18,6 +18,8 @@
  ****************************************************************************/
 #ifndef _UAPI_LINUX_RTC_H_
 #define _UAPI_LINUX_RTC_H_
+#include <linux/const.h>
+#include <linux/ioctl.h>
 struct rtc_time {
   int tm_sec;
   int tm_min;
@@ -63,7 +65,12 @@ struct rtc_pll_info {
 #define RTC_WKALM_RD _IOR('p', 0x10, struct rtc_wkalrm)
 #define RTC_PLL_GET _IOR('p', 0x11, struct rtc_pll_info)
 #define RTC_PLL_SET _IOW('p', 0x12, struct rtc_pll_info)
-#define RTC_VL_READ _IOR('p', 0x13, int)
+#define RTC_VL_DATA_INVALID _BITUL(0)
+#define RTC_VL_BACKUP_LOW _BITUL(1)
+#define RTC_VL_BACKUP_EMPTY _BITUL(2)
+#define RTC_VL_ACCURACY_LOW _BITUL(3)
+#define RTC_VL_BACKUP_SWITCH _BITUL(4)
+#define RTC_VL_READ _IOR('p', 0x13, unsigned int)
 #define RTC_VL_CLR _IO('p', 0x14)
 #define RTC_IRQF 0x80
 #define RTC_PF 0x40
